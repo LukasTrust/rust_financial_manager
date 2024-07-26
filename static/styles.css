@@ -13,6 +13,9 @@ body {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
 }
 
 .login-form {
@@ -22,6 +25,23 @@ body {
 .input-group {
     margin-bottom: 15px;
     text-align: left;
+}
+
+.registration-form {
+    position: relative;
+}
+
+.error {
+    color: #ff0000;
+    background-color: #fdd;
+    border: 1px solid #fbb;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
 }
 
 label {
