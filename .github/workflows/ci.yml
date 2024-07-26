@@ -137,52 +137,52 @@ jobs:
           path: gl-dependency-scanning-report.json
 
   unittest-code:
-     runs-on: ubuntu-latest
-     container:
-       image: rust:latest
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
     needs: [lint-code, format-code, doc-code, benchmark-code, audit-code]
-     steps:
-       - uses: actions/checkout@v2
-       - name: Cache cargo registry
-         uses: actions/cache@v2
-         with:
-           path: |
-             ~/.cargo/registry
-             ~/.cargo/git
-           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-           restore-keys: |
-             ${{ runner.os }}-cargo-registry-
-       - name: Set up Rust
-         run: |
-           rustc --version
-           cargo --version
-       - name: Test
-         run: cargo test
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache cargo registry
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+      - name: Set up Rust
+        run: |
+          rustc --version
+          cargo --version
+      - name: Test
+        run: cargo test
 
-   coverage-code:
-     runs-on: ubuntu-latest
-     container:
-       image: rust:latest
-     needs: unittest-code
-     steps:
-       - uses: actions/checkout@v2
-       - name: Cache cargo registry
-         uses: actions/cache@v2
-         with:
-           path: |
-             ~/.cargo/registry
-             ~/.cargo/git
-           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-           restore-keys: |
-             ${{ runner.os }}-cargo-registry-
-       - name: Set up Cargo Tarpaulin
-         run: |
-           mkdir -p $CARGO_HOME/bin
-           cargo install cargo-tarpaulin --root $CARGO_HOME
-       - name: Generate Coverage
-         run: cargo tarpaulin --engine llvm --ignore-tests --out Xml
-       - name: Upload Coverage Report
-         uses: actions/upload-artifact@v2
-         with:
-           name: coverage-report
-           path: cobertura.xml
+  coverage-code:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
+    needs: unittest-code
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache cargo registry
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+      - name: Set up Cargo Tarpaulin
+        run: |
+          mkdir -p $CARGO_HOME/bin
+          cargo install cargo-tarpaulin --root $CARGO_HOME
+      - name: Generate Coverage
+        run: cargo tarpaulin --engine llvm --ignore-tests --out Xml
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage-report
+          path: cobertura.xml
