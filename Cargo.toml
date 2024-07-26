@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-diesel = { version = "2.2.0", features = ["postgres", "r2d2"] }
+diesel = { version = "2.1.1", features = ["postgres", "r2d2"] }
 dotenvy = "0.15"
 rocket = "0.5.1"
-rocket_sync_db_pools = { version = "0.1.0-rc.1", features = ["diesel_postgres_pool"] }
+rocket_db_pools = { version = "0.2.0", features = ["diesel_postgres"] }
 dotenv = "0.15"
 rocket_dyn_templates = { version = "0.2.0", features = ["tera"] }

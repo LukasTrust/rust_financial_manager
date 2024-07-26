@@ -2,10 +2,10 @@ use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use rocket::form::Form;
 use rocket::response::Redirect;
-use rocket::uri;
-use rocket::{get, post, FromForm};
+use rocket::{get, post, uri, FromForm};
+use rocket_db_pools::diesel;
+use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
-use rocket_sync_db_pools::diesel;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::NewUser;
@@ -22,7 +22,10 @@ pub fn register_form() -> Template {
 }
 
 #[post("/register", data = "<user_form>")]
-pub async fn register_user(db: DbConn, user_form: Form<NewUserForm>) -> Result<Redirect, Template> {
+pub async fn register_user(
+    mut db: Connection<DbConn>,
+    user_form: Form<NewUserForm>,
+) -> Result<Redirect, Template> {
     let new_user = NewUser {
         firstname: user_form.firstname.clone(),
         lastname: user_form.lastname.clone(),
@@ -30,12 +33,9 @@ pub async fn register_user(db: DbConn, user_form: Form<NewUserForm>) -> Result<R
         password: user_form.password.clone(),
     };
 
-    let result = db
-        .run(move |conn| {
-            diesel::insert_into(users::table)
-                .values(&new_user)
-                .execute(conn)
-        })
+    let result = diesel::insert_into(users::table)
+        .values(&new_user)
+        .execute(&mut db)
         .await;
 
     match result {

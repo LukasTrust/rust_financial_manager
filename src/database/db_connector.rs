@@ -1,4 +1,5 @@
-use rocket_sync_db_pools::{database, diesel};
+use rocket_db_pools::{diesel, Database};
 
+#[derive(Database)]
 #[database("postgres_db")]
-pub struct DbConn(diesel::PgConnection);
+pub struct DbConn(diesel::PgPool);
