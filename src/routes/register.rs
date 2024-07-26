@@ -1,5 +1,7 @@
+use bcrypt::{hash, DEFAULT_COST};
 use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
+use regex::Regex;
 use rocket::form::Form;
 use rocket::response::Redirect;
 use rocket::{get, post, uri, FromForm};
@@ -26,11 +28,35 @@ pub async fn register_user(
     mut db: Connection<DbConn>,
     user_form: Form<NewUserForm>,
 ) -> Result<Redirect, Template> {
+    if !is_valid_email(&user_form.email.clone()) {
+        return Err(Template::render(
+            "register",
+            context! { error: "Email format not valide." },
+        ));
+    }
+
+    if !is_strong_password(&user_form.password.clone()) {
+        return Err(Template::render(
+            "register",
+            context! { error: "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character" },
+        ));
+    }
+
+    let hashed_password = match hash(&user_form.password.clone(), DEFAULT_COST) {
+        Ok(h) => h,
+        Err(err) => {
+            return Err(Template::render(
+                "register",
+                context! { error: format!("Failed to hash password: {}", err) },
+            ))
+        }
+    };
+
     let new_user = NewUser {
         firstname: user_form.firstname.clone(),
         lastname: user_form.lastname.clone(),
         email: user_form.email.clone(),
-        password: user_form.password.clone(),
+        password: hashed_password,
     };
 
     let result = diesel::insert_into(users::table)
@@ -53,6 +79,35 @@ pub async fn register_user(
             context! { error: "Internal server error. Please try again later." },
         )),
     }
+}
+
+/// Check if an email is valid.
+/// A valid email must:
+/// - Contain only alphanumeric characters, dots, hyphens, and underscores
+/// - Have a domain with at least one dot
+/// - Have a top-level domain with at least two characters
+pub fn is_valid_email(email: &str) -> bool {
+    // Regular expression to match a basic email format
+    let re = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
+    re.is_match(email)
+}
+
+/// Check if a password is strong.
+/// A strong password must:
+/// - Be at least 8 characters long
+/// - Contain at least one lowercase letter
+/// - Contain at least one uppercase letter
+/// - Contain at least one digit
+/// - Contain at least one special character
+pub fn is_strong_password(password: &str) -> bool {
+    // Define password strength criteria
+    let has_lowercase = password.chars().any(|c| c.is_lowercase());
+    let has_uppercase = password.chars().any(|c| c.is_uppercase());
+    let has_digit = password.chars().any(|c| c.is_ascii_digit());
+    let has_special = password.chars().any(|c| !c.is_alphanumeric());
+
+    // Password is considered strong if it meets all criteria
+    password.len() >= 8 && has_lowercase && has_uppercase && has_digit && has_special
 }
 
 #[derive(FromForm)]
