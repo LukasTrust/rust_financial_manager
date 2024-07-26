@@ -1,0 +1,3 @@
+[![Rust CI](https://github.com/LukasTrust/rust_financial_manager/workflows/Rust%20CI/badge.svg)](https://github.com/LukasTrust/rust_financial_manager/actions?query=workflow%3A%22Rust+CI%22)
+[![Coverage](https://img.shields.io/badge/coverage-80%25-brightgreen)](./coverage/cobertura.xml)
+[![Latest Release](https://img.shields.io/github/v/release/LukasTrust/rust_financial_manager)](https://github.com/LukasTrust/rust_financial_manager/releases/latest)
