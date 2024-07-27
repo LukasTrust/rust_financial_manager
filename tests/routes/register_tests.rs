@@ -7,6 +7,7 @@ mod tests {
     use rocket_dyn_templates::Template;
     use rust_financial_manager::database::db_connector::DbConn;
     use rust_financial_manager::database::models::RegisterUser;
+    use rust_financial_manager::routes::delete_user::delete_user;
     use rust_financial_manager::routes::register::{is_strong_password, is_valid_email};
     use rust_financial_manager::routes::register::{
         login_form_from_register, register_form, register_user,
@@ -18,7 +19,12 @@ mod tests {
         rocket::build()
             .mount(
                 "/",
-                routes![login_form_from_register, register_form, register_user],
+                routes![
+                    login_form_from_register,
+                    register_form,
+                    register_user,
+                    delete_user
+                ],
             )
             .attach(Template::fairing())
             .attach(DbConn::init())
@@ -60,15 +66,17 @@ mod tests {
     }
 
     #[rocket::async_test]
-    async fn test_register_user_success() {
+    async fn test_register_and_delete_user_success() {
         // Initialize Rocket client
         let client = test_client().await;
+
+        let email_for_test = "john.doe@example.com";
 
         // Prepare a new user registration form
         let form = RegisterUser {
             firstname: "John".into(),
             lastname: "Doe".into(),
-            email: "john.doe@example.com".into(),
+            email: email_for_test.into(),
             password: "Str0ngP@ssw0rd".into(),
         };
 
@@ -84,16 +92,27 @@ mod tests {
 
         // Assert that the response status is a redirect (See Other)
         assert_eq!(response.status(), Status::SeeOther);
+
+        // Prepare a delete request to remove the user
+        let delete_response = client
+            .delete(format!("/delete_user/{}", email_for_test))
+            .dispatch()
+            .await;
+
+        // Assert that the delete response status is a redirect (See Other)
+        assert_eq!(delete_response.status(), Status::SeeOther);
     }
 
     #[rocket::async_test]
     async fn test_register_user_existing_email() {
         let client = test_client().await;
 
+        let email_for_test = "unique.email@example.com";
+
         let initial_form = RegisterUser {
             firstname: "Jane".into(),
             lastname: "Doe".into(),
-            email: "unique.email@example.com".into(),
+            email: email_for_test.into(),
             password: "InitialP@ssw0rd".into(),
         };
 
@@ -111,7 +130,7 @@ mod tests {
         let duplicate_form = RegisterUser {
             firstname: "Jane".into(),
             lastname: "Doe".into(),
-            email: "unique.email@example.com".into(),
+            email: email_for_test.into(),
             password: "AnotherP@ssw0rd".into(),
         };
 
@@ -127,6 +146,15 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
         let body = response.into_string().await.unwrap();
         assert!(body.contains("Email already exists"));
+
+        // Prepare a delete request to remove the user
+        let delete_response = client
+            .delete(format!("/delete_user/{}", email_for_test))
+            .dispatch()
+            .await;
+
+        // Assert that the delete response status is a redirect (See Other)
+        assert_eq!(delete_response.status(), Status::SeeOther);
     }
 
     #[test]
