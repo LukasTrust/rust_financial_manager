@@ -2,7 +2,7 @@ use super::schema::users;
 use diesel::prelude::*;
 use rocket::FromForm;
 
-#[derive(Queryable, Insertable)]
+#[derive(Queryable, Insertable, Debug)]
 #[diesel(table_name = users)]
 pub struct User {
     pub id: i32,
@@ -18,9 +18,8 @@ pub struct LoginUser {
     pub password: String,
 }
 
-#[derive(Insertable)]
+#[derive(FromForm, Insertable, Debug)]
 #[diesel(table_name = users)]
-#[derive(FromForm)]
 pub struct RegisterUser {
     pub firstname: String,
     pub lastname: String,

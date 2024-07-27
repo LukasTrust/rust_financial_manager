@@ -37,7 +37,7 @@ pub async fn register_user(
     if !is_strong_password(&user_form.password.clone()) {
         return Err(Template::render(
             "register",
-            context! { error: "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character" },
+            context! { error: "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character" },
         ));
     }
 
@@ -86,14 +86,16 @@ pub async fn register_user(
 /// - Have a domain with at least one dot
 /// - Have a top-level domain with at least two characters
 pub fn is_valid_email(email: &str) -> bool {
-    // Regular expression to match a basic email format
+    // Regular expression for validating an email address
     let re = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
-    re.is_match(email)
+
+    // Check if the email matches the regex pattern and doesn't contain consecutive dots
+    re.is_match(email) && !email.contains("..")
 }
 
 /// Check if a password is strong.
 /// A strong password must:
-/// - Be at least 8 characters long
+/// - Be at least 10 characters long
 /// - Contain at least one lowercase letter
 /// - Contain at least one uppercase letter
 /// - Contain at least one digit
@@ -106,5 +108,5 @@ pub fn is_strong_password(password: &str) -> bool {
     let has_special = password.chars().any(|c| !c.is_alphanumeric());
 
     // Password is considered strong if it meets all criteria
-    password.len() >= 8 && has_lowercase && has_uppercase && has_digit && has_special
+    password.len() >= 10 && has_lowercase && has_uppercase && has_digit && has_special
 }
