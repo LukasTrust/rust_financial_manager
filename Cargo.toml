@@ -10,7 +10,7 @@ diesel = { version = "2.1.1", features = ["postgres", "r2d2"] }
 bcrypt = "0.15.1"
 dotenvy = "0.15"
 regex = "1.10.5"
-rocket = "0.5.1"
-rocket_db_pools = { version = "0.2.0", features = ["diesel_postgres"] }
+rocket = "0.5.0-rc.2"
 dotenv = "0.15"
+rocket_db_pools = { version = "0.2.0", features = ["diesel_postgres"] }
 rocket_dyn_templates = { version = "0.2.0", features = ["tera"] }

@@ -40,7 +40,7 @@ diesel::table! {
         lastname -> Varchar,
         #[max_length = 100]
         email -> Varchar,
-        #[max_length = 50]
+        #[max_length = 200]
         password -> Varchar,
     }
 }

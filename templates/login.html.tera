@@ -12,6 +12,9 @@
     <div class="container">
         <div class="login-form">
             <h2>Login</h2>
+            {% if error %}
+            <p class="error">{{ error }}</p>
+            {% endif %}
             {% if message %}
             <p class="success">{{ message }}</p>
             {% endif %}

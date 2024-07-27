@@ -44,6 +44,19 @@ body {
     box-sizing: border-box;
 }
 
+.success {
+    color: #00b300;
+    background-color: #e6ffe6;
+    border: 1px solid #00b300;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
+}
+
 label {
     display: block;
     margin-bottom: 5px;

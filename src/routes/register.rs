@@ -4,13 +4,12 @@ use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use regex::Regex;
 use rocket::form::Form;
 use rocket::response::Redirect;
-use rocket::{get, post, uri, FromForm};
-use rocket_db_pools::diesel;
-use rocket_db_pools::Connection;
+use rocket::{get, post, uri};
+use rocket_db_pools::{diesel, Connection};
 use rocket_dyn_templates::{context, Template};
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::NewUser;
+use crate::database::models::RegisterUser;
 use crate::database::schema::users;
 
 #[get("/login?<message>")]
@@ -26,7 +25,7 @@ pub fn register_form() -> Template {
 #[post("/register", data = "<user_form>")]
 pub async fn register_user(
     mut db: Connection<DbConn>,
-    user_form: Form<NewUserForm>,
+    user_form: Form<RegisterUser>,
 ) -> Result<Redirect, Template> {
     if !is_valid_email(&user_form.email.clone()) {
         return Err(Template::render(
@@ -42,7 +41,7 @@ pub async fn register_user(
         ));
     }
 
-    let hashed_password = match hash(&user_form.password.clone(), DEFAULT_COST) {
+    let hashed_password = match hash(user_form.password.clone(), DEFAULT_COST) {
         Ok(h) => h,
         Err(err) => {
             return Err(Template::render(
@@ -52,10 +51,10 @@ pub async fn register_user(
         }
     };
 
-    let new_user = NewUser {
+    let new_user = RegisterUser {
         firstname: user_form.firstname.clone(),
         lastname: user_form.lastname.clone(),
-        email: user_form.email.clone(),
+        email: user_form.email.clone().to_lowercase(),
         password: hashed_password,
     };
 
@@ -108,12 +107,4 @@ pub fn is_strong_password(password: &str) -> bool {
 
     // Password is considered strong if it meets all criteria
     password.len() >= 8 && has_lowercase && has_uppercase && has_digit && has_special
-}
-
-#[derive(FromForm)]
-pub struct NewUserForm {
-    pub firstname: String,
-    pub lastname: String,
-    pub email: String,
-    pub password: String,
 }
