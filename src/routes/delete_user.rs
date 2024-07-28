@@ -5,7 +5,7 @@ use rocket_db_pools::{diesel, Connection};
 use rocket_dyn_templates::{context, Template};
 
 use crate::database::db_connector::DbConn;
-use crate::database::schema::users;
+use crate::schema::users;
 
 #[delete("/delete_user/<email>")]
 pub async fn delete_user(mut db: Connection<DbConn>, email: String) -> Result<Redirect, Template> {

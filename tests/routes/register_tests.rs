@@ -6,7 +6,7 @@ mod tests {
     use rocket_db_pools::Database;
     use rocket_dyn_templates::Template;
     use rust_financial_manager::database::db_connector::DbConn;
-    use rust_financial_manager::database::models::RegisterUser;
+    use rust_financial_manager::database::models::NewUser;
     use rust_financial_manager::routes::delete_user::delete_user;
     use rust_financial_manager::routes::register::{is_strong_password, is_valid_email};
     use rust_financial_manager::routes::register::{
@@ -37,7 +37,7 @@ mod tests {
             .expect("valid rocket instance")
     }
 
-    fn form_encoded(body: &RegisterUser) -> String {
+    fn form_encoded(body: &NewUser) -> String {
         format!(
             "firstname={}&lastname={}&email={}&password={}",
             encode(&body.firstname),
@@ -73,7 +73,7 @@ mod tests {
         let email_for_test = "john.doe@example.com";
 
         // Prepare a new user registration form
-        let form = RegisterUser {
+        let form = NewUser {
             firstname: "John".into(),
             lastname: "Doe".into(),
             email: email_for_test.into(),
@@ -109,7 +109,7 @@ mod tests {
 
         let email_for_test = "unique.email@example.com";
 
-        let initial_form = RegisterUser {
+        let initial_form = NewUser {
             firstname: "Jane".into(),
             lastname: "Doe".into(),
             email: email_for_test.into(),
@@ -127,7 +127,7 @@ mod tests {
 
         assert_eq!(response.status(), Status::SeeOther);
 
-        let duplicate_form = RegisterUser {
+        let duplicate_form = NewUser {
             firstname: "Jane".into(),
             lastname: "Doe".into(),
             email: email_for_test.into(),

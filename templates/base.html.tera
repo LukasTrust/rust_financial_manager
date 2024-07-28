@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Home{% endblock %}</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
+
 <body>
   <div class="full-page-container">
     <div class="sidebar">
       <h2>Rust Financial Manager</h2>
       <button onclick="window.location.href='/dashboard'">Dashboard</button>
-      <button onclick="window.location.href='/settings'">Settings</button>
       <ul id="bank-list">
       </ul>
     </div>
@@ -21,12 +22,14 @@
       {% endblock %}
     </div>
     <header>
-        <div class="logout-container">
-            <form action="/logout" method="post">
-                <button type="submit">Logout</button>
-            </form>     
-        </div>
+      <div class="header-buttons">
+        <button onclick="window.location.href='/settings'">Settings</button>
+        <form action="/logout" method="post">
+          <button type="submit">Logout</button>
+        </form>
+      </div>
     </header>
   </div>
 </body>
+
 </html>

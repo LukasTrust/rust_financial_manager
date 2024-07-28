@@ -9,8 +9,8 @@ use rocket_db_pools::{diesel, Connection};
 use rocket_dyn_templates::{context, Template};
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::RegisterUser;
-use crate::database::schema::users;
+use crate::database::models::NewUser;
+use crate::schema::users;
 
 #[get("/login?<message>")]
 pub fn login_form_from_register(message: String) -> Template {
@@ -25,7 +25,7 @@ pub fn register_form() -> Template {
 #[post("/register", data = "<user_form>")]
 pub async fn register_user(
     mut db: Connection<DbConn>,
-    user_form: Form<RegisterUser>,
+    user_form: Form<NewUser>,
 ) -> Result<Redirect, Template> {
     if !is_valid_email(&user_form.email.clone()) {
         return Err(Template::render(
@@ -51,7 +51,7 @@ pub async fn register_user(
         }
     };
 
-    let new_user = RegisterUser {
+    let new_user = NewUser {
         firstname: user_form.firstname.clone(),
         lastname: user_form.lastname.clone(),
         email: user_form.email.clone().to_lowercase(),
