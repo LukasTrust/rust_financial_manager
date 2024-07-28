@@ -141,6 +141,20 @@ jobs:
     container:
       image: rust:latest
     needs: [lint-code, format-code, doc-code, benchmark-code, audit-code]
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: glpat-BYytBgysP3yeceKp6FUW
+          POSTGRES_DB: financial_manager
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v2
       - name: Cache cargo registry
@@ -156,7 +170,15 @@ jobs:
         run: |
           rustc --version
           cargo --version
+      - name: Install Diesel CLI
+        run: cargo install diesel_cli --no-default-features --features postgres
+      - name: Run Diesel Migrations
+        env:
+          DATABASE_URL: postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@localhost:5432/financial_manager
+        run: diesel migration run
       - name: Test
+        env:
+          DATABASE_URL: postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@localhost:5432/financial_manager
         run: cargo test
 
   coverage-code:
