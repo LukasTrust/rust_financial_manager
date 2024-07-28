@@ -7,10 +7,7 @@ use rocket_dyn_templates::{context, Template};
 pub fn home(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
     if let Some(user_id_cookie) = cookies.get("user_id") {
         if user_id_cookie.value().parse::<i32>().is_ok() {
-            Ok(Template::render(
-                "home",
-                context! { main_content: "dashboard" },
-            ))
+            Ok(Template::render("dashboard", context! {}))
         } else {
             Err(Redirect::to("/"))
         }
@@ -21,12 +18,12 @@ pub fn home(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
 
 #[get("/dashboard")]
 pub fn dashboard() -> Template {
-    Template::render("home", context! { main_content: "dashboard" })
+    Template::render("dashboard", context! {})
 }
 
 #[get("/settings")]
 pub fn settings() -> Template {
-    Template::render("home", context! { main_content: "settings" })
+    Template::render("settings", context! {})
 }
 
 #[post("/logout")]

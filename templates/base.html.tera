@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Home</title>
+  <title>{% block title %}Home{% endblock %}</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -16,13 +16,9 @@
       </ul>
     </div>
     <div class="main-content">
-      {% if main_content == "dashboard" %}
-        {% include "dashboard" %}
-      {% elif main_content == "settings" %}
-        {% include "settings" %}
-      {% else %}
-        <p>Welcome! Please select an option from the sidebar.</p>
-      {% endif %}
+      {% block main_content %}
+      <p>Welcome! Please select an option from the sidebar.</p>
+      {% endblock %}
     </div>
     <header>
         <div class="logout-container">
