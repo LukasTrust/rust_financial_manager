@@ -172,6 +172,16 @@ jobs:
           cargo --version
       - name: Install Diesel CLI
         run: cargo install diesel_cli --no-default-features --features postgres
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if pg_isready -h localhost -p 5432 -U postgres; then
+              echo "PostgreSQL is up and running"
+              break
+            fi
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 5
+          done
       - name: Run Diesel Migrations
         env:
           DATABASE_URL: postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@localhost:5432/financial_manager

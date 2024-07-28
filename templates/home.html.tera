@@ -1,29 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
-    <link rel="stylesheet" href="/static/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home</title>
+  <link rel="stylesheet" href="/static/styles.css">
 </head>
-
 <body>
-    <div class="container">
-        <div class="home-content">
-            <h2>Welcome Home</h2>
-            {% if error %}
-            <p class="error">{{ error }}</p>
-            {% endif %}
-            {% if message %}
-            <p class="success">{{ message }}</p>
-            {% endif %}
-            <p>Your User ID is: {{ user_id }}</p>
+  <div class="full-page-container">
+    <div class="sidebar">
+      <h2>Rust Financial Manager</h2>
+      <button onclick="window.location.href='/dashboard'">Dashboard</button>
+      <button onclick="window.location.href='/settings'">Settings</button>
+      <ul id="bank-list">
+      </ul>
+    </div>
+    <div class="main-content">
+      {% if main_content == "dashboard" %}
+        {% include "dashboard" %}
+      {% elif main_content == "settings" %}
+        {% include "settings" %}
+      {% else %}
+        <p>Welcome! Please select an option from the sidebar.</p>
+      {% endif %}
+    </div>
+    <header>
+        <div class="logout-container">
             <form action="/logout" method="post">
                 <button type="submit">Logout</button>
-            </form>
+            </form>     
         </div>
-    </div>
+    </header>
+  </div>
 </body>
-
 </html>

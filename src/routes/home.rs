@@ -4,15 +4,29 @@ use rocket::{get, post};
 use rocket_dyn_templates::{context, Template};
 
 #[get("/home")]
-pub fn home(cookies: &CookieJar<'_>) -> Result<Template, Box<Redirect>> {
+pub fn home(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
     if let Some(user_id_cookie) = cookies.get("user_id") {
-        match user_id_cookie.value().parse::<i32>() {
-            Ok(user_id) => Ok(Template::render("home", context! { user_id })),
-            Err(_) => Err(Box::new(Redirect::to("/"))),
+        if user_id_cookie.value().parse::<i32>().is_ok() {
+            Ok(Template::render(
+                "home",
+                context! { main_content: "dashboard" },
+            ))
+        } else {
+            Err(Redirect::to("/"))
         }
     } else {
-        Err(Box::new(Redirect::to("/")))
+        Err(Redirect::to("/"))
     }
+}
+
+#[get("/dashboard")]
+pub fn dashboard() -> Template {
+    Template::render("home", context! { main_content: "dashboard" })
+}
+
+#[get("/settings")]
+pub fn settings() -> Template {
+    Template::render("home", context! { main_content: "settings" })
 }
 
 #[post("/logout")]
