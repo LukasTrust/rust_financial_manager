@@ -1,11 +1,11 @@
 CREATE TABLE banks (
-    Id SERIAL PRIMARY KEY,
-    UserId INT NOT NULL,
-    Name VARCHAR(50) NOT NULL,
-    Link VARCHAR(200),
-    StartDate DATE,
-    EndDate DATE,
-    CurrentAmount FLOAT,
-    InterestRate FLOAT,
-    FOREIGN KEY (UserId) REFERENCES users(Id)
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    link VARCHAR(200),
+    start_date DATE,
+    end_date DATE,
+    current_amount FLOAT,
+    interest_rate FLOAT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );

@@ -40,8 +40,8 @@ mod tests {
     fn form_encoded(body: &NewUser) -> String {
         format!(
             "firstname={}&lastname={}&email={}&password={}",
-            encode(&body.firstname),
-            encode(&body.lastname),
+            encode(&body.first_name),
+            encode(&body.last_name),
             encode(&body.email),
             encode(&body.password)
         )
@@ -74,8 +74,8 @@ mod tests {
 
         // Prepare a new user registration form
         let form = NewUser {
-            firstname: "John".into(),
-            lastname: "Doe".into(),
+            first_name: "John".into(),
+            last_name: "Doe".into(),
             email: email_for_test.into(),
             password: "Str0ngP@ssw0rd".into(),
         };
@@ -110,8 +110,8 @@ mod tests {
         let email_for_test = "unique.email@example.com";
 
         let initial_form = NewUser {
-            firstname: "Jane".into(),
-            lastname: "Doe".into(),
+            first_name: "Jane".into(),
+            last_name: "Doe".into(),
             email: email_for_test.into(),
             password: "InitialP@ssw0rd".into(),
         };
@@ -128,8 +128,8 @@ mod tests {
         assert_eq!(response.status(), Status::SeeOther);
 
         let duplicate_form = NewUser {
-            firstname: "Jane".into(),
-            lastname: "Doe".into(),
+            first_name: "Jane".into(),
+            last_name: "Doe".into(),
             email: email_for_test.into(),
             password: "AnotherP@ssw0rd".into(),
         };

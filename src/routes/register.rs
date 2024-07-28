@@ -52,8 +52,8 @@ pub async fn register_user(
     };
 
     let new_user = NewUser {
-        firstname: user_form.firstname.clone(),
-        lastname: user_form.lastname.clone(),
+        first_name: user_form.first_name.clone(),
+        last_name: user_form.last_name.clone(),
         email: user_form.email.clone().to_lowercase(),
         password: hashed_password,
     };

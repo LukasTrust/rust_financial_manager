@@ -3,25 +3,24 @@
 diesel::table! {
     banks (id) {
         id -> Int4,
-        userid -> Int4,
+        user_id -> Int4,
         #[max_length = 50]
         name -> Varchar,
         #[max_length = 200]
         link -> Nullable<Varchar>,
-        startdate -> Nullable<Date>,
-        enddate -> Nullable<Date>,
-        currentamount -> Nullable<Float8>,
-        interestrate -> Nullable<Float8>,
+        start_date -> Nullable<Date>,
+        end_date -> Nullable<Date>,
+        current_amount -> Nullable<Float8>,
+        interest_rate -> Nullable<Float8>,
     }
 }
 
 diesel::table! {
     transactions (id) {
         id -> Int4,
-        bankid -> Int4,
-        #[sql_name = "type"]
+        bank_id -> Int4,
         #[max_length = 50]
-        type_ -> Varchar,
+        type_of_t -> Varchar,
         date -> Date,
         #[max_length = 200]
         other -> Nullable<Varchar>,
@@ -35,9 +34,9 @@ diesel::table! {
     users (id) {
         id -> Int4,
         #[max_length = 50]
-        firstname -> Varchar,
+        first_name -> Varchar,
         #[max_length = 50]
-        lastname -> Varchar,
+        last_name -> Varchar,
         #[max_length = 100]
         email -> Varchar,
         #[max_length = 200]
@@ -45,8 +44,8 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(banks -> users (userid));
-diesel::joinable!(transactions -> banks (bankid));
+diesel::joinable!(banks -> users (user_id));
+diesel::joinable!(transactions -> banks (bank_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     banks,

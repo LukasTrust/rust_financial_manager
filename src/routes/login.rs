@@ -7,7 +7,7 @@ use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 
 use crate::database::db_connector::{load_user_id_and_password, DbConn};
-use crate::database::models::User;
+use crate::database::models::FormUser;
 
 #[get("/")]
 pub fn login_form() -> Template {
@@ -17,7 +17,7 @@ pub fn login_form() -> Template {
 #[post("/login", data = "<user_form>")]
 pub async fn login_user(
     db: Connection<DbConn>,
-    user_form: Form<User>,
+    user_form: Form<FormUser>,
     cookies: &CookieJar<'_>,
 ) -> Result<Redirect, Template> {
     let email_of_user = &user_form.email.to_lowercase();
