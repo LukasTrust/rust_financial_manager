@@ -1,7 +1,7 @@
 CREATE TABLE banks (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
-    name VARCHAR(50) NOT NULL,
+    name VARCHAR(50) NOT NULL UNIQUE,
     link VARCHAR(200),
     current_amount FLOAT,
     interest_rate FLOAT,

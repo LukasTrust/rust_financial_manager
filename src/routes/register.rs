@@ -1,10 +1,10 @@
 use bcrypt::{hash, DEFAULT_COST};
-use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use regex::Regex;
 use rocket::form::Form;
 use rocket::response::Redirect;
 use rocket::{get, post, uri};
+use rocket_db_pools::diesel::prelude::RunQueryDsl;
 use rocket_db_pools::{diesel, Connection};
 use rocket_dyn_templates::{context, Template};
 
