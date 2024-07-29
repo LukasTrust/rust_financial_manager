@@ -182,6 +182,8 @@ jobs:
             echo "Waiting for PostgreSQL to be ready..."
             sleep 5
           done
+          # Check again to ensure PostgreSQL is ready
+          pg_isready -h localhost -p 5432 -U postgres
       - name: Run Diesel Migrations
         env:
           DATABASE_URL: postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@localhost:5432/financial_manager
