@@ -170,6 +170,10 @@ jobs:
         run: |
           rustc --version
           cargo --version
+      - name: Install PostgreSQL Client
+        run: |
+          apt-get update
+          apt-get install -y postgresql-client
       - name: Install Diesel CLI
         run: cargo install diesel_cli --no-default-features --features postgres
       - name: Wait for PostgreSQL to be ready
