@@ -39,7 +39,6 @@ mod tests {
         };
 
         let response = user_login(&client, login_form).await;
-
         assert_eq!(response.status(), Status::SeeOther);
 
         // Cleanup
@@ -64,7 +63,6 @@ mod tests {
         };
 
         let response = user_login(&client, login_form).await;
-
         let body = response.into_string().await.unwrap();
         assert!(body.contains("Login failed. Either the email or password was incorrect."));
     }

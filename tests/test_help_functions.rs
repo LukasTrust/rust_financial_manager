@@ -8,6 +8,7 @@ use urlencoding::encode;
 use rust_financial_manager::database::db_connector::DbConn;
 use rust_financial_manager::database::models::{FormUser, NewUser};
 use rust_financial_manager::routes::delete_user::delete_user;
+use rust_financial_manager::routes::home::home;
 use rust_financial_manager::routes::login::{login_form, login_user};
 use rust_financial_manager::routes::register::{
     login_form_from_register, register_form, register_user,
@@ -26,7 +27,9 @@ pub fn rocket() -> Rocket<Build> {
                 delete_user,
                 // Login routes
                 login_user,
-                login_form
+                login_form,
+                // Home routes
+                home
             ],
         )
         .attach(Template::fairing())

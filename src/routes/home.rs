@@ -6,23 +6,23 @@ use rocket::{get, post};
 use rocket_db_pools::diesel::prelude::RunQueryDsl;
 use rocket_db_pools::{diesel, Connection};
 use rocket_dyn_templates::{context, Template};
-use std::str::FromStr;
+//use std::str::FromStr;
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{FormBank, FormTransactions, NewBank, NewTransactions, TypeOfT};
+use crate::database::models::{FormBank, NewBank}; //FormTransactions, NewTransactions, TypeOfT};
 use crate::schema::banks;
-use crate::schema::transactions::type_of_t;
+//use crate::schema::transactions::type_of_t;
 
 #[get("/home")]
-pub fn home(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
+pub fn home(cookies: &CookieJar<'_>) -> Result<Template, Box<Redirect>> {
     if let Some(user_id_cookie) = cookies.get("user_id") {
         if user_id_cookie.value().parse::<i32>().is_ok() {
             Ok(Template::render("dashboard", context! {}))
         } else {
-            Err(Redirect::to("/"))
+            Err(Box::new(Redirect::to("/")))
         }
     } else {
-        Err(Redirect::to("/"))
+        Err(Box::new(Redirect::to("/")))
     }
 }
 
@@ -72,25 +72,25 @@ pub async fn add_bank_form(
     }
 }
 
-#[post("/add-transaction", data = "<form>")]
-pub fn add_transaction_form(form: Form<FormTransactions>) -> String {
-    let form = form.into_inner();
-    let type_of_transactions = TypeOfT::from_str(&form.type_of_t).unwrap_or(TypeOfT::Deposit);
+//#[post("/add-transaction", data = "<form>")]
+//pub fn add_transaction_form(form: Form<FormTransactions>) -> String {
+//    let form = form.into_inner();
+//    let type_of_transactions = TypeOfT::from_str(&form.type_of_t).unwrap_or(TypeOfT::Deposit);
 
-    let bank = NewTransactions {
-        bank_id: todo!(),
-        date: todo!(),
-        counterparty: todo!(),
-        comment: todo!(),
-        amount: todo!(),
-        type_of_t: todo!(),
-    };
+//    let bank = NewTransactions {
+//        bank_id: todo!(),
+//        date: todo!(),
+//        counterparty: todo!(),
+//        comment: todo!(),
+//        amount: todo!(),
+//        type_of_t: todo!(),
+//    };
 
-    format!(
-        "Type: {:?}, Date: {}, counterparty: {}, Comment: {}, Amount: {}",
-        type_of_t, form.date, form.counterparty, form.comment, form.amount
-    )
-}
+//    format!(
+//        "Type: {:?}, Date: {}, counterparty: {}, Comment: {}, Amount: {}",
+//        type_of_t, form.date, form.counterparty, form.comment, form.amount
+//    )
+//}
 
 #[get("/dashboard")]
 pub fn dashboard() -> Template {
