@@ -13,6 +13,7 @@
     <div class="sidebar">
       <h2>Rust Financial Manager</h2>
       <button onclick="window.location.href='/dashboard'">Dashboard</button>
+      <button onclick="window.location.href='/add-bank'">Add new bank</button>
       <ul id="bank-list">
       </ul>
     </div>

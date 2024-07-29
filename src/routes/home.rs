@@ -1,7 +1,12 @@
+use std::str::FromStr;
+
+use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
 use rocket::{get, post};
 use rocket_dyn_templates::{context, Template};
+
+use crate::database::models::{FormTransactions, TypeOfT};
 
 #[get("/home")]
 pub fn home(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
@@ -14,6 +19,22 @@ pub fn home(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
     } else {
         Err(Redirect::to("/"))
     }
+}
+
+#[get("/add-bank")]
+pub fn add_bank() -> Template {
+    Template::render("add_bank", context! {})
+}
+
+#[post("/add-bank", data = "<form>")]
+pub fn add_bank_form(form: Form<FormTransactions>) -> String {
+    let form = form.into_inner();
+    let type_of_t = TypeOfT::from_str(&form.type_of_t).unwrap_or(TypeOfT::Deposit); // Default or handle error
+
+    format!(
+        "Type: {:?}, Date: {}, counterparty: {}, Comment: {}, Amount: {}",
+        type_of_t, form.date, form.counterparty, form.comment, form.amount
+    )
 }
 
 #[get("/dashboard")]

@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
 use diesel::prelude::*;
 use rocket::{time::Date, FromForm};
+use std::str::FromStr;
 
 use crate::schema::{banks, transactions, users};
 
@@ -21,11 +22,8 @@ pub struct NewUser {
 
 #[derive(FromForm)]
 pub struct FormBank {
-    pub user_id: i32,
     pub name: String,
     pub link: Option<String>,
-    pub start_date: Date,
-    pub end_date: Date,
     pub current_amount: f64,
     pub interest_rate: Option<f64>,
 }
@@ -36,18 +34,35 @@ pub struct NewBank {
     pub user_id: i32,
     pub name: String,
     pub link: Option<String>,
-    pub start_date: NaiveDate,
-    pub end_date: NaiveDate,
     pub current_amount: f64,
     pub interest_rate: Option<f64>,
 }
 
+#[derive(Debug)]
+pub enum TypeOfT {
+    Deposit,
+    Withdraw,
+    Interest,
+}
+
+impl FromStr for TypeOfT {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "deposit" => Ok(TypeOfT::Deposit),
+            "withdraw" => Ok(TypeOfT::Withdraw),
+            "interest" => Ok(TypeOfT::Interest),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(FromForm)]
 pub struct FormTransactions {
-    pub bank_id: i32,
     pub type_of_t: String,
     pub date: Date,
-    pub other: String,
+    pub counterparty: String,
     pub comment: String,
     pub amount: f64,
 }
@@ -58,7 +73,7 @@ pub struct NewTransactions {
     pub bank_id: i32,
     pub type_of_t: String,
     pub date: NaiveDate,
-    pub other: String,
+    pub counterparty: String,
     pub comment: String,
     pub amount: f64,
 }

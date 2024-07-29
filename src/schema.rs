@@ -8,8 +8,6 @@ diesel::table! {
         name -> Varchar,
         #[max_length = 200]
         link -> Nullable<Varchar>,
-        start_date -> Nullable<Date>,
-        end_date -> Nullable<Date>,
         current_amount -> Nullable<Float8>,
         interest_rate -> Nullable<Float8>,
     }
@@ -23,7 +21,7 @@ diesel::table! {
         type_of_t -> Varchar,
         date -> Date,
         #[max_length = 200]
-        other -> Nullable<Varchar>,
+        counterparty -> Nullable<Varchar>,
         #[max_length = 200]
         comment -> Nullable<Varchar>,
         amount -> Float8,

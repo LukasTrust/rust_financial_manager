@@ -96,7 +96,6 @@ button:hover {
     height: 40px;
 }
 
-
 .signup-link {
     margin-top: 10px;
 }
@@ -104,6 +103,11 @@ button:hover {
 .main-content {
     flex-grow: 1;
     padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    margin: 20px;
+    box-sizing: border-box;
 }
 
 .sidebar {
@@ -115,8 +119,11 @@ button:hover {
 header {
     display: flex;
     justify-content: flex-end;
-    width: 100%;
+    width: 100;
+    height: 100;
     padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
 }
 
 .header-buttons {
@@ -126,4 +133,26 @@ header {
 
 .header-buttons form {
     margin: 0;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    font-weight: bold;
+}
+
+.form-group input[type="radio"] {
+    margin-right: 10px;
+}
+
+.form-group .radio-group {
+    display: flex;
+    justify-content: space-between;
+}
+
+.form-group .radio-group div {
+    flex: 1;
+    text-align: center;
 }

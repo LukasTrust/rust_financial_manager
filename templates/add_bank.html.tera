@@ -1,0 +1,32 @@
+{% extends "base" %}
+
+{% block title %}Add bank{% endblock %}
+
+{% block main_content %}
+    <h1>Add Bank</h1>
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+    {% if message %}
+        <p class="success">{{ message }}</p>
+    {% endif %}
+    <form action="/add-bank" method="post">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="name" id="name" name="name" required>
+        </div>
+        <div class="form-group">
+            <label for="link">Link (Option)</label>
+            <input type="text" id="link" name="link">
+        </div>
+        <div class="form-group">
+            <label for="current_amount">Current amount</label>
+            <input type="number" id="current_amount" name="current_amount" required>
+        </div>
+        <div class="form-group">
+            <label for="interest_rate">Interest rate</label>
+            <input type="number" id="interest_rate" name="interest_rate" required>
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+{% endblock %}
