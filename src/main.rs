@@ -21,6 +21,7 @@ fn rocket() -> _ {
     let app_state = AppState {
         banks: Arc::new(RwLock::new(vec![])),
         transactions: Arc::new(RwLock::new(HashMap::new())),
+        csvConverts: Arc::new(RwLock::new(HashMap::new())),
     };
 
     rocket::build()

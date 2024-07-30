@@ -14,8 +14,11 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{Bank, FormBank, NewBank, Transaction};
-use crate::schema::{banks as banks_without_dsl, transactions as transactions_without_dsl};
+use crate::database::models::{Bank, CSVConverter, FormBank, NewBank, Transaction};
+use crate::schema::{
+    banks as banks_without_dsl, csv_converters as csv_converters_without_dsl,
+    transactions as transactions_without_dsl,
+};
 
 #[derive(Serialize)]
 pub struct Context {
@@ -26,6 +29,7 @@ pub struct Context {
 pub struct AppState {
     pub banks: Arc<RwLock<Vec<Bank>>>,
     pub transactions: Arc<RwLock<HashMap<i32, Vec<Transaction>>>>,
+    pub csvConverts: Arc<RwLock<HashMap<i32, CSVConverter>>>,
 }
 
 #[get("/home")]
@@ -37,6 +41,7 @@ pub async fn home(
     if let Some(user_id_cookie) = cookies.get("user_id") {
         if user_id_cookie.value().parse::<i32>().is_ok() {
             use crate::schema::banks::dsl::*;
+            use crate::schema::csv_converters::dsl::*;
             use crate::schema::transactions::dsl::*;
 
             let user_id_cookie = user_id_cookie.value().parse::<i32>().unwrap();
@@ -47,6 +52,7 @@ pub async fn home(
                 .map_err(|_| Redirect::to("/"))?;
 
             let mut transactions_map: HashMap<i32, Vec<Transaction>> = HashMap::new();
+            let mut csv_converters_map: HashMap<i32, CSVConverter> = HashMap::new();
 
             for bank in banks_result.iter() {
                 let transactions_result = transactions_without_dsl::table
@@ -55,6 +61,14 @@ pub async fn home(
                     .await
                     .map_err(|_| Redirect::to("/"))?;
                 transactions_map.insert(bank.id, transactions_result);
+
+                let csv_converters_result = csv_converters_without_dsl::table
+                    .filter(csv_bank_id.eq(bank.id))
+                    .first::<CSVConverter>(&mut db)
+                    .await
+                    .map_err(|_| Redirect::to("/"))?;
+
+                csv_converters_map.insert(bank.id, csv_converters_result);
             }
 
             let mut banks_state = state.banks.write().await;
@@ -62,6 +76,9 @@ pub async fn home(
 
             let mut transactions_state = state.transactions.write().await;
             *transactions_state = transactions_map.clone();
+
+            let mut csv_converters_state = state.csvConverts.write().await;
+            *csv_converters_state = csv_converters_map.clone();
 
             let plot_data = generate_balance_graph_data(&banks_result, &transactions_map);
 

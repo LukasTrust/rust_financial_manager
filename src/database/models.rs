@@ -4,7 +4,7 @@ use rocket::{time::Date, FromForm};
 use serde::Serialize;
 use std::str::FromStr;
 
-use crate::schema::{banks, transactions, users};
+use crate::schema::{banks, csv_converters, transactions, users};
 
 #[derive(FromForm)]
 pub struct FormUser {
@@ -98,4 +98,16 @@ pub struct Transaction {
     pub counterparty: Option<String>,
     pub comment: Option<String>,
     pub amount: f64,
+}
+
+#[derive(Queryable, Insertable, Debug, Clone)]
+#[diesel(table_name = csv_converters)]
+pub struct CSVConverter {
+    pub id: i32,
+    pub csv_bank_id: i32,
+    pub type_conv: Option<String>,
+    pub date_conv: Option<String>,
+    pub counterparty_conv: Option<String>,
+    pub comment_conv: Option<String>,
+    pub amount_conv: Option<String>,
 }
