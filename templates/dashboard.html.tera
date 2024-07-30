@@ -4,5 +4,5 @@
 
 {% block main_content %}
 <h1>Dashboard</h1>
-<!-- Dashboard specific content here -->
+<img src="/static/balance_graph.svg" alt="Bank Balance Graph">
 {% endblock %}

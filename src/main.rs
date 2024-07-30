@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate rocket;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use rocket::fs::{relative, FileServer};
@@ -19,6 +20,7 @@ use rust_financial_manager::{database, routes};
 fn rocket() -> _ {
     let app_state = AppState {
         banks: Arc::new(RwLock::new(vec![])),
+        transactions: Arc::new(RwLock::new(HashMap::new())),
     };
 
     rocket::build()

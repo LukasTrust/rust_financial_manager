@@ -88,3 +88,14 @@ pub struct NewTransactions {
     pub comment: String,
     pub amount: f64,
 }
+
+#[derive(Debug, Queryable, Serialize, Clone)]
+pub struct Transaction {
+    pub id: i32,
+    pub bank_id: i32,
+    pub type_of_t: String,
+    pub date: NaiveDate,
+    pub counterparty: Option<String>,
+    pub comment: Option<String>,
+    pub amount: f64,
+}

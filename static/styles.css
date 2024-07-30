@@ -92,6 +92,7 @@ button {
     border-radius: 4px;
     cursor: pointer;
     max-height: 50px;
+    width: 100%;
 }
 
 button:hover {
@@ -208,4 +209,17 @@ header {
 
 h1 {
     margin: 0;
+}
+
+#bank-list {
+    display: flex;
+    flex-direction: column;
+}
+
+#bank-list button {
+    background-color: #0bc3f1;
+}
+
+#bank-list button:hover {
+    background-color: #7ce1fa;
 }

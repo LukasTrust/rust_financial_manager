@@ -12,13 +12,13 @@
       <h2>Rust Financial Manager</h2>
       <button onclick="window.location.href='/dashboard'">Dashboard</button>
       <button onclick="window.location.href='/add-bank'">Add new bank</button>
-      <ul id="bank-list">
+      <div id="bank-list">
         {% for bank in banks %}
-          <li>{{ bank.name }}</li>
+          <button onclick="window.location.href='/bank/{{ bank.id }}'">{{ bank.name }}</button>
         {% else %}
-          <li>No banks found.</li>
+          <button disabled>No banks found.</button>
         {% endfor %}
-      </ul>
+      </div>
     </div>
     <div class="main-content">
       {% block main_content %}
