@@ -1,7 +1,6 @@
 use ::diesel::{ExpressionMethods, QueryDsl};
 use chrono::NaiveDate;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use plotters::prelude::*;
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
@@ -10,6 +9,7 @@ use rocket::{get, post, State};
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 use rocket_dyn_templates::{context, Template};
 use serde::Serialize;
+use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
@@ -46,7 +46,6 @@ pub async fn home(
                 .await
                 .map_err(|_| Redirect::to("/"))?;
 
-            // Create a HashMap to store transactions by bank_id
             let mut transactions_map: HashMap<i32, Vec<Transaction>> = HashMap::new();
 
             for bank in banks_result.iter() {
@@ -57,18 +56,19 @@ pub async fn home(
                     .map_err(|_| Redirect::to("/"))?;
                 transactions_map.insert(bank.id, transactions_result);
             }
-            // Update the global state
+
             let mut banks_state = state.banks.write().await;
             *banks_state = banks_result.clone();
 
             let mut transactions_state = state.transactions.write().await;
             *transactions_state = transactions_map.clone();
 
-            let _ = generate_balance_graph(&banks_result, &transactions_map);
+            let plot_data = generate_balance_graph_data(&banks_result, &transactions_map);
 
-            let context = Context {
-                banks: banks_result,
-            };
+            let context = json!({
+                "banks": banks_result,
+                "plot_data": plot_data.to_string()
+            });
 
             Ok(Template::render("dashboard", &context))
         } else {
@@ -88,7 +88,16 @@ pub async fn add_bank(state: &State<AppState>) -> Template {
 #[get("/dashboard")]
 pub async fn dashboard(state: &State<AppState>) -> Template {
     let banks = state.banks.read().await.clone();
-    Template::render("dashboard", context! { banks })
+    let transactions = state.transactions.read().await.clone();
+    let plot_data = generate_balance_graph_data(&banks, &transactions);
+
+    Template::render(
+        "dashboard",
+        context! {
+            banks,
+            plot_data: plot_data.to_string()
+        },
+    )
 }
 
 #[get("/settings")]
@@ -101,6 +110,38 @@ pub async fn settings(state: &State<AppState>) -> Template {
 pub fn logout(cookies: &CookieJar<'_>) -> Redirect {
     cookies.remove(Cookie::build("user_id"));
     Redirect::to("/")
+}
+
+#[get("/bank/<bank_id>")]
+pub async fn bank_view(bank_id: i32, state: &State<AppState>) -> Result<Template, Redirect> {
+    // Retrieve banks and transactions from state
+    let banks = state.banks.read().await.clone();
+    let transactions = state.transactions.read().await.clone();
+
+    // Find the requested bank
+    let bank = banks.iter().find(|&b| b.id == bank_id);
+
+    if let Some(bank) = bank {
+        // Fetch the transactions for the found bank
+        let bank_transactions = transactions.get(&bank_id).unwrap_or(&Vec::new()).clone();
+
+        // Generate plot data based on the bank's transactions
+        let plot_data = generate_balance_graph_data(
+            &vec![bank.clone()],
+            &HashMap::from([(bank.id, bank_transactions)]),
+        );
+
+        let context = json!({
+            "banks": banks,
+            "bank": bank,
+            "plot_data": plot_data.to_string()
+        });
+
+        Ok(Template::render("bank", &context))
+    } else {
+        // Redirect to home if bank is not found
+        Err(Redirect::to("/"))
+    }
 }
 
 #[post("/add-bank", data = "<bank_form>")]
@@ -144,25 +185,11 @@ pub async fn add_bank_form(
     }
 }
 
-fn generate_balance_graph(
+fn generate_balance_graph_data(
     banks: &[Bank],
     transactions: &HashMap<i32, Vec<Transaction>>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let root = SVGBackend::new("static/balance_graph.svg", (1024, 768)).into_drawing_area();
-    root.fill(&WHITE)?;
-
-    let mut chart = ChartBuilder::on(&root)
-        .caption("Bank Account Balances", ("sans-serif", 50).into_font())
-        .margin(10)
-        .x_label_area_size(35)
-        .y_label_area_size(40)
-        .build_cartesian_2d(
-            NaiveDate::from_ymd_opt(2023, 1, 1).unwrap()
-                ..NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-            0.0..100.0,
-        )?; // assuming balance range 0-100, update the date range as needed
-
-    chart.configure_mesh().draw()?;
+) -> serde_json::Value {
+    let mut plot_data = vec![];
 
     for bank in banks {
         let bank_transactions = transactions.get(&bank.id).unwrap();
@@ -170,8 +197,8 @@ fn generate_balance_graph(
         let mut data: BTreeMap<NaiveDate, f64> = BTreeMap::new();
 
         // Insert today's balance
-        let today = chrono::Local::now().naive_local();
-        data.insert(today.into(), balance);
+        let today = chrono::Local::now().naive_local().date();
+        data.insert(today, balance);
 
         for transaction in bank_transactions.iter().rev() {
             match transaction.type_of_t.as_str() {
@@ -188,18 +215,19 @@ fn generate_balance_graph(
         data.entry(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap())
             .or_insert(balance); // Ensure we plot the initial balance at the start
 
-        let series_data: Vec<(NaiveDate, f64)> = data.into_iter().collect();
+        let series_data: Vec<(String, f64)> = data
+            .into_iter()
+            .map(|(date, balance)| (date.to_string(), balance))
+            .collect();
 
-        chart
-            .draw_series(LineSeries::new(series_data, &RED))?
-            .label(bank.name.clone())
-            .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        plot_data.push(json!({
+            "name": bank.name,
+            "x": series_data.iter().map(|(date, _)| date.clone()).collect::<Vec<String>>(),
+            "y": series_data.iter().map(|(_, balance)| *balance).collect::<Vec<f64>>(),
+            "type": "scatter",
+            "mode": "lines+markers"
+        }));
     }
 
-    chart
-        .configure_series_labels()
-        .border_style(&BLACK)
-        .draw()?;
-
-    Ok(())
+    json!(plot_data)
 }

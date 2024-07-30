@@ -1,10 +1,15 @@
 {% extends "base" %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Bank Dashboard{% endblock %}
 
 {% block main_content %}
-<h1>Dashboard</h1>
-<div id="balance_graph"></div>
+<h1>{{ bank.name }}</h1>
+
+<!-- Container for the main content -->
+<div style="display: flex; justify-content: center; align-items: flex-start; height: 100vh; padding: 20px;">
+    <!-- Plot container -->
+    <div id="balance_graph" style="flex: 1; margin-right: 20px; max-width: 80%;"></div>
+</div>
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>

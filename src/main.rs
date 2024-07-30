@@ -10,7 +10,7 @@ use rocket_db_pools::Database;
 use rocket_dyn_templates::Template;
 
 use database::db_connector::DbConn;
-use routes::home::{add_bank, add_bank_form, dashboard, home, logout, settings};
+use routes::home::{add_bank, add_bank_form, bank_view, dashboard, home, logout, settings};
 use routes::login::{login_form, login_user};
 use routes::register::{login_form_from_register, register_form, register_user};
 use rust_financial_manager::routes::home::AppState;
@@ -30,17 +30,21 @@ fn rocket() -> _ {
         .mount(
             "/",
             routes![
-                login_form,
+                // Register
                 register_form,
                 register_user,
                 login_form_from_register,
+                // Login
+                login_form,
                 login_user,
+                // Home
                 home,
                 logout,
                 dashboard,
                 settings,
                 add_bank,
-                add_bank_form
+                add_bank_form,
+                bank_view
             ],
         )
         .mount("/static", FileServer::from(relative!("static")))
