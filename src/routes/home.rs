@@ -1,23 +1,55 @@
+use ::diesel::{ExpressionMethods, QueryDsl};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
-use rocket::{get, post};
-use rocket_db_pools::diesel::prelude::RunQueryDsl;
-use rocket_db_pools::{diesel, Connection};
+use rocket::tokio::sync::RwLock;
+use rocket::{get, post, State};
+use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 use rocket_dyn_templates::{context, Template};
+use serde::Serialize;
+use std::sync::Arc;
 //use std::str::FromStr;
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{FormBank, NewBank}; //FormTransactions, NewTransactions, TypeOfT};
-use crate::schema::banks;
+use crate::database::models::{Bank, FormBank, NewBank}; //FormTransactions, NewTransactions, TypeOfT};
+use crate::schema::banks as banks_without_dsl;
 //use crate::schema::transactions::type_of_t;
 
+#[derive(Serialize)]
+pub struct Context {
+    pub banks: Vec<Bank>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AppState {
+    pub banks: Arc<RwLock<Vec<Bank>>>,
+}
+
 #[get("/home")]
-pub fn home(cookies: &CookieJar<'_>) -> Result<Template, Box<Redirect>> {
+pub async fn home(
+    mut db: Connection<DbConn>,
+    cookies: &CookieJar<'_>,
+    state: &State<AppState>,
+) -> Result<Template, Box<Redirect>> {
     if let Some(user_id_cookie) = cookies.get("user_id") {
         if user_id_cookie.value().parse::<i32>().is_ok() {
-            Ok(Template::render("dashboard", context! {}))
+            use crate::schema::banks::dsl::*;
+
+            let user_id_cookie = user_id_cookie.value().parse::<i32>().unwrap();
+            let result = banks_without_dsl::table
+                .filter(user_id.eq(user_id_cookie))
+                .load::<Bank>(&mut db)
+                .await
+                .map_err(|_| Redirect::to("/"))?;
+
+            // Update the global state
+            let mut banks_state = state.banks.write().await;
+            *banks_state = result.clone();
+
+            let context = Context { banks: result };
+
+            Ok(Template::render("dashboard", &context))
         } else {
             Err(Box::new(Redirect::to("/")))
         }
@@ -27,8 +59,9 @@ pub fn home(cookies: &CookieJar<'_>) -> Result<Template, Box<Redirect>> {
 }
 
 #[get("/add-bank")]
-pub fn add_bank() -> Template {
-    Template::render("add_bank", context! {})
+pub async fn add_bank(state: &State<AppState>) -> Template {
+    let banks = state.banks.read().await.clone();
+    Template::render("add_bank", context! { banks })
 }
 
 #[post("/add-bank", data = "<bank_form>")]
@@ -54,7 +87,7 @@ pub async fn add_bank_form(
         interest_rate: bank_form.interest_rate,
     };
 
-    let result = diesel::insert_into(banks::table)
+    let result = diesel::insert_into(banks_without_dsl::table)
         .values(&new_bank)
         .execute(&mut db)
         .await;
@@ -93,13 +126,15 @@ pub async fn add_bank_form(
 //}
 
 #[get("/dashboard")]
-pub fn dashboard() -> Template {
-    Template::render("dashboard", context! {})
+pub async fn dashboard(state: &State<AppState>) -> Template {
+    let banks = state.banks.read().await.clone();
+    Template::render("dashboard", context! { banks })
 }
 
 #[get("/settings")]
-pub fn settings() -> Template {
-    Template::render("settings", context! {})
+pub async fn settings(state: &State<AppState>) -> Template {
+    let banks = state.banks.read().await.clone();
+    Template::render("settings", context! {banks})
 }
 
 #[post("/logout")]
