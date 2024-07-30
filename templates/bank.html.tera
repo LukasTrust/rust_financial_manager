@@ -3,12 +3,63 @@
 {% block title %}Bank Dashboard{% endblock %}
 
 {% block main_content %}
-<h1>{{ bank.name }}</h1>
+<header class="header-container">
+    <div class="header-heading">
+        <h1>{{ bank.name }}</h1>
+    </div>
+    <div class="header-buttons">
+        <button id="toggle_form_button">Show Form</button>
+    </div>
+</header>
 
 <!-- Container for the main content -->
-<div style="display: flex; justify-content: center; align-items: flex-start; height: 100vh; padding: 20px;">
+<div class="full-page-container">
     <!-- Plot container -->
     <div id="balance_graph" style="flex: 1; margin-right: 20px; max-width: 80%;"></div>
+
+    <!-- Form panel container -->
+    <div id="form_panel" style="display: none; flex: 1; margin-left: 20px; max-width: 20%; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
+        <h2>Update Conversion Strings</h2>
+
+        <!-- Form for type_of_t -->
+        <form action="/update_type_of_t" method="post">
+            <label for="type_of_t">Type of T:</label>
+            <input type="text" id="type_of_t" name="type_of_t">
+            <button type="submit">Change</button>
+        </form>
+        <br>
+
+        <!-- Form for date -->
+        <form action="/update_date" method="post">
+            <label for="date">Date:</label>
+            <input type="text" id="date" name="date">
+            <button type="submit">Change</button>
+        </form>
+        <br>
+
+        <!-- Form for counterparty -->
+        <form action="/update_counterparty" method="post">
+            <label for="counterparty">Counterparty:</label>
+            <input type="text" id="counterparty" name="counterparty">
+            <button type="submit">Change</button>
+        </form>
+        <br>
+
+        <!-- Form for comment -->
+        <form action="/update_comment" method="post">
+            <label for="comment">Comment:</label>
+            <input type="text" id="comment" name="comment">
+            <button type="submit">Change</button>
+        </form>
+        <br>
+
+        <!-- Form for amount -->
+        <form action="/update_amount" method="post">
+            <label for="amount">Amount:</label>
+            <input type="text" id="amount" name="amount">
+            <button type="submit">Change</button>
+        </form>
+    </div>
 </div>
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -19,6 +70,19 @@
             title: 'Bank Account Balances',
             xaxis: { title: 'Date' },
             yaxis: { title: 'Balance' }
+        });
+
+        var formPanel = document.getElementById('form_panel');
+        var toggleButton = document.getElementById('toggle_form_button');
+
+        toggleButton.addEventListener('click', function() {
+            if (formPanel.style.display === 'none') {
+                formPanel.style.display = 'block';
+                toggleButton.textContent = 'Hide Form';
+            } else {
+                formPanel.style.display = 'none';
+                toggleButton.textContent = 'Show Form';
+            }
         });
     });
 </script>
