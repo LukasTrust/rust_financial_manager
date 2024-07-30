@@ -7,6 +7,14 @@
     <div class="header-heading">
         <h1>{{ bank.name }}</h1>
     </div>
+    <div class="header-messages">
+            {% if error %}
+                <p class="error">{{ error }}</p>
+            {% endif %}
+            {% if success %}
+                <p class="success">{{ success }}</p>
+            {% endif %}
+        </div>
     <div class="header-buttons">
         <button id="toggle_form_button">Show Form</button>
     </div>

@@ -31,7 +31,7 @@
         </div>
         <div class="form-group">
             <label for="interest_rate">Interest rate</label>
-            <input type="number" id="interest_rate" name="interest_rate" required step="0.01">
+            <input type="number" id="interest_rate" name="interest_rate" step="0.01">
         </div>
         <button type="submit">Submit</button>
     </form>

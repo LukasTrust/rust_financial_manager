@@ -100,7 +100,7 @@ pub struct Transaction {
     pub amount: f64,
 }
 
-#[derive(Queryable, Insertable, Debug, Clone)]
+#[derive(Queryable, Insertable, Debug, Clone, AsChangeset)]
 #[diesel(table_name = csv_converters)]
 pub struct CSVConverter {
     pub id: i32,
