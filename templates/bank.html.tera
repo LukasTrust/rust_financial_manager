@@ -3,68 +3,45 @@
 {% block title %}Bank Dashboard{% endblock %}
 
 {% block main_content %}
-<header class="header-container">
-    <div class="header-heading">
         <h1>{{ bank.name }}</h1>
-    </div>
     <div class="header-messages">
-            {% if error %}
-                <p class="error">{{ error }}</p>
-            {% endif %}
-            {% if success %}
-                <p class="success">{{ success }}</p>
-            {% endif %}
-        </div>
-    <div class="header-buttons">
-        <button id="toggle_form_button">Show Form</button>
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+        {% if success %}
+            <p class="success">{{ success }}</p>
+        {% endif %}
     </div>
-</header>
 
-<!-- Container for the main content -->
-<div class="full-page-container">
-    <!-- Plot container -->
-    <div id="balance_graph" style="flex: 1; margin-right: 20px; max-width: 80%;"></div>
+<div class="bank-container">
+    <div id="balance_graph" class="balance-graph"></div>
 
     <!-- Form panel container -->
-    <div id="form_panel" style="display: none; flex: 1; margin-left: 20px; max-width: 20%; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
-        <h2>Update Conversion Strings</h2>
-
-        <!-- Form for type_of_t -->
-        <form action="/update_type_of_t" method="post">
-            <label for="type_of_t">Type of T:</label>
-            <input type="text" id="type_of_t" name="type_of_t">
-            <button type="submit">Change</button>
+    <div id="form_panel" class="form-panel">
+        <form action="/upload_csv" method="post" enctype="multipart/form-data" >
+        <input type="file" name="file" accept=".csv" required />
+        <button type="submit" >Upload</button>
         </form>
-        <br>
-
-        <!-- Form for date -->
-        <form action="/update_date" method="post">
-            <label for="date">Date:</label>
-            <input type="text" id="date" name="date">
-            <button type="submit">Change</button>
-        </form>
-        <br>
+        <h2>Update CSV Conversion</h2>
 
         <!-- Form for counterparty -->
-        <form action="/update_counterparty" method="post">
+        <form action="/update_counterparty" method="post" class="form-group">
             <label for="counterparty">Counterparty:</label>
-            <input type="text" id="counterparty" name="counterparty">
-            <button type="submit">Change</button>
+            <input type="text" id="counterparty" name="counterparty" required >
+            <button type="submit" >Change</button>
         </form>
-        <br>
-
-        <!-- Form for comment -->
-        <form action="/update_comment" method="post">
-            <label for="comment">Comment:</label>
-            <input type="text" id="comment" name="comment">
-            <button type="submit">Change</button>
-        </form>
-        <br>
 
         <!-- Form for amount -->
-        <form action="/update_amount" method="post">
+        <form action="/update_amount" method="post" class="form-group">
             <label for="amount">Amount:</label>
-            <input type="text" id="amount" name="amount">
+            <input type="text" id="amount" name="amount" required >
+            <button type="submit" >Change</button>
+        </form>
+
+        <!-- Form for date -->
+        <form action="/update_date" method="post" class="form-group">
+            <label for="date">Date:</label>
+            <input type="text" id="date" name="date" required>
             <button type="submit">Change</button>
         </form>
     </div>
@@ -78,19 +55,6 @@
             title: 'Bank Account Balances',
             xaxis: { title: 'Date' },
             yaxis: { title: 'Balance' }
-        });
-
-        var formPanel = document.getElementById('form_panel');
-        var toggleButton = document.getElementById('toggle_form_button');
-
-        toggleButton.addEventListener('click', function() {
-            if (formPanel.style.display === 'none') {
-                formPanel.style.display = 'block';
-                toggleButton.textContent = 'Hide Form';
-            } else {
-                formPanel.style.display = 'none';
-                toggleButton.textContent = 'Show Form';
-            }
         });
     });
 </script>

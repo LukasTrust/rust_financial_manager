@@ -7,8 +7,24 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
+    services:
+      postgres:
+        image: postgres:latest
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - uses: actions/checkout@v2
+
       - name: Cache cargo registry
         uses: actions/cache@v2
         with:
@@ -18,10 +34,20 @@ jobs:
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
+
       - name: Set up Rust
         run: |
           rustc --version
           cargo --version
+
+      - name: Install Diesel CLI
+        run: cargo install diesel_cli --no-default-features --features postgres
+
+      - name: Run Diesel Migrations
+        env:
+          DATABASE_URL: postgres://postgres:password@localhost:5432/test_db
+        run: diesel migration run
+
       - name: Build
         run: cargo build --release
 
@@ -32,6 +58,7 @@ jobs:
     needs: build-code
     steps:
       - uses: actions/checkout@v2
+
       - name: Cache cargo registry
         uses: actions/cache@v2
         with:
@@ -41,8 +68,10 @@ jobs:
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
+
       - name: Set up Rust
         run: rustup component add clippy
+
       - name: Lint
         run: cargo clippy -- -D warnings
 
@@ -53,6 +82,7 @@ jobs:
     needs: build-code
     steps:
       - uses: actions/checkout@v2
+
       - name: Cache cargo registry
         uses: actions/cache@v2
         with:
@@ -62,8 +92,10 @@ jobs:
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
+
       - name: Set up Rust
         run: rustup component add rustfmt
+
       - name: Check Format
         run: cargo fmt --check
 
@@ -74,6 +106,7 @@ jobs:
     needs: build-code
     steps:
       - uses: actions/checkout@v2
+
       - name: Cache cargo registry
         uses: actions/cache@v2
         with:
@@ -83,8 +116,10 @@ jobs:
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
+
       - name: Generate Documentation
         run: cargo doc --no-deps
+
       - name: Upload Documentation
         uses: actions/upload-artifact@v2
         with:
@@ -98,6 +133,7 @@ jobs:
     needs: build-code
     steps:
       - uses: actions/checkout@v2
+
       - name: Cache cargo registry
         uses: actions/cache@v2
         with:
@@ -107,6 +143,7 @@ jobs:
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
+
       - name: Benchmark
         run: cargo bench
 
@@ -117,6 +154,7 @@ jobs:
     needs: build-code
     steps:
       - uses: actions/checkout@v2
+
       - name: Cache cargo registry
         uses: actions/cache@v2
         with:
@@ -126,10 +164,13 @@ jobs:
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
+
       - name: Install Cargo Audit
         run: cargo install cargo-audit
+
       - name: Audit
         run: cargo audit --json > gl-dependency-scanning-report.json
+
       - name: Upload Audit Report
         uses: actions/upload-artifact@v2
         with:
@@ -141,22 +182,9 @@ jobs:
     container:
       image: rust:latest
     needs: [lint-code, format-code, doc-code, benchmark-code, audit-code]
-    services:
-      postgres:
-        image: postgres:13
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: glpat-BYytBgysP3yeceKp6FUW
-          POSTGRES_DB: financial_manager
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v2
+
       - name: Cache cargo registry
         uses: actions/cache@v2
         with:
@@ -166,31 +194,13 @@ jobs:
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
+
       - name: Set up Rust
         run: |
           rustc --version
           cargo --version
-      - name: Install PostgreSQL Client
-        run: |
-          apt-get update
-          apt-get install -y postgresql-client
-      - name: Install Diesel CLI
-        run: cargo install diesel_cli --no-default-features --features postgres
-      - name: Wait for PostgreSQL to be ready
-        run: |
-          until pg_isready -h localhost -p 5432 -U postgres; do
-            echo "Waiting for database to be ready..."
-            sleep 5
-          done
-      - name: Check PostgreSQL Logs
-        run: docker logs $(docker ps -q --filter ancestor=postgres:13)
-      - name: Run Diesel Migrations
-        env:
-          DATABASE_URL: postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@localhost:5432/financial_manager
-        run: diesel migration run
+
       - name: Test
-        env:
-          DATABASE_URL: postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@localhost:5432/financial_manager
         run: cargo test
 
   coverage-code:
@@ -200,6 +210,7 @@ jobs:
     needs: unittest-code
     steps:
       - uses: actions/checkout@v2
+
       - name: Cache cargo registry
         uses: actions/cache@v2
         with:
@@ -209,12 +220,15 @@ jobs:
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-registry-
+
       - name: Set up Cargo Tarpaulin
         run: |
           mkdir -p $CARGO_HOME/bin
           cargo install cargo-tarpaulin --root $CARGO_HOME
+
       - name: Generate Coverage
         run: cargo tarpaulin --engine llvm --ignore-tests --out Xml
+
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v2
         with:

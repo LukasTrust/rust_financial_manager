@@ -49,32 +49,10 @@ pub struct Bank {
     pub interest_rate: Option<f64>,
 }
 
-#[derive(Debug)]
-pub enum TypeOfT {
-    Deposit,
-    Withdraw,
-    Interest,
-}
-
-impl FromStr for TypeOfT {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "deposit" => Ok(TypeOfT::Deposit),
-            "withdraw" => Ok(TypeOfT::Withdraw),
-            "interest" => Ok(TypeOfT::Interest),
-            _ => Err(()),
-        }
-    }
-}
-
 #[derive(FromForm)]
 pub struct FormTransactions {
-    pub type_of_t: String,
     pub date: Date,
     pub counterparty: String,
-    pub comment: String,
     pub amount: f64,
 }
 
@@ -82,10 +60,8 @@ pub struct FormTransactions {
 #[diesel(table_name = transactions)]
 pub struct NewTransactions {
     pub bank_id: i32,
-    pub type_of_t: String,
     pub date: NaiveDate,
     pub counterparty: String,
-    pub comment: String,
     pub amount: f64,
 }
 
@@ -105,9 +81,7 @@ pub struct Transaction {
 pub struct CSVConverter {
     pub id: i32,
     pub csv_bank_id: i32,
-    pub type_conv: Option<String>,
     pub date_conv: Option<String>,
     pub counterparty_conv: Option<String>,
-    pub comment_conv: Option<String>,
     pub amount_conv: Option<String>,
 }

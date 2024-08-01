@@ -3,10 +3,7 @@
 {% block title %}Add Bank{% endblock %}
 
 {% block main_content %}
-    <div class="header-container">
-        <div class="header-heading">
             <h1>Add Bank</h1>
-        </div>
         <div class="header-messages">
             {% if error %}
                 <p class="error">{{ error }}</p>
@@ -15,7 +12,6 @@
                 <p class="success">{{ success }}</p>
             {% endif %}
         </div>
-    </div>
     <form action="/add-bank" method="post">
         <div class="form-group">
             <label for="name">Name</label>

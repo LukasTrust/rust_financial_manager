@@ -8,7 +8,7 @@
 </head>
 <body>
   <div class="full-page-container">
-    <div class="sidebar">
+    <div class="sidebar-left">
       <h2>Rust Financial Manager</h2>
       <button onclick="window.location.href='/dashboard'">Dashboard</button>
       <button onclick="window.location.href='/add-bank'">Add new bank</button>
@@ -25,14 +25,12 @@
       <p>Welcome! Please select an option from the sidebar.</p>
       {% endblock %}
     </div>
-    <header>
-      <div class="header-buttons">
+      <div class="sidebar-right">
         <button onclick="window.location.href='/settings'">Settings</button>
         <form action="/logout" method="post">
           <button type="submit">Logout</button>
         </form>
       </div>
-    </header>
   </div>
 </body>
 </html>

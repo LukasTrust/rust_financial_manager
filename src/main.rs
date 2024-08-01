@@ -11,8 +11,7 @@ use rocket_dyn_templates::Template;
 
 use database::db_connector::DbConn;
 use routes::bank::{
-    add_bank, add_bank_form, bank_view, update_amount, update_comment, update_counterparty,
-    update_date, update_type_of_t,
+    add_bank, add_bank_form, bank_view, update_amount, update_counterparty, update_date, upload_csv,
 };
 use routes::home::{dashboard, home, logout, settings};
 use routes::login::{login_form, login_user};
@@ -61,10 +60,9 @@ fn rocket() -> _ {
                 add_bank_form,
                 bank_view,
                 update_amount,
-                update_comment,
                 update_counterparty,
                 update_date,
-                update_type_of_t,
+                upload_csv
             ],
         )
         .mount("/static", FileServer::from(relative!("static")))

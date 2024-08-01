@@ -18,13 +18,9 @@ diesel::table! {
         id -> Int4,
         csv_bank_id -> Int4,
         #[max_length = 200]
-        type_conv -> Nullable<Varchar>,
-        #[max_length = 200]
         date_conv -> Nullable<Varchar>,
         #[max_length = 200]
         counterparty_conv -> Nullable<Varchar>,
-        #[max_length = 200]
-        comment_conv -> Nullable<Varchar>,
         #[max_length = 200]
         amount_conv -> Nullable<Varchar>,
     }
