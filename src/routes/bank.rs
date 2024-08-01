@@ -1,11 +1,13 @@
+use chrono::NaiveDate;
 use csv::ReaderBuilder;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use diesel::QueryDsl;
+use diesel::sql_types::Record;
+use diesel::{ExpressionMethods, QueryDsl};
+use rocket::data::{Data, ToByteUnit};
 use rocket::form::{Form, FromForm};
-use rocket::fs::TempFile;
+use rocket::http::hyper::header;
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
-use rocket::tokio::io::AsyncReadExt;
 use rocket::{get, post, State};
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 use rocket_dyn_templates::{context, Template};
@@ -14,9 +16,9 @@ use std::collections::HashMap;
 use std::io::Cursor;
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{CSVConverter, FormBank, NewBank};
+use crate::database::models::{CSVConverter, FormBank, NewBank, NewTransactions, Transaction};
 use crate::routes::home::AppState;
-use crate::schema::{banks as banks_without_dsl, csv_converters};
+use crate::schema::{banks as banks_without_dsl, csv_converters, transactions};
 
 use super::help_functions::generate_balance_graph_data;
 
@@ -109,124 +111,95 @@ pub async fn bank_view(bank_id: i32, state: &State<AppState>) -> Result<Template
     }
 }
 
-#[post("/upload_csv", data = "<file>")]
+#[post("/upload_csv", data = "<data>")]
 pub async fn upload_csv(
-    file: TempFile<'_>,
+    data: Data<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Template {
-    let current_bank_id;
-    {
+    let current_bank_id = {
         let current_bank = state.current_bank.read().await;
-        current_bank_id = current_bank.id;
-    }
+        current_bank.id
+    };
 
     let mut csv_converters_lock = state.csv_convert.write().await;
+    let error = validate_csv_converters(&csv_converters_lock, current_bank_id);
 
-    let mut error = None;
-
-    if csv_converters_lock.get(&current_bank_id).is_none() {
-        let new_csv_converter = CSVConverter {
-            id: 0,
-            csv_bank_id: current_bank_id,
-            date_conv: None,
-            counterparty_conv: None,
-            amount_conv: None,
-        };
-
-        let result = diesel::insert_into(csv_converters::table)
-            .values(new_csv_converter.clone())
-            .execute(&mut db)
-            .await;
-
-        if result.is_ok() {
-            csv_converters_lock.insert(current_bank_id, new_csv_converter);
-        }
+    if let Some(err) = error {
+        return render_template_with_error(state, Some(err)).await;
     }
 
     let csv_converter = csv_converters_lock.get_mut(&current_bank_id).unwrap();
+    let headers_to_extract = get_headers_to_extract(csv_converter);
 
-    if csv_converter.date_conv.is_none()
-        || csv_converter.counterparty_conv.is_none()
-        || csv_converter.amount_conv.is_none()
-    {
-        error = Some("Please set all CSV converters before uploading a CSV file");
-    } else {
-        // Read the file into a buffer
-        let mut file_content = Vec::new();
-        file.open().await.unwrap().read_to_end(&mut file_content);
+    // Read the CSV file
+    let data_stream = match data.open(512.kibibytes()).into_bytes().await {
+        Ok(bytes) => bytes,
+        Err(_) => {
+            return render_template_with_error(state, Some("Failed to read data stream")).await
+        }
+    };
 
-        // Use the buffer to create a CSV reader
-        let mut rdr = ReaderBuilder::new().from_reader(&file_content[..]);
-        let headers = rdr.headers().unwrap();
+    let cursor = Cursor::new(data_stream.to_vec());
+    let mut rdr = ReaderBuilder::new()
+        .has_headers(true)
+        .flexible(true)
+        .delimiter(b',')
+        .from_reader(cursor);
 
-        // Iterate through the rows and apply converters
-        for result in rdr.records() {
-            match result {
-                Ok(record) => {
-                    // Read the file into a buffer
-                    let mut file_content = Vec::new();
-                    file.open().await.unwrap().read_to_end(&mut file_content);
-                    // Create a CSV reader
-                    let mut rdr = ReaderBuilder::new().from_reader(&file_content[..]);
-                    let headers = rdr.headers().unwrap();
+    let mut header_indices: Vec<usize> = Vec::new();
 
-                    // Create a mapping from header names to indices
-                    let header_indices: std::collections::HashMap<String, usize> = headers
-                        .iter()
-                        .enumerate()
-                        .map(|(i, header)| (header.to_string(), i))
-                        .collect();
+    // Iterate over records to find the headers
+    for (i, result) in rdr.records().enumerate() {
+        let record = result;
 
-                    // Read and process each record
-                    for result in rdr.records() {
-                        match result {
-                            Ok(record) => {
-                                // Helper function to get field value by column name
-                                fn get_field_value(
-                                    record: &csv::StringRecord,
-                                    header_indices: &std::collections::HashMap<String, usize>,
-                                    column_name: &str,
-                                ) -> Option<String> {
-                                    header_indices
-                                        .get(column_name)
-                                        .and_then(|&index| record.get(index))
-                                        .map(|s| s.to_string())
-                                }
+        if record.is_err() {
+            return render_template_with_error(state, Some("Failed to read CSV file")).await;
+        }
 
-                                // Retrieve values based on converters' column names
+        // If we have already found all headers, we can stop
+        if header_indices.len() == headers_to_extract.len() {
+            break;
+        }
 
-                                let date_field =
-                                    csv_converter.date_conv.as_ref().and_then(|col_name| {
-                                        get_field_value(&record, &header_indices, col_name)
-                                    });
-                                let counterparty_field = csv_converter
-                                    .counterparty_conv
-                                    .as_ref()
-                                    .and_then(|col_name| {
-                                        get_field_value(&record, &header_indices, col_name)
-                                    });
-                                let amount_field =
-                                    csv_converter.amount_conv.as_ref().and_then(|col_name| {
-                                        get_field_value(&record, &header_indices, col_name)
-                                    });
-
-                                // Process the converted data (for example, inserting into a database)
-                                println!("Date: {:?}", date_field);
-                                println!("Counterparty: {:?}", counterparty_field);
-                                println!("Amount: {:?}", amount_field);
-                            }
-                            Err(err) => {
-                                todo!();
-                            }
-                        }
-                    }
+        // Check if this record has any of the headers we are looking for
+        for (_, field) in record.iter().enumerate() {
+            let array = field.as_slice().split(';');
+            for (j, value) in array.enumerate() {
+                if headers_to_extract.contains(&value.to_string()) {
+                    header_indices.push(j);
+                    print!("{}: {} ", value, j);
                 }
-                Err(_) => todo!(),
             }
         }
     }
 
+    render_template_with_error(state, None).await
+}
+
+fn validate_csv_converters(
+    csv_converters: &HashMap<i32, CSVConverter>,
+    bank_id: i32,
+) -> Option<&'static str> {
+    let csv_converter = csv_converters.get(&bank_id)?;
+    if csv_converter.date_conv.is_none()
+        || csv_converter.counterparty_conv.is_none()
+        || csv_converter.amount_conv.is_none()
+    {
+        return Some("Please set all CSV converters before uploading a CSV file");
+    }
+    None
+}
+
+fn get_headers_to_extract(csv_converter: &CSVConverter) -> Vec<String> {
+    vec![
+        csv_converter.date_conv.clone().unwrap(),
+        csv_converter.counterparty_conv.clone().unwrap(),
+        csv_converter.amount_conv.clone().unwrap(),
+    ]
+}
+
+async fn render_template_with_error(state: &State<AppState>, error: Option<&str>) -> Template {
     let banks = state.banks.read().await.clone();
     let transactions = state.transactions.read().await.clone();
     let plot_data = generate_balance_graph_data(&banks, &transactions);
@@ -242,11 +215,6 @@ pub async fn upload_csv(
 }
 
 #[derive(FromForm)]
-pub struct TypeOfTForm {
-    type_of_t: String,
-}
-
-#[derive(FromForm)]
 pub struct DateForm {
     date: String,
 }
@@ -254,11 +222,6 @@ pub struct DateForm {
 #[derive(FromForm)]
 pub struct CounterpartyForm {
     counterparty: String,
-}
-
-#[derive(FromForm)]
-pub struct CommentForm {
-    comment: String,
 }
 
 #[derive(FromForm)]

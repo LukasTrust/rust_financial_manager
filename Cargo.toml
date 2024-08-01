@@ -20,3 +20,4 @@ rocket = "0.5.0-rc.2"
 csv = "1.1"
 rocket_db_pools = { version = "0.2.0", features = ["diesel_postgres"] }
 rocket_dyn_templates = { version = "0.2.0", features = ["tera"] }
+

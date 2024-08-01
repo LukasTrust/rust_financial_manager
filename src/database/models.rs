@@ -2,7 +2,6 @@ use chrono::NaiveDate;
 use diesel::prelude::*;
 use rocket::{time::Date, FromForm};
 use serde::Serialize;
-use std::str::FromStr;
 
 use crate::schema::{banks, csv_converters, transactions, users};
 
