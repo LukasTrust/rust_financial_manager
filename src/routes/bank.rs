@@ -1,12 +1,9 @@
 use chrono::{Datelike, NaiveDate};
-use csv::{ReaderBuilder, StringRecord};
+use csv::ReaderBuilder;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use diesel::sql_types::Record;
-use diesel::{ExpressionMethods, QueryDsl};
+use diesel::QueryDsl;
 use rocket::data::{Data, ToByteUnit};
 use rocket::form::{Form, FromForm};
-use rocket::futures::stream::ForEach;
-use rocket::http::hyper::header;
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::{get, post, State};
@@ -18,10 +15,10 @@ use std::io::Cursor;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, FormBank, NewBank, NewTransactions, Transaction};
-use crate::routes::home::AppState;
 use crate::schema::{banks as banks_without_dsl, csv_converters, transactions};
 
-use super::help_functions::generate_balance_graph_data;
+use crate::structs::AppState;
+use crate::utils::generate_balance_graph_data;
 
 #[get("/add-bank")]
 pub async fn add_bank(state: &State<AppState>) -> Template {

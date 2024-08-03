@@ -1,35 +1,20 @@
 use ::diesel::{ExpressionMethods, QueryDsl};
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
-use rocket::tokio::sync::RwLock;
 use rocket::{get, post, State};
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 use rocket_dyn_templates::{context, Template};
-use serde::Serialize;
 use serde_json::json;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{Bank, CSVConverter, Transaction};
-use crate::routes::help_functions::generate_balance_graph_data;
 use crate::schema::{
     banks as banks_without_dsl, csv_converters as csv_converters_without_dsl,
     transactions as transactions_without_dsl,
 };
-
-#[derive(Serialize)]
-pub struct Context {
-    pub banks: Vec<Bank>,
-}
-
-#[derive(Debug, Clone)]
-pub struct AppState {
-    pub banks: Arc<RwLock<Vec<Bank>>>,
-    pub transactions: Arc<RwLock<HashMap<i32, Vec<Transaction>>>>,
-    pub csv_convert: Arc<RwLock<HashMap<i32, CSVConverter>>>,
-    pub current_bank: Arc<RwLock<Bank>>,
-}
+use crate::structs::AppState;
+use crate::utils::generate_balance_graph_data;
 
 #[get("/home")]
 pub async fn home(

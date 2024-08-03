@@ -1,8 +1,12 @@
+#[macro_use]
+extern crate rocket;
+
 use env_logger::Env;
 use rocket::fs::{relative, FileServer};
 use rocket::tokio::sync::RwLock;
 use rocket_db_pools::Database;
 use rocket_dyn_templates::Template;
+use rust_financial_manager::structs::AppState;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -15,11 +19,7 @@ use routes::home::{dashboard, home, logout, settings};
 use routes::login::{login_form, login_user};
 use routes::register::{login_form_from_register, register_form, register_user};
 use rust_financial_manager::database::models::Bank;
-use rust_financial_manager::routes::home::AppState;
 use rust_financial_manager::{database, routes};
-
-#[macro_use]
-extern crate rocket;
 
 #[launch]
 fn rocket() -> _ {
