@@ -35,7 +35,6 @@ pub struct NewBank {
     pub name: String,
     pub link: Option<String>,
     pub current_amount: f64,
-    pub interest_rate: Option<f64>,
 }
 
 #[derive(Debug, Queryable, Serialize, Clone)]
@@ -45,7 +44,6 @@ pub struct Bank {
     pub name: String,
     pub link: Option<String>,
     pub current_amount: Option<f64>,
-    pub interest_rate: Option<f64>,
 }
 
 #[derive(FromForm)]
@@ -55,7 +53,7 @@ pub struct FormTransactions {
     pub amount: f64,
 }
 
-#[derive(Queryable, Insertable, Debug)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = transactions)]
 pub struct NewTransactions {
     pub bank_id: i32,
@@ -68,10 +66,8 @@ pub struct NewTransactions {
 pub struct Transaction {
     pub id: i32,
     pub bank_id: i32,
-    pub type_of_t: String,
     pub date: NaiveDate,
-    pub counterparty: Option<String>,
-    pub comment: Option<String>,
+    pub counterparty: String,
     pub amount: f64,
 }
 

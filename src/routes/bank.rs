@@ -1,10 +1,11 @@
-use chrono::NaiveDate;
-use csv::ReaderBuilder;
+use chrono::{Datelike, NaiveDate};
+use csv::{ReaderBuilder, StringRecord};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::sql_types::Record;
 use diesel::{ExpressionMethods, QueryDsl};
 use rocket::data::{Data, ToByteUnit};
 use rocket::form::{Form, FromForm};
+use rocket::futures::stream::ForEach;
 use rocket::http::hyper::header;
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
@@ -55,7 +56,6 @@ pub async fn add_bank_form(
         name: bank_form.name.to_string(),
         link: bank_form.link.clone(),
         current_amount: bank_form.current_amount,
-        interest_rate: bank_form.interest_rate,
     };
 
     let result = diesel::insert_into(banks_without_dsl::table)
@@ -144,37 +144,169 @@ pub async fn upload_csv(
     let mut rdr = ReaderBuilder::new()
         .has_headers(true)
         .flexible(true)
-        .delimiter(b',')
         .from_reader(cursor);
 
-    let mut header_indices: Vec<usize> = Vec::new();
+    let all_transactions = transactions::table
+        .load::<Transaction>(&mut db)
+        .await
+        .unwrap();
 
-    // Iterate over records to find the headers
+    match extract_and_process_records(&mut rdr, &headers_to_extract, current_bank_id, db).await {
+        Ok(inserts) => {
+            render_template_with_success(
+                state,
+                format!(
+                    "Succesfully insertet {} and {} were duplicates",
+                    inserts.0, inserts.1
+                ),
+                all_transactions,
+            )
+            .await
+        }
+        Err(err) => render_template_with_error(state, Some(&err)).await,
+    }
+}
+
+async fn extract_and_process_records<R: std::io::Read>(
+    rdr: &mut csv::Reader<R>,
+    headers_to_extract: &[String],
+    current_bank_id: i32,
+    mut db: Connection<DbConn>,
+) -> Result<(i32, i32), String> {
+    let headers_map = match find_header_indices(rdr, headers_to_extract) {
+        Ok(map) => map,
+        Err(e) => return Err(e),
+    };
+
+    let header_row = headers_map.1 as usize;
+    let headers_map = headers_map.0;
+
+    let mut succesful_inserts = 0;
+    let mut failed_inserts = 0;
+
     for (i, result) in rdr.records().enumerate() {
-        let record = result;
-
-        if record.is_err() {
-            return render_template_with_error(state, Some("Failed to read CSV file")).await;
+        if i < header_row {
+            continue;
         }
 
-        // If we have already found all headers, we can stop
-        if header_indices.len() == headers_to_extract.len() {
-            break;
-        }
+        let record = match result {
+            Ok(rec) => rec,
+            Err(_) => return Err("Failed to read CSV file".to_string()),
+        };
 
-        // Check if this record has any of the headers we are looking for
-        for (_, field) in record.iter().enumerate() {
-            let array = field.as_slice().split(';');
-            for (j, value) in array.enumerate() {
-                if headers_to_extract.contains(&value.to_string()) {
-                    header_indices.push(j);
-                    print!("{}: {} ", value, j);
+        let mut date_from_csv = NaiveDate::from_ymd_opt(1, 1, 1).unwrap();
+        let mut counterparty_from_csv = "";
+        let mut amount_from_csv = 0.0;
+
+        let date_index = *headers_map.get("Date").ok_or("Date header missing")?;
+        let counterparty_index = *headers_map
+            .get("Counterparty")
+            .ok_or("Counterparty header missing")?;
+        let amount_index = *headers_map.get("Amount").ok_or("Amount header missing")?;
+
+        for (j, value) in record.as_slice().split(';').enumerate() {
+            match j {
+                idx if idx == date_index => {
+                    date_from_csv = NaiveDate::parse_from_str(value, "%d.%m.%Y")
+                        .map_err(|e| format!("Failed to parse date '{}': {}", value, e))?;
                 }
+                idx if idx == counterparty_index => {
+                    counterparty_from_csv = value;
+                }
+                idx if idx == amount_index => {
+                    // Determine and handle the decimal separator
+                    let processed_value = if value.contains(',') {
+                        // If value contains a comma, use it as is
+                        value.to_string()
+                    } else if value.contains('.') {
+                        // If value contains a dot, replace it with a comma for consistency
+                        value.replace('.', ",")
+                    } else {
+                        // Insert a comma before the last two digits (assuming no decimal point is present)
+                        let len = value.len();
+                        if len > 2 {
+                            format!("{}.{:02}", &value[..len - 2], &value[len - 2..])
+                        } else {
+                            format!("0.{}", value)
+                        }
+                    };
+
+                    // Print out the value after processing
+                    println!("Parsing amount from value: '{}'", processed_value);
+                    amount_from_csv = processed_value
+                        .replace(',', ".") // Convert comma to dot for parsing
+                        .parse::<f64>()
+                        .map_err(|e| {
+                            format!("Failed to parse amount '{}': {}", processed_value, e)
+                        })?;
+                }
+                _ => (),
+            }
+        }
+
+        if date_from_csv.year() == 1 || counterparty_from_csv == "" || amount_from_csv == 0.0 {
+            continue;
+        }
+
+        let new_transaction = NewTransactions {
+            bank_id: current_bank_id,
+            date: date_from_csv,
+            counterparty: counterparty_from_csv.to_string(),
+            amount: amount_from_csv,
+        };
+
+        let result = diesel::insert_into(transactions::table)
+            .values(&new_transaction)
+            .execute(&mut db)
+            .await;
+
+        match result {
+            Ok(_) => succesful_inserts += 1,
+            Err(err) => {
+                println!("Failed to insert transaction: {:?}", err);
+                failed_inserts += 1
             }
         }
     }
 
-    render_template_with_error(state, None).await
+    Ok((succesful_inserts, failed_inserts))
+}
+
+fn find_header_indices<R: std::io::Read>(
+    rdr: &mut csv::Reader<R>,
+    headers_to_extract: &[String],
+) -> Result<(HashMap<String, usize>, i32), String> {
+    let mut header_indices = HashMap::new();
+    let mut header_row = -1;
+
+    for (i, result) in rdr.records().enumerate() {
+        header_row += 1;
+        let record = match result {
+            Ok(rec) => rec,
+            Err(_) => return Err("Failed to read CSV file".to_string()),
+        };
+
+        let array = record.as_slice().split(';');
+        for (j, value) in array.enumerate() {
+            if headers_to_extract.get(0) == Some(&value.to_string()) {
+                header_indices.insert("Date".to_string(), j);
+            } else if headers_to_extract.get(1) == Some(&value.to_string()) {
+                header_indices.insert("Counterparty".to_string(), j);
+            } else if headers_to_extract.get(2) == Some(&value.to_string()) {
+                header_indices.insert("Amount".to_string(), j);
+            }
+        }
+
+        if header_indices.len() == headers_to_extract.len() {
+            break;
+        }
+    }
+
+    if header_indices.len() != headers_to_extract.len() {
+        return Err("Not all required headers were found".to_string());
+    }
+
+    Ok((header_indices, header_row - 2))
 }
 
 fn validate_csv_converters(
@@ -209,6 +341,38 @@ async fn render_template_with_error(state: &State<AppState>, error: Option<&str>
         "bank": bank,
         "plot_data": plot_data.to_string(),
         "error": error
+    });
+
+    Template::render("bank", &context)
+}
+
+async fn render_template_with_success(
+    state: &State<AppState>,
+    success: String,
+    all_transactions: Vec<Transaction>,
+) -> Template {
+    let banks = state.banks.read().await.clone();
+    let mut transactions = state.transactions.write().await;
+
+    let current_bank_id = state.current_bank.read().await.id;
+    if let Some(bank_transactions) = transactions.get_mut(&current_bank_id) {
+        bank_transactions.clear();
+        for transaction in &all_transactions {
+            if transaction.bank_id == current_bank_id {
+                bank_transactions.push(transaction.clone());
+            }
+        }
+    } else {
+        transactions.insert(current_bank_id, all_transactions.clone());
+    }
+
+    let plot_data = generate_balance_graph_data(&banks, &transactions);
+    let bank = state.current_bank.read().await.clone();
+    let context = json!({
+        "banks": banks,
+        "bank": bank,
+        "plot_data": plot_data.to_string(),
+        "success": success
     });
 
     Template::render("bank", &context)

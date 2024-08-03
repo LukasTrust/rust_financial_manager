@@ -25,10 +25,6 @@
             <label for="current_amount">Current amount</label>
             <input type="number" id="current_amount" name="current_amount" required step="0.01">
         </div>
-        <div class="form-group">
-            <label for="interest_rate">Interest rate</label>
-            <input type="number" id="interest_rate" name="interest_rate" step="0.01">
-        </div>
         <button type="submit">Submit</button>
     </form>
 {% endblock %}

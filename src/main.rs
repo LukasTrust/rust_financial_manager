@@ -1,13 +1,13 @@
 #[macro_use]
 extern crate rocket;
 
-use std::collections::HashMap;
-use std::sync::Arc;
-
+use env_logger::Env;
 use rocket::fs::{relative, FileServer};
 use rocket::tokio::sync::RwLock;
 use rocket_db_pools::Database;
 use rocket_dyn_templates::Template;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use database::db_connector::DbConn;
 use routes::bank::{
@@ -22,6 +22,8 @@ use rust_financial_manager::{database, routes};
 
 #[launch]
 fn rocket() -> _ {
+    env_logger::init_from_env(Env::default().default_filter_or("info"));
+
     let app_state = AppState {
         banks: Arc::new(RwLock::new(vec![])),
         transactions: Arc::new(RwLock::new(HashMap::new())),
@@ -32,7 +34,6 @@ fn rocket() -> _ {
             name: "".to_string(),
             link: Some("".to_string()),
             current_amount: None,
-            interest_rate: None,
         })),
     };
 
