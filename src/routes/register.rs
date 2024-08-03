@@ -1,5 +1,6 @@
 use bcrypt::{hash, DEFAULT_COST};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
+use log::info;
 use regex::Regex;
 use rocket::form::Form;
 use rocket::response::Redirect;
@@ -16,6 +17,7 @@ use crate::schema::users;
 /// The `succes` query parameter is used to display a success message.
 #[get("/login?<succes>")]
 pub fn login_form_from_register(succes: String) -> Template {
+    info!("Registration successful.");
     Template::render("login", context! { succes })
 }
 
@@ -23,6 +25,7 @@ pub fn login_form_from_register(succes: String) -> Template {
 /// The form is used to collect user information such as first name, last name, email, and password.
 #[get("/register")]
 pub fn register_form() -> Template {
+    info!("Register form displayed.");
     Template::render("register", context! {})
 }
 
@@ -39,6 +42,7 @@ pub async fn register_user(
     user_form: Form<NewUser>,
 ) -> Result<Redirect, Template> {
     if !is_valid_email(&user_form.email.clone()) {
+        info!("Email format not valide.");
         return Err(Template::render(
             "register",
             context! { error: "Email format not valide." },
@@ -46,6 +50,7 @@ pub async fn register_user(
     }
 
     if !is_strong_password(&user_form.password.clone()) {
+        info!("Password does not meet the criteria.");
         return Err(Template::render(
             "register",
             context! { error: "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character" },
@@ -53,12 +58,16 @@ pub async fn register_user(
     }
 
     let hashed_password = match hash(user_form.password.clone(), DEFAULT_COST) {
-        Ok(h) => h,
+        Ok(h) => {
+            info!("Password hashed.");
+            h
+        }
         Err(err) => {
+            info!("Failed to hash password: {}", err);
             return Err(Template::render(
                 "register",
-                context! { error: format!("Failed to hash password: {}", err) },
-            ))
+                context! { error: format!("Internal server error. Please try again later.") },
+            ));
         }
     };
 
@@ -69,25 +78,37 @@ pub async fn register_user(
         password: hashed_password,
     };
 
+    info!("Registering new user with email: {}", new_user.email);
+
     let result = diesel::insert_into(users::table)
         .values(&new_user)
         .execute(&mut db)
         .await;
 
     match result {
-        Ok(_) => Ok(Redirect::to(uri!(login_form_from_register(
-            "Registration successful. Please log in."
-        )))),
+        Ok(_) => {
+            info!(
+                "Registration successful for user with email: {}",
+                new_user.email
+            );
+            Ok(Redirect::to(uri!(login_form_from_register(
+                "Registration successful. Please log in."
+            ))))
+        }
         Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
+            info!("Email already exists.");
             Err(Template::render(
                 "register",
                 context! { error: "Email already exists. Please use a different email." },
             ))
         }
-        Err(_) => Err(Template::render(
-            "register",
-            context! { error: "Internal server error. Please try again later." },
-        )),
+        Err(err) => {
+            info!("Registration failed: {}", err);
+            Err(Template::render(
+                "register",
+                context! { error: "Internal server error. Please try again later." },
+            ))
+        }
     }
 }
 
