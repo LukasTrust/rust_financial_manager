@@ -12,16 +12,27 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::NewUser;
 use crate::schema::users;
 
-#[get("/login?<message>")]
-pub fn login_form_from_register(message: String) -> Template {
-    Template::render("login", context! { message })
+/// Display the login form after a successful registration.
+/// The `succes` query parameter is used to display a success message.
+#[get("/login?<succes>")]
+pub fn login_form_from_register(succes: String) -> Template {
+    Template::render("login", context! { succes })
 }
 
+/// Display the registration form.
+/// The form is used to collect user information such as first name, last name, email, and password.
 #[get("/register")]
 pub fn register_form() -> Template {
     Template::render("register", context! {})
 }
 
+/// Register a new user.
+/// The user information is collected from the registration form and stored in the database.
+/// If the registration is successful, the user is redirected to the login page with a success message.
+/// If the email already exists, an error message is displayed.
+/// If the email format is invalid, an error message is displayed.
+/// If the password is not strong enough, an error message is displayed.
+/// If there is an internal server error, an error message is displayed.
 #[post("/register", data = "<user_form>")]
 pub async fn register_user(
     mut db: Connection<DbConn>,

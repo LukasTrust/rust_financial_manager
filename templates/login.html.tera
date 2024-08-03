@@ -16,8 +16,8 @@
             {% if error %}
             <p class="error">{{ error }}</p>
             {% endif %}
-            {% if message %}
-            <p class="success">{{ message }}</p>
+            {% if succes %}
+            <p class="success">{{ succes }}</p>
             {% endif %}
             <form action="/login" method="post">
                 <div class="input-group">
