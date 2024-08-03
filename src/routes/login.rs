@@ -1,6 +1,6 @@
 use ::diesel::{ExpressionMethods, QueryDsl};
 use bcrypt::verify;
-use log::info;
+use log::{error, info};
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
@@ -60,7 +60,7 @@ pub async fn login_user(
                 ))
             }
             Err(err) => {
-                info!("Login failed, bcrypt error: {}", err);
+                error!("Login failed, bcrypt error: {}", err);
                 Err(Template::render(
                     "login",
                     context! { error: "Login failed. Internal server error. Please try again later." },
@@ -68,7 +68,7 @@ pub async fn login_user(
             }
         },
         Err(err) => {
-            info!("Login failed, database error {}", err);
+            error!("Login failed, database error {}", err);
             Err(Template::render(
                 "login",
                 context! { error: "Login failed. Either the email or password was incorrect." },

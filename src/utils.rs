@@ -1,9 +1,16 @@
 use chrono::NaiveDate;
+use log::{error, info};
+use rocket::{http::CookieJar, response::Redirect};
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::database::models::{Bank, Transaction};
+use crate::routes::error_page::show_error_page;
 
+/// Generate balance graph data for plotting.
+/// The balance graph data is generated from the bank accounts and transactions.
+/// The balance graph data is used to plot the bank account balances over time.
+/// The balance graph data is returned as a JSON value.
 pub fn generate_balance_graph_data(
     banks: &[Bank],
     transactions: &HashMap<i32, Vec<Transaction>>,
@@ -53,4 +60,26 @@ pub fn generate_balance_graph_data(
 
     // Return the plot data as JSON
     json!(plot_data)
+}
+
+/// Extract the user ID from the user ID cookie.
+/// If the user ID cookie is not found or cannot be parsed, an error page is displayed.
+/// The user ID is returned if the user ID cookie is found and parsed successfully.
+pub fn extract_user_id(cookies: &CookieJar<'_>) -> Result<i32, Redirect> {
+    if let Some(user_id_cookie) = cookies.get("user_id") {
+        info!("User ID cookie found: {:?}", user_id_cookie.value());
+        user_id_cookie.value().parse::<i32>().map_err(|_| {
+            error!("Error parsing user ID cookie.");
+            show_error_page(
+                "Error validating the login!".to_string(),
+                "Please login again.".to_string(),
+            )
+        })
+    } else {
+        error!("No user ID cookie found.");
+        Err(show_error_page(
+            "Error validating the login!".to_string(),
+            "Please login again.".to_string(),
+        ))
+    }
 }

@@ -1,6 +1,6 @@
 use bcrypt::{hash, DEFAULT_COST};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use log::info;
+use log::{error, info};
 use regex::Regex;
 use rocket::form::Form;
 use rocket::response::Redirect;
@@ -63,7 +63,7 @@ pub async fn register_user(
             h
         }
         Err(err) => {
-            info!("Failed to hash password: {}", err);
+            error!("Failed to hash password: {}", err);
             return Err(Template::render(
                 "register",
                 context! { error: format!("Internal server error. Please try again later.") },
@@ -103,7 +103,7 @@ pub async fn register_user(
             ))
         }
         Err(err) => {
-            info!("Registration failed: {}", err);
+            error!("Registration failed: {}", err);
             Err(Template::render(
                 "register",
                 context! { error: "Internal server error. Please try again later." },

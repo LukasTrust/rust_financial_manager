@@ -15,6 +15,8 @@ use routes::bank::{
     add_bank, add_bank_form, bank_view, update_amount, update_bank_current_balance_after,
     update_counterparty, update_date, upload_csv,
 };
+use routes::error_page::error_page;
+use routes::error_page::not_found;
 use routes::home::{dashboard, home, logout, settings};
 use routes::login::{login_form, login_user};
 use routes::register::{login_form_from_register, register_form, register_user};
@@ -65,8 +67,11 @@ fn rocket() -> _ {
                 update_bank_current_balance_after,
                 update_counterparty,
                 update_date,
-                upload_csv
+                upload_csv,
+                // Error page
+                error_page
             ],
         )
         .mount("/static", FileServer::from(relative!("static")))
+        .register("/", catchers![not_found])
 }
