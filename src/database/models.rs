@@ -51,6 +51,7 @@ pub struct FormTransactions {
     pub date: Date,
     pub counterparty: String,
     pub amount: f64,
+    pub current_amount_after: f64,
 }
 
 #[derive(Insertable, Debug)]
@@ -60,6 +61,7 @@ pub struct NewTransactions {
     pub date: NaiveDate,
     pub counterparty: String,
     pub amount: f64,
+    pub bank_current_balance_after: f64,
 }
 
 #[derive(Debug, Queryable, Serialize, Clone)]
@@ -69,6 +71,7 @@ pub struct Transaction {
     pub date: NaiveDate,
     pub counterparty: String,
     pub amount: f64,
+    pub bank_current_balance_after: f64,
 }
 
 #[derive(Queryable, Insertable, Debug, Clone, AsChangeset)]
@@ -79,4 +82,5 @@ pub struct CSVConverter {
     pub date_conv: Option<String>,
     pub counterparty_conv: Option<String>,
     pub amount_conv: Option<String>,
+    pub bank_current_balance_after_conv: Option<String>,
 }

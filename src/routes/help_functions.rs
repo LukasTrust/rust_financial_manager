@@ -12,24 +12,27 @@ pub fn generate_balance_graph_data(
 
     for bank in banks {
         if let Some(bank_transactions) = transactions.get(&bank.id) {
-            let mut balance = bank.current_amount.unwrap_or(0.0);
             let mut data: BTreeMap<NaiveDate, f64> = BTreeMap::new();
 
-            // Insert today's balance
+            // Insert today's balance from the bank's current amount
             let today = chrono::Local::now().naive_local().date();
-            data.insert(today, balance);
+            if let Some(current_amount) = bank.current_amount {
+                data.insert(today, current_amount);
+            }
 
             // Process transactions in reverse chronological order
             for transaction in bank_transactions.iter().rev() {
-                balance -= transaction.amount;
                 data.entry(transaction.date)
-                    .and_modify(|e| *e = balance)
-                    .or_insert(balance);
+                    .and_modify(|e| *e = transaction.bank_current_balance_after)
+                    .or_insert(transaction.bank_current_balance_after);
             }
 
             // Ensure we plot the initial balance at the start of 2023
-            data.entry(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap())
-                .or_insert(balance);
+            if let Some(start_date) = NaiveDate::from_ymd_opt(2023, 1, 1) {
+                if let Some(&initial_balance) = data.values().next() {
+                    data.entry(start_date).or_insert(initial_balance);
+                }
+            }
 
             // Prepare series data for plotting
             let series_data: Vec<(String, f64)> = data

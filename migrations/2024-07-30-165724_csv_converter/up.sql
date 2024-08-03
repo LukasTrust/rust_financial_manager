@@ -4,5 +4,6 @@ CREATE TABLE csv_converters (
     date_conv VARCHAR(200),
     counterparty_conv VARCHAR(200),
     amount_conv VARCHAR(200),
+    bank_current_balance_after_conv VARCHAR(200),
     FOREIGN KEY (csv_bank_id) REFERENCES banks(id)
 );

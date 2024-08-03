@@ -197,12 +197,16 @@ async fn extract_and_process_records<R: std::io::Read>(
         let mut date_from_csv = NaiveDate::from_ymd_opt(1, 1, 1).unwrap();
         let mut counterparty_from_csv = "";
         let mut amount_from_csv = 0.0;
+        let mut bank_current_balance_after = 0.0;
 
         let date_index = *headers_map.get("Date").ok_or("Date header missing")?;
         let counterparty_index = *headers_map
             .get("Counterparty")
             .ok_or("Counterparty header missing")?;
         let amount_index = *headers_map.get("Amount").ok_or("Amount header missing")?;
+        let bank_current_balance_after_index = *headers_map
+            .get("Bank current balance after")
+            .ok_or("Bank current balance after header missing")?;
 
         for (j, value) in record.as_slice().split(';').enumerate() {
             match j {
@@ -240,6 +244,39 @@ async fn extract_and_process_records<R: std::io::Read>(
                             format!("Failed to parse amount '{}': {}", processed_value, e)
                         })?;
                 }
+                idx if idx == bank_current_balance_after_index => {
+                    // Determine and handle the decimal separator
+                    let processed_value = if value.contains(',') {
+                        // If value contains a comma, use it as is
+                        value.to_string()
+                    } else if value.contains('.') {
+                        // If value contains a dot, replace it with a comma for consistency
+                        value.replace('.', ",")
+                    } else {
+                        // Insert a comma before the last two digits (assuming no decimal point is present)
+                        let len = value.len();
+                        if len > 2 {
+                            format!("{}.{:02}", &value[..len - 2], &value[len - 2..])
+                        } else {
+                            format!("0.{}", value)
+                        }
+                    };
+
+                    // Print out the value after processing
+                    println!(
+                        "Parsing bank current balance after from value: '{}'",
+                        processed_value
+                    );
+                    bank_current_balance_after = processed_value
+                        .replace(',', ".") // Convert comma to dot for parsing
+                        .parse::<f64>()
+                        .map_err(|e| {
+                            format!(
+                                "Failed to parse bank current balance after '{}': {}",
+                                processed_value, e
+                            )
+                        })?;
+                }
                 _ => (),
             }
         }
@@ -253,6 +290,7 @@ async fn extract_and_process_records<R: std::io::Read>(
             date: date_from_csv,
             counterparty: counterparty_from_csv.to_string(),
             amount: amount_from_csv,
+            bank_current_balance_after: bank_current_balance_after,
         };
 
         let result = diesel::insert_into(transactions::table)
@@ -262,10 +300,7 @@ async fn extract_and_process_records<R: std::io::Read>(
 
         match result {
             Ok(_) => succesful_inserts += 1,
-            Err(err) => {
-                println!("Failed to insert transaction: {:?}", err);
-                failed_inserts += 1
-            }
+            Err(_) => failed_inserts += 1,
         }
     }
 
@@ -294,6 +329,8 @@ fn find_header_indices<R: std::io::Read>(
                 header_indices.insert("Counterparty".to_string(), j);
             } else if headers_to_extract.get(2) == Some(&value.to_string()) {
                 header_indices.insert("Amount".to_string(), j);
+            } else if headers_to_extract.get(3) == Some(&value.to_string()) {
+                header_indices.insert("Bank current balance after".to_string(), j);
             }
         }
 
@@ -328,6 +365,10 @@ fn get_headers_to_extract(csv_converter: &CSVConverter) -> Vec<String> {
         csv_converter.date_conv.clone().unwrap(),
         csv_converter.counterparty_conv.clone().unwrap(),
         csv_converter.amount_conv.clone().unwrap(),
+        csv_converter
+            .bank_current_balance_after_conv
+            .clone()
+            .unwrap(),
     ]
 }
 
@@ -391,6 +432,23 @@ pub struct CounterpartyForm {
 #[derive(FromForm)]
 pub struct AmountForm {
     amount: String,
+}
+
+#[derive(FromForm)]
+pub struct BankCurrentBalanceAfterForm {
+    bank_current_balance_after: String,
+}
+
+#[post("/update_bank_current_balance_after", data = "<form>")]
+pub async fn update_bank_current_balance_after(
+    form: Form<BankCurrentBalanceAfterForm>,
+    state: &State<AppState>,
+    db: Connection<DbConn>,
+) -> Template {
+    update_csv_converter(state, db, |converter| {
+        converter.bank_current_balance_after_conv = Some(form.bank_current_balance_after.clone());
+    })
+    .await
 }
 
 #[post("/update_date", data = "<form>")]
@@ -466,6 +524,7 @@ where
                 date_conv: None,
                 counterparty_conv: None,
                 amount_conv: None,
+                bank_current_balance_after_conv: None,
             };
             update_field(&mut new_csv_converter);
             let result = diesel::insert_into(csv_converters::table)

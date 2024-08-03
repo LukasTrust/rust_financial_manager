@@ -22,6 +22,8 @@ diesel::table! {
         counterparty_conv -> Nullable<Varchar>,
         #[max_length = 200]
         amount_conv -> Nullable<Varchar>,
+        #[max_length = 200]
+        bank_current_balance_after_conv -> Nullable<Varchar>,
     }
 }
 
@@ -33,6 +35,7 @@ diesel::table! {
         #[max_length = 200]
         counterparty -> Varchar,
         amount -> Float8,
+        bank_current_balance_after -> Float8,
     }
 }
 
@@ -54,4 +57,9 @@ diesel::joinable!(banks -> users (user_id));
 diesel::joinable!(csv_converters -> banks (csv_bank_id));
 diesel::joinable!(transactions -> banks (bank_id));
 
-diesel::allow_tables_to_appear_in_same_query!(banks, csv_converters, transactions, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    banks,
+    csv_converters,
+    transactions,
+    users,
+);
