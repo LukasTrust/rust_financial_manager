@@ -1,5 +1,6 @@
 use ::diesel::{ExpressionMethods, QueryDsl};
 use bcrypt::verify;
+use log::info;
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
@@ -15,6 +16,7 @@ use crate::schema::users::dsl::*;
 /// The form is used to collect user information such as email and password.
 #[get("/")]
 pub fn login_form() -> Template {
+    info!("Login form displayed.");
     Template::render("login", context! {})
 }
 
@@ -38,24 +40,39 @@ pub async fn login_user(
         .first::<(i32, String)>(&mut db)
         .await;
 
+    info!("Login attempt for user with email: {}", email_of_user);
+
     match result {
         Ok((user_id, stored_password)) => match verify(password_of_user, &stored_password) {
             Ok(true) => {
+                info!("Login successful for user with email: {}", email_of_user);
                 cookies.add(Cookie::new("user_id", user_id.to_string()));
                 Ok(Redirect::to("/home"))
             }
-            Ok(false) => Err(Template::render(
+            Ok(false) => {
+                info!(
+                    "Login failed for user with email, password did not match: {}",
+                    email_of_user
+                );
+                Err(Template::render(
+                    "login",
+                    context! { error: "Login failed. Either the email or password was incorrect." },
+                ))
+            }
+            Err(err) => {
+                info!("Login failed, bcrypt error: {}", err);
+                Err(Template::render(
+                    "login",
+                    context! { error: "Login failed. Internal server error. Please try again later." },
+                ))
+            }
+        },
+        Err(err) => {
+            info!("Login failed, database error {}", err);
+            Err(Template::render(
                 "login",
                 context! { error: "Login failed. Either the email or password was incorrect." },
-            )),
-            Err(_) => Err(Template::render(
-                "login",
-                context! { error: "Login failed. Internal server error. Please try again later." },
-            )),
-        },
-        Err(_) => Err(Template::render(
-            "login",
-            context! { error: "Login failed. Either the email or password was incorrect." },
-        )),
+            ))
+        }
     }
 }
