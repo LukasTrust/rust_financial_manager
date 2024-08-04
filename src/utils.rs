@@ -16,6 +16,10 @@ use crate::schema::csv_converters as csv_converters_without_dsl;
 use crate::schema::transactions as transactions_without_dsl;
 use crate::structs::AppState;
 
+/// Load the transactions for a bank from the database.
+/// The transactions are loaded from the database using the bank ID.
+/// The transactions are returned as a vector of transactions.
+/// If the transactions cannot be loaded, an error page is displayed.
 pub async fn load_transactions(
     bank_id_for_loading: i32,
     db: &mut AsyncPgConnection,
@@ -43,6 +47,10 @@ pub async fn load_transactions(
     }
 }
 
+/// Load the banks for a user from the database.
+/// The banks are loaded from the database using the user ID.
+/// The banks are returned as a vector of banks.
+/// If the banks cannot be loaded, an error page is displayed.
 pub async fn load_banks(
     user_id_for_loading: i32,
     db: &mut AsyncPgConnection,
@@ -67,6 +75,10 @@ pub async fn load_banks(
     }
 }
 
+/// Load the CSV converters for a bank from the database.
+/// The CSV converters are loaded from the database using the bank ID.
+/// The CSV converters are returned as a CSVConverter struct.
+/// If the CSV converters cannot be loaded, an error page is displayed.
 pub async fn load_csv_converters(
     bank_id_for_loading: i32,
     db: &mut AsyncPgConnection,
@@ -94,6 +106,9 @@ pub async fn load_csv_converters(
     }
 }
 
+/// Update the application state with new data.
+/// The application state is updated with new banks, transactions, CSV converters, and the current bank.
+/// All the new data is optional and can be None.
 pub async fn update_app_state(
     state: &State<AppState>,
     new_banks: Option<Vec<Bank>>,
