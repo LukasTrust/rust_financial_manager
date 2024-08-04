@@ -46,6 +46,18 @@ pub struct Bank {
     pub current_amount: Option<f64>,
 }
 
+impl Default for Bank {
+    fn default() -> Self {
+        Bank {
+            id: 0,
+            user_id: 0,
+            name: "".to_string(),
+            link: None,
+            current_amount: None,
+        }
+    }
+}
+
 #[derive(FromForm)]
 pub struct FormTransactions {
     pub date: Date,

@@ -31,13 +31,7 @@ fn rocket() -> _ {
         banks: Arc::new(RwLock::new(vec![])),
         transactions: Arc::new(RwLock::new(HashMap::new())),
         csv_convert: Arc::new(RwLock::new(HashMap::new())),
-        current_bank: Arc::new(RwLock::new(Bank {
-            id: 0,
-            user_id: 0,
-            name: "".to_string(),
-            link: Some("".to_string()),
-            current_amount: None,
-        })),
+        current_bank: Arc::new(RwLock::new(Bank::default())),
     };
 
     rocket::build()

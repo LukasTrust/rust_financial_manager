@@ -1,20 +1,18 @@
-use ::diesel::{ExpressionMethods, QueryDsl};
 use log::info;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
 use rocket::{get, post, State};
-use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
+use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 use std::collections::HashMap;
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{Bank, CSVConverter, Transaction};
-use crate::schema::{
-    banks as banks_without_dsl, csv_converters as csv_converters_without_dsl,
-    transactions as transactions_without_dsl,
-};
+use crate::database::models::{CSVConverter, Transaction};
 use crate::structs::AppState;
-use crate::utils::{extract_user_id, generate_balance_graph_data};
+use crate::utils::{
+    extract_user_id, generate_balance_graph_data, load_banks, load_csv_converters,
+    load_transactions, update_app_state,
+};
 
 /// Display the home page.
 /// The home page is the dashboard that displays the user's bank accounts and transactions.
@@ -30,64 +28,29 @@ pub async fn home(
         Ok(cookie_user_id) => {
             info!("User is logged in: {}", cookie_user_id);
 
-            use crate::schema::banks::dsl::*;
-            use crate::schema::csv_converters::dsl::*;
-            use crate::schema::transactions::dsl::*;
-
-            let banks_result = banks_without_dsl::table
-                .filter(user_id.eq(user_id))
-                .load::<Bank>(&mut db)
-                .await
-                .map_err(|_| Redirect::to("/"))?;
-
-            info!("Banks loaded: {:?}", banks_result);
+            let banks_result = load_banks(cookie_user_id, &mut db).await?;
 
             let mut transactions_map: HashMap<i32, Vec<Transaction>> = HashMap::new();
             let mut csv_converters_map: HashMap<i32, CSVConverter> = HashMap::new();
 
             for bank in banks_result.iter() {
-                let transactions_result = transactions_without_dsl::table
-                    .filter(bank_id.eq(bank.id))
-                    .load::<Transaction>(&mut db)
-                    .await
-                    .map_err(|_| Redirect::to("/"))?;
+                let transactions_result = load_transactions(bank.id, &mut db).await?;
 
-                info!(
-                    "Transactions loaded for bank {}: {:?}",
-                    bank.id, transactions_result
-                );
+                transactions_map.insert(bank.clone().id, transactions_result);
 
-                transactions_map.insert(bank.id, transactions_result);
+                let csv_converters_result = load_csv_converters(bank.id, &mut db).await?;
 
-                let csv_converters_result = csv_converters_without_dsl::table
-                    .filter(csv_bank_id.eq(bank.id))
-                    .first::<CSVConverter>(&mut db)
-                    .await
-                    .map_err(|_| Redirect::to("/"));
-
-                if csv_converters_result.is_ok() {
-                    info!(
-                        "CSV converter loaded for bank {}: {:?}",
-                        bank.id, csv_converters_result
-                    );
-                    csv_converters_map.insert(bank.id, csv_converters_result.unwrap());
-                }
+                csv_converters_map.insert(bank.id, csv_converters_result);
             }
 
-            let mut banks_state = state.banks.write().await;
-            *banks_state = banks_result.clone();
-
-            info!("Banks state updated: {:?}", *banks_state);
-
-            let mut transactions_state = state.transactions.write().await;
-            *transactions_state = transactions_map.clone();
-
-            info!("Transactions state updated: {:?}", *transactions_state);
-
-            let mut csv_converters_state = state.csv_convert.write().await;
-            *csv_converters_state = csv_converters_map.clone();
-
-            info!("CSV converters state updated: {:?}", *csv_converters_state);
+            update_app_state(
+                state,
+                Some(banks_result.clone()),
+                Some(transactions_map.clone()),
+                Some(csv_converters_map),
+                None,
+            )
+            .await;
 
             let plot_data = generate_balance_graph_data(&banks_result, &transactions_map);
 

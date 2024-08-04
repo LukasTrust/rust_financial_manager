@@ -16,7 +16,6 @@ use std::io::Cursor;
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, FormBank, NewBank, NewTransactions, Transaction};
 use crate::schema::{banks as banks_without_dsl, csv_converters, transactions};
-
 use crate::structs::AppState;
 use crate::utils::generate_balance_graph_data;
 
