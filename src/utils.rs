@@ -12,9 +12,6 @@ use std::collections::{BTreeMap, HashMap};
 
 use crate::database::models::{Bank, CSVConverter, Transaction};
 use crate::routes::error_page::show_error_page;
-use crate::schema::banks as banks_without_dsl;
-use crate::schema::csv_converters as csv_converters_without_dsl;
-use crate::schema::transactions as transactions_without_dsl;
 use crate::structs::AppState;
 
 /// Load the transactions for a bank from the database.
@@ -25,6 +22,7 @@ pub async fn load_transactions(
     bank_id_for_loading: i32,
     db: &mut AsyncPgConnection,
 ) -> Result<Vec<Transaction>, Redirect> {
+    use crate::schema::transactions as transactions_without_dsl;
     use crate::schema::transactions::dsl::*;
 
     let transactions_result = transactions_without_dsl::table
@@ -57,6 +55,7 @@ pub async fn load_banks(
     user_id_for_loading: i32,
     db: &mut AsyncPgConnection,
 ) -> Result<Vec<Bank>, Redirect> {
+    use crate::schema::banks as banks_without_dsl;
     use crate::schema::banks::dsl::*;
 
     let banks_result = banks_without_dsl::table
@@ -88,26 +87,33 @@ pub async fn load_banks(
 pub async fn load_csv_converters(
     bank_id_for_loading: i32,
     db: &mut AsyncPgConnection,
-) -> Result<CSVConverter, Redirect> {
+) -> Result<Option<CSVConverter>, Redirect> {
     use crate::schema::csv_converters::dsl::*;
+    use diesel::result::Error;
 
-    let csv_converters_result = csv_converters_without_dsl::table
+    let csv_converters_result = csv_converters
         .filter(csv_bank_id.eq(bank_id_for_loading))
         .first::<CSVConverter>(db)
-        .await
-        .map_err(|_| show_error_page("Error loading CSV converters!".to_string(), "".to_string()));
+        .await;
 
     match csv_converters_result {
-        Ok(csv_converters_result) => {
+        Ok(csv_converter) => {
             info!(
-                "CSV converters loaded for bank {}: {:?}",
-                bank_id_for_loading, csv_converters_result
+                "CSV converter loaded for bank {}: {:?}",
+                bank_id_for_loading, csv_converter
             );
-            Ok(csv_converters_result)
+            Ok(Some(csv_converter))
+        }
+        Err(Error::NotFound) => {
+            info!("No CSV converter found for bank {}", bank_id_for_loading);
+            Ok(None)
         }
         Err(err) => {
             error!("Error loading CSV converters: {:?}", err);
-            Err(err)
+            Err(show_error_page(
+                "Error loading CSV converters!".to_string(),
+                "".to_string(),
+            ))
         }
     }
 }
@@ -187,19 +193,19 @@ pub async fn update_app_state(
                 *csv_converters_state
             );
         }
+    }
 
-        if let Some(current_bank) = new_current_bank {
-            let mut current_bank_state = state.current_bank.write().await;
+    if let Some(current_bank) = new_current_bank {
+        let mut current_bank_state = state.current_bank.write().await;
 
-            info!(
-                "Current bank state before update: {:?}",
-                *current_bank_state
-            );
+        info!(
+            "Current bank state before update: {:?}",
+            *current_bank_state
+        );
 
-            *current_bank_state = current_bank.clone();
+        *current_bank_state = current_bank.clone();
 
-            info!("Current bank state after update: {:?}", *current_bank_state);
-        }
+        info!("Current bank state after update: {:?}", *current_bank_state);
     }
 }
 
@@ -220,8 +226,14 @@ pub async fn show_home_or_subview_with_data(
 
     let plot_data = if generate_graph_data {
         match generate_only_current_bank {
-            true => generate_balance_graph_data(&[current_bank.clone()], &transactions),
-            false => generate_balance_graph_data(&banks, &transactions),
+            true => {
+                info!("Generating balance graph data for current bank only.");
+                generate_balance_graph_data(&[current_bank.clone()], &transactions)
+            }
+            false => {
+                info!("Generating balance graph data for all banks.");
+                generate_balance_graph_data(&banks, &transactions)
+            }
         }
     } else {
         serde_json::Value::String("".to_string())
@@ -232,7 +244,7 @@ pub async fn show_home_or_subview_with_data(
         context! {
             banks: banks,
             bank: current_bank,
-            plot_data: plot_data,
+            plot_data: plot_data.to_string(),
             success: success_message.unwrap_or_default(),
             error: error_message.unwrap_or_default(),
         },

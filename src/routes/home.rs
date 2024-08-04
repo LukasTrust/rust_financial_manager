@@ -40,7 +40,12 @@ pub async fn home(
 
                 let csv_converters_result = load_csv_converters(bank.id, &mut db).await?;
 
-                csv_converters_map.insert(bank.id, csv_converters_result);
+                match csv_converters_result {
+                    Some(csv_converter) => {
+                        csv_converters_map.insert(bank.id, csv_converter);
+                    }
+                    None => {}
+                }
             }
 
             update_app_state(

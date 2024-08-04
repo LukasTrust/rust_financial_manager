@@ -148,7 +148,7 @@ pub async fn bank_view(
                     update_app_state(state, None, None, None, Some(new_current_bank.clone())).await;
                     return Ok(show_home_or_subview_with_data(
                         state,
-                        "add_bank".to_string(),
+                        "bank".to_string(),
                         true,
                         true,
                         None,
