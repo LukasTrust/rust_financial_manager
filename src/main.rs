@@ -11,15 +11,15 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use database::db_connector::DbConn;
-use routes::bank::{
-    add_bank, add_bank_form, bank_view, update_amount, update_bank_current_balance_after,
-    update_counterparty, update_date, upload_csv,
-};
+use routes::bank::{add_bank, add_bank_form, bank_view, upload_csv};
 use routes::error_page::error_page;
 use routes::error_page::not_found;
 use routes::home::{dashboard, home, logout, settings};
 use routes::login::{login_form, login_user};
 use routes::register::{login_form_from_register, register_form, register_user};
+use routes::updated_csv::{
+    update_amount, update_bank_balance_after, update_counterparty, update_date,
+};
 use rust_financial_manager::database::models::Bank;
 use rust_financial_manager::{database, routes};
 
@@ -58,7 +58,7 @@ fn rocket() -> _ {
                 add_bank_form,
                 bank_view,
                 update_amount,
-                update_bank_current_balance_after,
+                update_bank_balance_after,
                 update_counterparty,
                 update_date,
                 upload_csv,

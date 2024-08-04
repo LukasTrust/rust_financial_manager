@@ -39,9 +39,9 @@
         </form>
 
         <!-- Form for balance_after_update -->
-        <form action="/update_bank_current_balance_after" method="post" class="form-group">
-            <label for="bank_current_balance_after">Bank balance after trancaction:</label>
-            <input type="text" id="bank_current_balance_after" name="bank_current_balance_after" required>
+        <form action="/update_bank_balance_after" method="post" class="form-group">
+            <label for="bank_balance_after">Bank balance after trancaction:</label>
+            <input type="text" id="bank_balance_after" name="bank_balance_after" required>
             <button type="submit">Change</button>
         </form>
 
