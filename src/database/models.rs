@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use diesel::prelude::*;
 use rocket::{time::Date, FromForm};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::schema::{banks, csv_converters, transactions, users};
 
@@ -28,7 +28,7 @@ pub struct FormBank {
     pub interest_rate: Option<f64>,
 }
 
-#[derive(Insertable, Debug)]
+#[derive(Queryable, Insertable, Debug, Deserialize, Serialize)]
 #[diesel(table_name = banks)]
 pub struct NewBank {
     pub user_id: i32,

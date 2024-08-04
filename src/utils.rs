@@ -6,6 +6,7 @@ use rocket::State;
 use rocket::{http::CookieJar, response::Redirect};
 use rocket_db_pools::diesel::prelude::RunQueryDsl;
 use rocket_db_pools::diesel::AsyncPgConnection;
+use rocket_dyn_templates::{context, Template};
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
@@ -35,8 +36,9 @@ pub async fn load_transactions(
     match transactions_result {
         Ok(transactions_result) => {
             info!(
-                "Transactions loaded for bank {}: {:?}",
-                bank_id_for_loading, transactions_result
+                "Transactions count for bank {}: {}",
+                bank_id_for_loading,
+                transactions_result.len()
             );
             Ok(transactions_result)
         }
@@ -65,7 +67,11 @@ pub async fn load_banks(
 
     match banks_result {
         Ok(banks_result) => {
-            info!("Banks loaded: {:?}", banks_result);
+            info!(
+                "Banks count for user {}: {}",
+                user_id_for_loading,
+                banks_result.len()
+            );
             Ok(banks_result)
         }
         Err(err) => {
@@ -119,17 +125,24 @@ pub async fn update_app_state(
     if let Some(banks) = new_banks {
         let mut banks_state = state.banks.write().await;
 
+        info!("Banks length before update: {}", banks_state.len());
+
         for bank in banks.iter() {
             if (*banks_state).iter().find(|b| b.id == bank.id).is_none() {
                 (*banks_state).push(bank.clone());
             }
         }
 
-        info!("Banks state updated: {:?}", *banks_state);
+        info!("Banks length after update: {}", banks_state.len());
     }
 
     if let Some(transactions) = new_transactions {
         let mut transactions_state = state.transactions.write().await;
+
+        info!(
+            "Transactions length before update: {}",
+            transactions_state.values().flatten().count()
+        );
 
         for (bank_id, bank_transactions) in transactions.iter() {
             if let Some(existing_transactions) = (*transactions_state).get_mut(bank_id) {
@@ -147,11 +160,19 @@ pub async fn update_app_state(
             }
         }
 
-        info!("Transactions state updated: {:?}", *transactions_state);
+        info!(
+            "Transactions length after update: {}",
+            transactions_state.values().flatten().count()
+        );
     }
 
     if let Some(csv_converters) = new_csv_converters {
         let mut csv_converters_state = state.csv_convert.write().await;
+
+        info!(
+            "CSV converters state before update: {:?}",
+            *csv_converters_state
+        );
 
         for (bank_id, csv_converter) in csv_converters.iter() {
             if let Some(existing_csv_converter) = (*csv_converters_state).get_mut(bank_id) {
@@ -161,17 +182,61 @@ pub async fn update_app_state(
             }
             *csv_converters_state = csv_converters.clone();
 
-            info!("CSV converters state updated: {:?}", *csv_converters_state);
+            info!(
+                "CSV converters state after update: {:?}",
+                *csv_converters_state
+            );
         }
 
         if let Some(current_bank) = new_current_bank {
             let mut current_bank_state = state.current_bank.write().await;
 
+            info!(
+                "Current bank state before update: {:?}",
+                *current_bank_state
+            );
+
             *current_bank_state = current_bank.clone();
 
-            info!("Current bank state updated: {:?}", *current_bank_state);
+            info!("Current bank state after update: {:?}", *current_bank_state);
         }
     }
+}
+
+/// Display the home page or a subview with data.
+/// The view to show is passed as a parameter.
+/// The success message and error message are optional and are displayed on the page.
+pub async fn show_home_or_subview_with_data(
+    state: &State<AppState>,
+    view_to_show: String,
+    generate_graph_data: bool,
+    generate_only_current_bank: bool,
+    success_message: Option<String>,
+    error_message: Option<String>,
+) -> Template {
+    let banks = state.banks.read().await.clone();
+    let current_bank = state.current_bank.read().await.clone();
+    let transactions = state.transactions.read().await.clone();
+
+    let plot_data = if generate_graph_data {
+        match generate_only_current_bank {
+            true => generate_balance_graph_data(&[current_bank.clone()], &transactions),
+            false => generate_balance_graph_data(&banks, &transactions),
+        }
+    } else {
+        serde_json::Value::String("".to_string())
+    };
+
+    Template::render(
+        view_to_show,
+        context! {
+            banks: banks,
+            bank: current_bank,
+            plot_data: plot_data,
+            success: success_message.unwrap_or_default(),
+            error: error_message.unwrap_or_default(),
+        },
+    )
 }
 
 /// Generate balance graph data for plotting.

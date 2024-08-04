@@ -3,15 +3,15 @@ use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
 use rocket::{get, post, State};
 use rocket_db_pools::Connection;
-use rocket_dyn_templates::{context, Template};
+use rocket_dyn_templates::Template;
 use std::collections::HashMap;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, Transaction};
 use crate::structs::AppState;
 use crate::utils::{
-    extract_user_id, generate_balance_graph_data, load_banks, load_csv_converters,
-    load_transactions, update_app_state,
+    extract_user_id, load_banks, load_csv_converters, load_transactions,
+    show_home_or_subview_with_data, update_app_state,
 };
 
 /// Display the home page.
@@ -52,12 +52,15 @@ pub async fn home(
             )
             .await;
 
-            let plot_data = generate_balance_graph_data(&banks_result, &transactions_map);
-
-            Ok(Template::render(
-                "dashboard",
-                context! { banks: banks_result, plot_data: plot_data.to_string() },
-            ))
+            Ok(show_home_or_subview_with_data(
+                state,
+                "dashboard".to_string(),
+                true,
+                false,
+                None,
+                None,
+            )
+            .await)
         }
         Err(err) => {
             info!("User is not logged in or parsing user_id failed.");
@@ -75,19 +78,15 @@ pub async fn dashboard(
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
     match extract_user_id(cookies) {
-        Ok(_) => {
-            let banks = state.banks.read().await.clone();
-            let transactions = state.transactions.read().await.clone();
-            let plot_data = generate_balance_graph_data(&banks, &transactions);
-
-            Ok(Template::render(
-                "dashboard",
-                context! {
-                    banks,
-                    plot_data: plot_data.to_string()
-                },
-            ))
-        }
+        Ok(_) => Ok(show_home_or_subview_with_data(
+            state,
+            "dashboard".to_string(),
+            true,
+            false,
+            None,
+            None,
+        )
+        .await),
         Err(err) => Err(Box::new(err)),
     }
 }
@@ -101,10 +100,15 @@ pub async fn settings(
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
     match extract_user_id(cookies) {
-        Ok(_) => {
-            let banks = state.banks.read().await.clone();
-            Ok(Template::render("settings", context! {banks}))
-        }
+        Ok(_) => Ok(show_home_or_subview_with_data(
+            state,
+            "settings".to_string(),
+            false,
+            false,
+            None,
+            None,
+        )
+        .await),
         Err(err) => Err(Box::new(err)),
     }
 }

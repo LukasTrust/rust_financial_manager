@@ -1,109 +1,171 @@
 use chrono::{Datelike, NaiveDate};
 use csv::ReaderBuilder;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use diesel::QueryDsl;
+use diesel::{ExpressionMethods, QueryDsl};
 use rocket::data::{Data, ToByteUnit};
 use rocket::form::{Form, FromForm};
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::{get, post, State};
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
-use rocket_dyn_templates::{context, Template};
+use rocket_dyn_templates::Template;
 use serde_json::json;
 use std::collections::HashMap;
 use std::io::Cursor;
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{CSVConverter, FormBank, NewBank, NewTransactions, Transaction};
+use crate::database::models::{
+    Bank, CSVConverter, FormBank, NewBank, NewTransactions, Transaction,
+};
 use crate::schema::{banks as banks_without_dsl, csv_converters, transactions};
 use crate::structs::AppState;
-use crate::utils::generate_balance_graph_data;
+use crate::utils::{
+    extract_user_id, generate_balance_graph_data, show_home_or_subview_with_data, update_app_state,
+};
+
+use super::error_page::show_error_page;
 
 #[get("/add-bank")]
-pub async fn add_bank(state: &State<AppState>) -> Template {
-    let banks = state.banks.read().await.clone();
-    Template::render("add_bank", context! { banks })
+pub async fn add_bank(
+    cookies: &CookieJar<'_>,
+    state: &State<AppState>,
+) -> Result<Template, Box<Redirect>> {
+    match extract_user_id(cookies) {
+        Ok(_) => Ok(show_home_or_subview_with_data(
+            state,
+            "add_bank".to_string(),
+            false,
+            false,
+            None,
+            None,
+        )
+        .await),
+        Err(err) => Err(Box::new(err)),
+    }
 }
 
 #[post("/add-bank", data = "<bank_form>")]
 pub async fn add_bank_form(
-    mut db: Connection<DbConn>,
     bank_form: Form<FormBank>,
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-) -> Template {
-    let user_id = cookies
-        .get("user_id")
-        .and_then(|cookie| cookie.value().parse::<i32>().ok());
-    let banks = state.banks.read().await.clone();
+    mut db: Connection<DbConn>,
+) -> Result<Template, Box<Redirect>> {
+    match extract_user_id(cookies) {
+        Ok(cookie_user_id) => {
+            let new_bank = NewBank {
+                user_id: cookie_user_id,
+                name: bank_form.name.to_string(),
+                link: bank_form.link.clone(),
+                current_amount: bank_form.current_amount,
+            };
 
-    match user_id {
-        Some(_) => {}
-        None => {
-            return Template::render(
-                "home",
-                context! {banks: banks, error: "Could not find user id" },
-            )
+            let result = diesel::insert_into(banks_without_dsl::table)
+                .values(&new_bank)
+                .execute(&mut db)
+                .await;
+
+            match result {
+                Ok(_) => {
+                    let inserted_bank = banks_without_dsl::table
+                        .filter(banks_without_dsl::name.eq(&new_bank.name))
+                        .first::<Bank>(&mut db)
+                        .await;
+
+                    match inserted_bank {
+                        Ok(inserted_bank) => {
+                            update_app_state(
+                                state,
+                                Some(vec![inserted_bank.clone()]),
+                                None,
+                                None,
+                                None,
+                            )
+                            .await;
+
+                            Ok(show_home_or_subview_with_data(
+                                state,
+                                "add_bank".to_string(),
+                                false,
+                                false,
+                                Some(format!("Bank {} added", inserted_bank.name)),
+                                None,
+                            )
+                            .await)
+                        }
+                        Err(err) => Ok(show_home_or_subview_with_data(
+                            state,
+                            "add_bank".to_string(),
+                            false,
+                            false,
+                            None,
+                            Some(format!("Internal server error {}", err)),
+                        )
+                        .await),
+                    }
+                }
+                Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
+                    Ok(show_home_or_subview_with_data(
+                        state,
+                        "add_bank".to_string(),
+                        false,
+                        false,
+                        None,
+                        Some(format!(
+                            "A bank with the name {} already exists. Please use a different name.",
+                            new_bank.name
+                        )),
+                    )
+                    .await)
+                }
+                Err(err) => Ok(show_home_or_subview_with_data(
+                    state,
+                    "add_bank".to_string(),
+                    false,
+                    false,
+                    None,
+                    Some(format!("Internal server error {}", err)),
+                )
+                .await),
+            }
         }
-    }
-
-    let new_bank = NewBank {
-        user_id: user_id.unwrap(),
-        name: bank_form.name.to_string(),
-        link: bank_form.link.clone(),
-        current_amount: bank_form.current_amount,
-    };
-
-    let result = diesel::insert_into(banks_without_dsl::table)
-        .values(&new_bank)
-        .execute(&mut db)
-        .await;
-
-    match result {
-        Ok(_) => Template::render("add_bank", context! { success: "New bank added" }),
-        Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => Template::render(
-            "add_bank",
-            context! {banks: banks, error: "A bank with this name already exists. Please use a different name." },
-        ),
-        Err(err) => Template::render(
-            "add_bank",
-            context! {banks: banks, error: format!("Internal server error {}", err) },
-        ),
+        Err(err) => Err(Box::new(err)),
     }
 }
 
 #[get("/bank/<bank_id>")]
-pub async fn bank_view(bank_id: i32, state: &State<AppState>) -> Result<Template, Redirect> {
-    // Retrieve banks and transactions from state
-    let banks = state.banks.read().await.clone();
-    let transactions = state.transactions.read().await.clone();
+pub async fn bank_view(
+    bank_id: i32,
+    cookies: &CookieJar<'_>,
+    state: &State<AppState>,
+) -> Result<Template, Box<Redirect>> {
+    match extract_user_id(cookies) {
+        Ok(_) => {
+            let banks = state.banks.read().await.clone();
+            let bank = banks.iter().find(|&b| b.id == bank_id);
 
-    // Find the requested bank
-    let bank = banks.iter().find(|&b| b.id == bank_id);
-
-    if let Some(bank) = bank {
-        // Fetch the transactions for the found bank
-        let bank_transactions = transactions.get(&bank_id).unwrap_or(&Vec::new()).clone();
-
-        // Generate plot data based on the bank's transactions
-        let plot_data = generate_balance_graph_data(
-            &vec![bank.clone()],
-            &HashMap::from([(bank.id, bank_transactions)]),
-        );
-
-        let mut current_bank = state.current_bank.write().await;
-        *current_bank = bank.clone();
-
-        let context = json!({
-            "banks": banks,
-            "bank": bank,
-            "plot_data": plot_data.to_string()
-        });
-
-        Ok(Template::render("bank", &context))
-    } else {
-        // Redirect to home if bank is not found
-        Err(Redirect::to("/"))
+            match bank {
+                Some(new_current_bank) => {
+                    update_app_state(state, None, None, None, Some(new_current_bank.clone())).await;
+                    return Ok(show_home_or_subview_with_data(
+                        state,
+                        "add_bank".to_string(),
+                        true,
+                        true,
+                        None,
+                        None,
+                    )
+                    .await);
+                }
+                None => {
+                    return Err(Box::new(show_error_page(
+                        "Bank not found".to_string(),
+                        "The bank you are looking for does not exist.".to_string(),
+                    )))
+                }
+            }
+        }
+        Err(err) => return Err(Box::new(err)),
     }
 }
 
