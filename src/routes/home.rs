@@ -54,8 +54,6 @@ pub async fn home(
 
             let plot_data = generate_balance_graph_data(&banks_result, &transactions_map);
 
-            info!("Plot data generated.");
-
             Ok(Template::render(
                 "dashboard",
                 context! { banks: banks_result, plot_data: plot_data.to_string() },

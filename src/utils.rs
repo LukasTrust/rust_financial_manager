@@ -210,6 +210,8 @@ pub fn generate_balance_graph_data(
         }
     }
 
+    info!("Plot data generated: {:?}", plot_data);
+
     // Return the plot data as JSON
     json!(plot_data)
 }
