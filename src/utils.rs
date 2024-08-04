@@ -52,14 +52,14 @@ pub async fn load_transactions(
 /// The banks are returned as a vector of banks.
 /// If the banks cannot be loaded, an error page is displayed.
 pub async fn load_banks(
-    user_id_for_loading: i32,
+    cookie_user_id: i32,
     db: &mut AsyncPgConnection,
 ) -> Result<Vec<Bank>, Redirect> {
     use crate::schema::banks as banks_without_dsl;
     use crate::schema::banks::dsl::*;
 
     let banks_result = banks_without_dsl::table
-        .filter(user_id.eq(user_id_for_loading))
+        .filter(user_id.eq(cookie_user_id))
         .load::<Bank>(db)
         .await
         .map_err(|_| show_error_page("Error loading banks!".to_string(), "".to_string()));
@@ -68,7 +68,7 @@ pub async fn load_banks(
         Ok(banks_result) => {
             info!(
                 "Banks count for user {}: {}",
-                user_id_for_loading,
+                cookie_user_id,
                 banks_result.len()
             );
             Ok(banks_result)
@@ -122,6 +122,7 @@ pub async fn load_csv_converters(
 /// The application state is updated with new banks, transactions, CSV converters, and the current bank.
 /// All the new data is optional and can be None.
 pub async fn update_app_state(
+    cookie_user_id: i32,
     state: &State<AppState>,
     new_banks: Option<Vec<Bank>>,
     new_transactions: Option<HashMap<i32, Vec<Transaction>>>,
@@ -131,15 +132,33 @@ pub async fn update_app_state(
     if let Some(banks) = new_banks {
         let mut banks_state = state.banks.write().await;
 
-        info!("Banks length before update: {}", banks_state.len());
+        info!(
+            "Banks length before update: {}",
+            banks_state.values().flatten().count()
+        );
 
-        for bank in banks.iter() {
-            if (*banks_state).iter().find(|b| b.id == bank.id).is_none() {
-                (*banks_state).push(bank.clone());
+        let mut bank_of_user = banks_state.get_mut(&cookie_user_id);
+
+        if bank_of_user.is_none() {
+            banks_state.insert(cookie_user_id, vec![]);
+        } else {
+            for bank in banks.iter() {
+                if bank_of_user
+                    .as_mut()
+                    .unwrap()
+                    .iter()
+                    .find(|b| b.id == bank.id)
+                    .is_none()
+                {
+                    bank_of_user.as_mut().unwrap().push(bank.clone());
+                }
             }
         }
 
-        info!("Banks length after update: {}", banks_state.len());
+        info!(
+            "Banks length after update: {}",
+            banks_state.values().flatten().count()
+        );
     }
 
     if let Some(transactions) = new_transactions {
@@ -198,14 +217,15 @@ pub async fn update_app_state(
     if let Some(current_bank) = new_current_bank {
         let mut current_bank_state = state.current_bank.write().await;
 
-        info!(
-            "Current bank state before update: {:?}",
-            *current_bank_state
-        );
+        let bank_of_user = current_bank_state.get(&cookie_user_id);
 
-        *current_bank_state = current_bank.clone();
-
-        info!("Current bank state after update: {:?}", *current_bank_state);
+        if let Some(bank_of_user) = bank_of_user {
+            info!("Current bank found: {:?}", bank_of_user);
+            if bank_of_user.id != current_bank.id {
+                current_bank_state.insert(cookie_user_id, current_bank.clone());
+                info!("Current bank updated: {:?}", current_bank);
+            }
+        }
     }
 }
 
@@ -213,6 +233,7 @@ pub async fn update_app_state(
 /// The view to show is passed as a parameter.
 /// The success message and error message are optional and are displayed on the page.
 pub async fn show_home_or_subview_with_data(
+    cookie_user_id: i32,
     state: &State<AppState>,
     view_to_show: String,
     generate_graph_data: bool,
@@ -220,14 +241,29 @@ pub async fn show_home_or_subview_with_data(
     success_message: Option<String>,
     error_message: Option<String>,
 ) -> Template {
-    let banks = state.banks.read().await.clone();
-    let current_bank = state.current_bank.read().await.clone();
+    let banks = state
+        .banks
+        .read()
+        .await
+        .get(&cookie_user_id)
+        .cloned()
+        .unwrap_or_default();
+
     let transactions = state.transactions.read().await.clone();
+
+    let current_bank = state
+        .current_bank
+        .read()
+        .await
+        .get(&cookie_user_id)
+        .cloned()
+        .unwrap_or_default();
 
     let plot_data = if generate_graph_data {
         match generate_only_current_bank {
             true => {
                 info!("Generating balance graph data for current bank only.");
+
                 generate_balance_graph_data(&[current_bank.clone()], &transactions)
             }
             false => {
@@ -312,9 +348,9 @@ pub fn generate_balance_graph_data(
 /// If the user ID cookie is not found or cannot be parsed, an error page is displayed.
 /// The user ID is returned if the user ID cookie is found and parsed successfully.
 pub fn extract_user_id(cookies: &CookieJar<'_>) -> Result<i32, Redirect> {
-    if let Some(user_id_cookie) = cookies.get("user_id") {
-        info!("User ID cookie found: {:?}", user_id_cookie.value());
-        user_id_cookie.value().parse::<i32>().map_err(|_| {
+    if let Some(cookie_user_id) = cookies.get("user_id") {
+        info!("User ID cookie found: {:?}", cookie_user_id.value());
+        cookie_user_id.value().parse::<i32>().map_err(|_| {
             error!("Error parsing user ID cookie.");
             show_error_page(
                 "Error validating the login!".to_string(),
