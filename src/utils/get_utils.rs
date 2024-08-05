@@ -10,6 +10,7 @@ use crate::routes::error_page::show_error_page;
 pub fn get_user_id(cookies: &CookieJar<'_>) -> Result<i32, Redirect> {
     if let Some(cookie_user_id) = cookies.get_private("user_id") {
         info!("User ID cookie found: {:?}", cookie_user_id.value());
+
         cookie_user_id.value().parse::<i32>().map_err(|_| {
             error!("Error parsing user ID cookie.");
             show_error_page(

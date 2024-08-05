@@ -3,6 +3,5 @@ CREATE TABLE banks (
     user_id INT NOT NULL,
     name VARCHAR(50) NOT NULL UNIQUE,
     link VARCHAR(200),
-    current_amount FLOAT,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );

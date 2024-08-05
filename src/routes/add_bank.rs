@@ -47,7 +47,6 @@ pub async fn add_bank_form(
         user_id: cookie_user_id,
         name: bank_form.name.to_string(),
         link: bank_form.link.clone(),
-        current_amount: bank_form.current_amount,
     };
 
     let result = diesel::insert_into(banks_without_dsl::table)

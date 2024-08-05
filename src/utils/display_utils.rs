@@ -1,4 +1,4 @@
-use chrono::{Local, NaiveDate};
+use chrono::NaiveDate;
 use log::info;
 use rocket::{tokio::task, State};
 use rocket_dyn_templates::{context, Template};
@@ -92,12 +92,6 @@ pub async fn generate_balance_graph_data(
 
             if let Some(bank_transactions) = transactions.get(&bank.id) {
                 let mut data: BTreeMap<NaiveDate, f64> = BTreeMap::new();
-
-                // Insert today's balance from the bank's current amount
-                let today = Local::now().naive_local().date();
-                if let Some(current_amount) = bank.current_amount {
-                    data.insert(today, current_amount);
-                }
 
                 // Process transactions in reverse chronological order
                 for transaction in bank_transactions.iter().rev() {

@@ -25,8 +25,6 @@ pub struct FormUser {
 pub struct FormBank {
     pub name: String,
     pub link: Option<String>,
-    pub current_amount: f64,
-    pub interest_rate: Option<f64>,
 }
 
 #[derive(Debug, Queryable, Serialize, Clone)]
@@ -35,7 +33,6 @@ pub struct Bank {
     pub user_id: i32,
     pub name: String,
     pub link: Option<String>,
-    pub current_amount: Option<f64>,
 }
 
 impl Default for Bank {
@@ -45,7 +42,6 @@ impl Default for Bank {
             user_id: 0,
             name: "".to_string(),
             link: None,
-            current_amount: None,
         }
     }
 }

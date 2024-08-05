@@ -20,7 +20,6 @@ pub struct NewBank {
     pub user_id: i32,
     pub name: String,
     pub link: Option<String>,
-    pub current_amount: f64,
 }
 
 #[derive(Insertable, Debug)]
