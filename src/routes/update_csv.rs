@@ -39,17 +39,12 @@ pub async fn update_bank_balance_after(
     state: &State<AppState>,
     db: Connection<DbConn>,
 ) -> Result<Template, Box<Redirect>> {
-    match get_user_id(cookies) {
-        Ok(cookie_user_id) => {
-            update_csv_converter(cookie_user_id, state, db, |converter| {
-                converter.amount_conv = Some(form.bank_balance_after.clone());
-            })
-            .await
-        }
-        Err(err) => {
-            return Err(Box::new(err));
-        }
-    }
+    let cookie_user_id = get_user_id(cookies)?;
+
+    update_csv_converter(cookie_user_id, state, db, |converter| {
+        converter.amount_conv = Some(form.bank_balance_after.clone());
+    })
+    .await
 }
 
 #[post("/update_date", data = "<form>")]
@@ -59,17 +54,12 @@ pub async fn update_date(
     state: &State<AppState>,
     db: Connection<DbConn>,
 ) -> Result<Template, Box<Redirect>> {
-    match get_user_id(cookies) {
-        Ok(cookie_user_id) => {
-            update_csv_converter(cookie_user_id, state, db, |converter| {
-                converter.amount_conv = Some(form.date.clone());
-            })
-            .await
-        }
-        Err(err) => {
-            return Err(Box::new(err));
-        }
-    }
+    let cookie_user_id = get_user_id(cookies)?;
+
+    update_csv_converter(cookie_user_id, state, db, |converter| {
+        converter.amount_conv = Some(form.date.clone());
+    })
+    .await
 }
 
 #[post("/update_counterparty", data = "<form>")]
@@ -79,17 +69,12 @@ pub async fn update_counterparty(
     state: &State<AppState>,
     db: Connection<DbConn>,
 ) -> Result<Template, Box<Redirect>> {
-    match get_user_id(cookies) {
-        Ok(cookie_user_id) => {
-            update_csv_converter(cookie_user_id, state, db, |converter| {
-                converter.amount_conv = Some(form.counterparty.clone());
-            })
-            .await
-        }
-        Err(err) => {
-            return Err(Box::new(err));
-        }
-    }
+    let cookie_user_id = get_user_id(cookies)?;
+
+    update_csv_converter(cookie_user_id, state, db, |converter| {
+        converter.amount_conv = Some(form.counterparty.clone());
+    })
+    .await
 }
 
 #[post("/update_amount", data = "<form>")]
@@ -99,17 +84,12 @@ pub async fn update_amount(
     state: &State<AppState>,
     db: Connection<DbConn>,
 ) -> Result<Template, Box<Redirect>> {
-    match get_user_id(cookies) {
-        Ok(cookie_user_id) => {
-            update_csv_converter(cookie_user_id, state, db, |converter| {
-                converter.amount_conv = Some(form.amount.clone());
-            })
-            .await
-        }
-        Err(err) => {
-            return Err(Box::new(err));
-        }
-    }
+    let cookie_user_id = get_user_id(cookies)?;
+
+    update_csv_converter(cookie_user_id, state, db, |converter| {
+        converter.amount_conv = Some(form.amount.clone());
+    })
+    .await
 }
 
 async fn update_csv_converter<F>(
@@ -121,14 +101,7 @@ async fn update_csv_converter<F>(
 where
     F: Fn(&mut CSVConverter),
 {
-    let current_bank_id = get_current_bank(cookie_user_id, state).await;
-
-    let current_bank_id = match current_bank_id {
-        Ok(current_bank_id) => current_bank_id,
-        Err(err) => {
-            return Err(Box::new(err));
-        }
-    };
+    let current_bank_id = get_current_bank(cookie_user_id, state).await?.id;
 
     let mut success = None;
     let mut error = None;

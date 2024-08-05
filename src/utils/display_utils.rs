@@ -1,11 +1,14 @@
-use chrono::NaiveDate;
+use chrono::{Local, NaiveDate};
 use log::info;
-use rocket::State;
+use rocket::{tokio::task, State};
 use rocket_dyn_templates::{context, Template};
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
-use super::structs::{AppState, Bank, Transaction};
+use super::{
+    get_utils::get_current_bank,
+    structs::{AppState, Bank, Transaction},
+};
 
 /// Display the home page or a subview with data.
 /// The view to show is passed as a parameter.
@@ -29,24 +32,29 @@ pub async fn show_home_or_subview_with_data(
 
     let transactions = state.transactions.read().await.clone();
 
-    let current_bank = state
-        .current_bank
-        .read()
-        .await
-        .get(&cookie_user_id)
-        .cloned()
-        .unwrap_or_default();
+    let current_bank = get_current_bank(cookie_user_id, state).await;
+
+    if current_bank.is_err() {
+        return Template::render(
+            "error_page",
+            context! {
+                error: "Error finding the current bank".to_string(),
+                message: "Please login again.".to_string(),
+            },
+        );
+    }
+    let current_bank = current_bank.unwrap();
 
     let plot_data = if generate_graph_data {
         match generate_only_current_bank {
             true => {
                 info!("Generating balance graph data for current bank only.");
 
-                generate_balance_graph_data(&[current_bank.clone()], &transactions)
+                generate_balance_graph_data(&[current_bank.clone()], &transactions).await
             }
             false => {
                 info!("Generating balance graph data for all banks.");
-                generate_balance_graph_data(&banks, &transactions)
+                generate_balance_graph_data(&banks, &transactions).await
             }
         }
     } else {
@@ -69,50 +77,69 @@ pub async fn show_home_or_subview_with_data(
 /// The balance graph data is generated from the bank accounts and transactions.
 /// The balance graph data is used to plot the bank account balances over time.
 /// The balance graph data is returned as a JSON value.
-pub fn generate_balance_graph_data(
+pub async fn generate_balance_graph_data(
     banks: &[Bank],
     transactions: &HashMap<i32, Vec<Transaction>>,
 ) -> serde_json::Value {
-    let mut plot_data = vec![];
+    let mut tasks = vec![];
 
     for bank in banks {
-        if let Some(bank_transactions) = transactions.get(&bank.id) {
-            let mut data: BTreeMap<NaiveDate, f64> = BTreeMap::new();
+        let bank = bank.clone();
+        let transactions = transactions.clone();
 
-            // Insert today's balance from the bank's current amount
-            let today = chrono::Local::now().naive_local().date();
-            if let Some(current_amount) = bank.current_amount {
-                data.insert(today, current_amount);
-            }
+        let task = task::spawn(async move {
+            let mut plot_data = vec![];
 
-            // Process transactions in reverse chronological order
-            for transaction in bank_transactions.iter().rev() {
-                data.entry(transaction.date)
-                    .and_modify(|e| *e = transaction.bank_current_balance_after)
-                    .or_insert(transaction.bank_current_balance_after);
-            }
+            if let Some(bank_transactions) = transactions.get(&bank.id) {
+                let mut data: BTreeMap<NaiveDate, f64> = BTreeMap::new();
 
-            // Ensure we plot the initial balance at the start of 2023
-            if let Some(start_date) = NaiveDate::from_ymd_opt(2023, 1, 1) {
-                if let Some(&initial_balance) = data.values().next() {
-                    data.entry(start_date).or_insert(initial_balance);
+                // Insert today's balance from the bank's current amount
+                let today = Local::now().naive_local().date();
+                if let Some(current_amount) = bank.current_amount {
+                    data.insert(today, current_amount);
                 }
+
+                // Process transactions in reverse chronological order
+                for transaction in bank_transactions.iter().rev() {
+                    data.entry(transaction.date)
+                        .and_modify(|e| *e = transaction.bank_current_balance_after)
+                        .or_insert(transaction.bank_current_balance_after);
+                }
+
+                // Ensure we plot the initial balance at the start of 2023
+                if let Some(start_date) = NaiveDate::from_ymd_opt(2023, 1, 1) {
+                    if let Some(&initial_balance) = data.values().next() {
+                        data.entry(start_date).or_insert(initial_balance);
+                    }
+                }
+
+                // Prepare series data for plotting
+                let series_data: Vec<(String, f64)> = data
+                    .into_iter()
+                    .map(|(date, balance)| (date.to_string(), balance))
+                    .collect();
+
+                // Add plot data for the bank
+                plot_data.push(json!({
+                    "name": bank.name,
+                    "x": series_data.iter().map(|(date, _)| date.clone()).collect::<Vec<String>>(),
+                    "y": series_data.iter().map(|(_, balance)| *balance).collect::<Vec<f64>>(),
+                    "type": "scatter",
+                    "mode": "lines+markers"
+                }));
             }
 
-            // Prepare series data for plotting
-            let series_data: Vec<(String, f64)> = data
-                .into_iter()
-                .map(|(date, balance)| (date.to_string(), balance))
-                .collect();
+            plot_data
+        });
 
-            // Add plot data for the bank
-            plot_data.push(json!({
-                "name": bank.name,
-                "x": series_data.iter().map(|(date, _)| date.clone()).collect::<Vec<String>>(),
-                "y": series_data.iter().map(|(_, balance)| *balance).collect::<Vec<f64>>(),
-                "type": "scatter",
-                "mode": "lines+markers"
-            }));
+        tasks.push(task);
+    }
+
+    let mut plot_data = vec![];
+
+    for task in tasks {
+        if let Ok(data) = task.await {
+            plot_data.extend(data);
         }
     }
 

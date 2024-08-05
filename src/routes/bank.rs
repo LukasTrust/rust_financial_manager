@@ -1,21 +1,25 @@
 use chrono::{Datelike, NaiveDate};
 use csv::ReaderBuilder;
+use log::{error, info};
 use rocket::data::{Data, ToByteUnit};
+use rocket::fairing::Info;
+use rocket::http::uri::error;
 use rocket::http::CookieJar;
+use rocket::outcome::IntoOutcome;
 use rocket::response::Redirect;
 use rocket::{get, post, State};
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 use rocket_dyn_templates::Template;
-use serde_json::json;
 use std::collections::HashMap;
 use std::io::Cursor;
 
 use super::error_page::show_error_page;
 use crate::database::db_connector::DbConn;
-use crate::database::models::{CSVConverter, NewTransactions, Transaction};
+use crate::database::models::{CSVConverter, NewTransactions};
 use crate::schema::transactions;
 use crate::utils::display_utils::show_home_or_subview_with_data;
 use crate::utils::get_utils::{get_current_bank, get_user_id};
+use crate::utils::loading_utils::load_transactions;
 use crate::utils::set_utils::set_app_state;
 use crate::utils::structs::AppState;
 
@@ -81,34 +85,22 @@ pub async fn upload_csv(
 ) -> Result<Template, Box<Redirect>> {
     match get_user_id(cookies) {
         Ok(cookie_user_id) => {
-            let current_bank_id = get_current_bank(cookie_user_id, state).await;
-
-            let current_bank_id = match current_bank_id {
-                Ok(current_bank_id) => current_bank_id,
-                Err(err) => {
-                    return Err(Box::new(err));
-                }
-            };
+            let current_bank_id = get_current_bank(cookie_user_id, state).await?.id;
 
             let mut csv_converters_lock = state.csv_convert.write().await;
-            let error = validate_csv_converters(&csv_converters_lock, current_bank_id);
+            let csv_converter = validate_csv_converters(&mut csv_converters_lock, current_bank_id)?;
 
-            if let Some(err) = error {
-                return Ok(render_template_with_error(state, Some(err)).await);
-            }
-
-            let csv_converter = csv_converters_lock.get_mut(&current_bank_id).unwrap();
             let headers_to_extract = get_headers_to_extract(csv_converter);
 
             // Read the CSV file
             let data_stream = match data.open(512.kibibytes()).into_bytes().await {
                 Ok(bytes) => bytes,
                 Err(_) => {
-                    return Ok(render_template_with_error(
-                        state,
-                        Some("Failed to read data stream"),
-                    )
-                    .await)
+                    error!("Failed to read CSV file");
+                    return Err(Box::new(show_error_page(
+                        "Failed to read CSV file".to_string(),
+                        "Please try again.".to_string(),
+                    )));
                 }
             };
 
@@ -118,10 +110,7 @@ pub async fn upload_csv(
                 .flexible(true)
                 .from_reader(cursor);
 
-            let all_transactions = transactions::table
-                .load::<Transaction>(&mut db)
-                .await
-                .unwrap();
+            let all_transactions = load_transactions(current_bank_id, &mut db).await;
 
             match extract_and_process_records(&mut rdr, &headers_to_extract, current_bank_id, db)
                 .await
@@ -147,7 +136,7 @@ async fn extract_and_process_records<R: std::io::Read>(
     headers_to_extract: &[String],
     current_bank_id: i32,
     mut db: Connection<DbConn>,
-) -> Result<(i32, i32), String> {
+) -> Result<(i32, i32), Box<Redirect>> {
     let headers_map = match find_header_indices(rdr, headers_to_extract) {
         Ok(map) => map,
         Err(e) => return Err(e),
@@ -166,7 +155,13 @@ async fn extract_and_process_records<R: std::io::Read>(
 
         let record = match result {
             Ok(rec) => rec,
-            Err(_) => return Err("Failed to read CSV file".to_string()),
+            Err(_) => {
+                error!("Failed to read CSV file");
+                return Err(Box::new(show_error_page(
+                    "Failed to read CSV file".to_string(),
+                    "Please try again.".to_string(),
+                )));
+            }
         };
 
         let mut date_from_csv = NaiveDate::from_ymd_opt(1, 1, 1).unwrap();
@@ -174,20 +169,37 @@ async fn extract_and_process_records<R: std::io::Read>(
         let mut amount_from_csv = 0.0;
         let mut bank_current_balance_after = 0.0;
 
-        let date_index = *headers_map.get("Date").ok_or("Date header missing")?;
-        let counterparty_index = *headers_map
-            .get("Counterparty")
-            .ok_or("Counterparty header missing")?;
-        let amount_index = *headers_map.get("Amount").ok_or("Amount header missing")?;
-        let bank_current_balance_after_index = *headers_map
-            .get("Bank current balance after")
-            .ok_or("Bank current balance after header missing")?;
+        let date_index = headers_map.get("Date");
+        let counterparty_index = headers_map.get("Counterparty");
+        let amount_index = headers_map.get("Amount");
+        let bank_current_balance_after_index = headers_map.get("Bank current balance after");
+
+        if date_index.is_none()
+            || counterparty_index.is_none()
+            || amount_index.is_none()
+            || bank_current_balance_after_index.is_none()
+        {
+            error!("Failed to find headers");
+            return Err(Box::new(show_error_page(
+                "Failed to find headers".to_string(),
+                "Please try again.".to_string(),
+            )));
+        }
+
+        let date_index = *date_index.unwrap();
+        let counterparty_index = *counterparty_index.unwrap();
+        let amount_index = *amount_index.unwrap();
+        let bank_current_balance_after_index = *bank_current_balance_after_index.unwrap();
 
         for (j, value) in record.as_slice().split(';').enumerate() {
             match j {
                 idx if idx == date_index => {
-                    date_from_csv = NaiveDate::parse_from_str(value, "%d.%m.%Y")
-                        .map_err(|e| format!("Failed to parse date '{}': {}", value, e))?;
+                    date_from_csv = NaiveDate::parse_from_str(value, "%d.%m.%Y").map_err(|e| {
+                        show_error_page(
+                            "Failed to pase date".to_string(),
+                            "Please try again".to_string(),
+                        )
+                    })?;
                 }
                 idx if idx == counterparty_index => {
                     counterparty_from_csv = value;
@@ -210,14 +222,10 @@ async fn extract_and_process_records<R: std::io::Read>(
                         }
                     };
 
-                    // Print out the value after processing
-                    println!("Parsing amount from value: '{}'", processed_value);
                     amount_from_csv = processed_value
                         .replace(',', ".") // Convert comma to dot for parsing
                         .parse::<f64>()
-                        .map_err(|e| {
-                            format!("Failed to parse amount '{}': {}", processed_value, e)
-                        })?;
+                        .map_err(|e| {})?;
                 }
                 idx if idx == bank_current_balance_after_index => {
                     // Determine and handle the decimal separator
@@ -285,7 +293,7 @@ async fn extract_and_process_records<R: std::io::Read>(
 fn find_header_indices<R: std::io::Read>(
     rdr: &mut csv::Reader<R>,
     headers_to_extract: &[String],
-) -> Result<(HashMap<String, usize>, i32), String> {
+) -> Result<(HashMap<String, usize>, i32), Box<Redirect>> {
     let mut header_indices = HashMap::new();
     let mut header_row = -1;
 
@@ -293,7 +301,12 @@ fn find_header_indices<R: std::io::Read>(
         header_row += 1;
         let record = match result {
             Ok(rec) => rec,
-            Err(_) => return Err("Failed to read CSV file".to_string()),
+            Err(_) => {
+                return Err(Box::new(show_error_page(
+                    "Failed to read CSV file".to_string(),
+                    "Please try again.".to_string(),
+                )))
+            }
         };
 
         let array = record.as_slice().split(';');
@@ -315,24 +328,45 @@ fn find_header_indices<R: std::io::Read>(
     }
 
     if header_indices.len() != headers_to_extract.len() {
-        return Err("Not all required headers were found".to_string());
+        return Err(Box::new(show_error_page(
+            "Failed to find headers".to_string(),
+            "Please try again.".to_string(),
+        )));
     }
 
     Ok((header_indices, header_row - 2))
 }
 
 fn validate_csv_converters(
-    csv_converters: &HashMap<i32, CSVConverter>,
-    bank_id: i32,
-) -> Option<&'static str> {
-    let csv_converter = csv_converters.get(&bank_id)?;
-    if csv_converter.date_conv.is_none()
-        || csv_converter.counterparty_conv.is_none()
-        || csv_converter.amount_conv.is_none()
-    {
-        return Some("Please set all CSV converters before uploading a CSV file");
+    csv_converters_lock: &mut HashMap<i32, CSVConverter>,
+    current_bank_id: i32,
+) -> Result<&mut CSVConverter, Redirect> {
+    let csv_converter = &csv_converters_lock.get(&current_bank_id);
+
+    match csv_converter {
+        Some(csv_converter) => {
+            if csv_converter.date_conv.is_none()
+                || csv_converter.counterparty_conv.is_none()
+                || csv_converter.amount_conv.is_none()
+            {
+                error!("CSV converter not set up");
+                return Err(show_error_page(
+                    "CSV converter not set up".to_string(),
+                    "Please set up the CSV converter before uploading a CSV file".to_string(),
+                ));
+            }
+            info!("CSV converter found");
+
+            Ok(csv_converters_lock.get_mut(&current_bank_id).unwrap())
+        }
+        None => {
+            error!("CSV converter not found");
+            Err(show_error_page(
+                "CSV converter not found".to_string(),
+                "Please set up the CSV converter before uploading a CSV file".to_string(),
+            ))
+        }
     }
-    None
 }
 
 fn get_headers_to_extract(csv_converter: &CSVConverter) -> Vec<String> {
@@ -345,51 +379,4 @@ fn get_headers_to_extract(csv_converter: &CSVConverter) -> Vec<String> {
             .clone()
             .unwrap(),
     ]
-}
-
-async fn render_template_with_error(state: &State<AppState>, error: Option<&str>) -> Template {
-    let banks = state.banks.read().await.clone();
-    let transactions = state.transactions.read().await.clone();
-    let plot_data = generate_balance_graph_data(&banks, &transactions);
-    let bank = state.current_bank.read().await.clone();
-    let context = json!({
-        "banks": banks,
-        "bank": bank,
-        "plot_data": plot_data.to_string(),
-        "error": error
-    });
-
-    Template::render("bank", &context)
-}
-
-async fn render_template_with_success(
-    state: &State<AppState>,
-    success: String,
-    all_transactions: Vec<Transaction>,
-) -> Template {
-    let banks = state.banks.read().await.clone();
-    let mut transactions = state.transactions.write().await;
-
-    let current_bank_id = state.current_bank.read().await.id;
-    if let Some(bank_transactions) = transactions.get_mut(&current_bank_id) {
-        bank_transactions.clear();
-        for transaction in &all_transactions {
-            if transaction.bank_id == current_bank_id {
-                bank_transactions.push(transaction.clone());
-            }
-        }
-    } else {
-        transactions.insert(current_bank_id, all_transactions.clone());
-    }
-
-    let plot_data = generate_balance_graph_data(&banks, &transactions);
-    let bank = state.current_bank.read().await.clone();
-    let context = json!({
-        "banks": banks,
-        "bank": bank,
-        "plot_data": plot_data.to_string(),
-        "success": success
-    });
-
-    Template::render("bank", &context)
 }

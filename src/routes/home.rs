@@ -24,56 +24,50 @@ pub async fn home(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
-    match get_user_id(cookies) {
-        Ok(cookie_user_id) => {
-            info!("User is logged in: {}", cookie_user_id);
+    let cookie_user_id = get_user_id(cookies)?;
 
-            let banks_result = load_banks(cookie_user_id, &mut db).await?;
+    info!("User is logged in: {}", cookie_user_id);
 
-            let mut transactions_map: HashMap<i32, Vec<Transaction>> = HashMap::new();
-            let mut csv_converters_map: HashMap<i32, CSVConverter> = HashMap::new();
+    let banks_result = load_banks(cookie_user_id, &mut db).await?;
 
-            for bank in banks_result.iter() {
-                let transactions_result = load_transactions(bank.id, &mut db).await?;
+    let mut transactions_map: HashMap<i32, Vec<Transaction>> = HashMap::new();
+    let mut csv_converters_map: HashMap<i32, CSVConverter> = HashMap::new();
 
-                transactions_map.insert(bank.clone().id, transactions_result);
+    for bank in banks_result.iter() {
+        let transactions_result = load_transactions(bank.id, &mut db).await?;
 
-                let csv_converters_result = load_csv_converters(bank.id, &mut db).await?;
+        transactions_map.insert(bank.clone().id, transactions_result);
 
-                match csv_converters_result {
-                    Some(csv_converter) => {
-                        csv_converters_map.insert(bank.id, csv_converter);
-                    }
-                    None => {}
-                }
+        let csv_converters_result = load_csv_converters(bank.id, &mut db).await?;
+
+        match csv_converters_result {
+            Some(csv_converter) => {
+                csv_converters_map.insert(bank.id, csv_converter);
             }
-
-            set_app_state(
-                cookie_user_id,
-                state,
-                Some(banks_result.clone()),
-                Some(transactions_map.clone()),
-                Some(csv_converters_map),
-                None,
-            )
-            .await;
-
-            Ok(show_home_or_subview_with_data(
-                cookie_user_id,
-                state,
-                "dashboard".to_string(),
-                true,
-                false,
-                None,
-                None,
-            )
-            .await)
-        }
-        Err(err) => {
-            info!("User is not logged in or parsing user_id failed.");
-            Err(Box::new(err))
+            None => {}
         }
     }
+
+    set_app_state(
+        cookie_user_id,
+        state,
+        Some(banks_result.clone()),
+        Some(transactions_map.clone()),
+        Some(csv_converters_map),
+        None,
+    )
+    .await;
+
+    Ok(show_home_or_subview_with_data(
+        cookie_user_id,
+        state,
+        "dashboard".to_string(),
+        true,
+        false,
+        None,
+        None,
+    )
+    .await)
 }
 
 /// Display the login page.
@@ -84,19 +78,18 @@ pub async fn dashboard(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
-    match get_user_id(cookies) {
-        Ok(cookie_user_id) => Ok(show_home_or_subview_with_data(
-            cookie_user_id,
-            state,
-            "dashboard".to_string(),
-            true,
-            false,
-            None,
-            None,
-        )
-        .await),
-        Err(err) => Err(Box::new(err)),
-    }
+    let cookie_user_id = get_user_id(cookies)?;
+
+    Ok(show_home_or_subview_with_data(
+        cookie_user_id,
+        state,
+        "dashboard".to_string(),
+        true,
+        false,
+        None,
+        None,
+    )
+    .await)
 }
 
 /// Display the settings page.
@@ -107,19 +100,18 @@ pub async fn settings(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
-    match get_user_id(cookies) {
-        Ok(cookie_user_id) => Ok(show_home_or_subview_with_data(
-            cookie_user_id,
-            state,
-            "settings".to_string(),
-            false,
-            false,
-            None,
-            None,
-        )
-        .await),
-        Err(err) => Err(Box::new(err)),
-    }
+    let cookie_user_id = get_user_id(cookies)?;
+
+    Ok(show_home_or_subview_with_data(
+        cookie_user_id,
+        state,
+        "settings".to_string(),
+        false,
+        false,
+        None,
+        None,
+    )
+    .await)
 }
 
 /// Display the login page.

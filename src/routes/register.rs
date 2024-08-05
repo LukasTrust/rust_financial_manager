@@ -41,21 +41,9 @@ pub async fn register_user(
     mut db: Connection<DbConn>,
     user_form: Form<NewUser>,
 ) -> Result<Redirect, Template> {
-    if !is_valid_email(&user_form.email.clone()) {
-        info!("Email format not valide.");
-        return Err(Template::render(
-            "register",
-            context! { error: "Email format not valide." },
-        ));
-    }
+    is_valid_email(&user_form.email.clone())?;
 
-    if !is_strong_password(&user_form.password.clone()) {
-        info!("Password does not meet the criteria.");
-        return Err(Template::render(
-            "register",
-            context! { error: "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character" },
-        ));
-    }
+    is_strong_password(&user_form.password.clone())?;
 
     let hashed_password = match hash(user_form.password.clone(), DEFAULT_COST) {
         Ok(h) => {
@@ -91,12 +79,14 @@ pub async fn register_user(
                 "Registration successful for user with email: {}",
                 new_user.email
             );
+
             Ok(Redirect::to(uri!(login_form_from_register(
                 "Registration successful. Please log in."
             ))))
         }
         Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
-            info!("Email already exists.");
+            error!("Email already exists.");
+
             Err(Template::render(
                 "register",
                 context! { error: "Email already exists. Please use a different email." },
@@ -104,6 +94,7 @@ pub async fn register_user(
         }
         Err(err) => {
             error!("Registration failed: {}", err);
+
             Err(Template::render(
                 "register",
                 context! { error: "Internal server error. Please try again later." },
@@ -117,12 +108,21 @@ pub async fn register_user(
 /// - Contain only alphanumeric characters, dots, hyphens, and underscores
 /// - Have a domain with at least one dot
 /// - Have a top-level domain with at least two characters
-pub fn is_valid_email(email: &str) -> bool {
+pub fn is_valid_email(email: &str) -> Result<(), Template> {
     // Regular expression for validating an email address
     let re = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
 
     // Check if the email matches the regex pattern and doesn't contain consecutive dots
-    re.is_match(email) && !email.contains("..")
+    match re.is_match(email) && !email.contains("..") {
+        true => Ok(()),
+        false => {
+            error!("Email format not valide.");
+            Err(Template::render(
+                "register",
+                context! { error: "Email format not valide." },
+            ))
+        }
+    }
 }
 
 /// Check if a password is strong.
@@ -132,7 +132,7 @@ pub fn is_valid_email(email: &str) -> bool {
 /// - Contain at least one uppercase letter
 /// - Contain at least one digit
 /// - Contain at least one special character
-pub fn is_strong_password(password: &str) -> bool {
+pub fn is_strong_password(password: &str) -> Result<(), Template> {
     // Define password strength criteria
     let has_lowercase = password.chars().any(|c| c.is_lowercase());
     let has_uppercase = password.chars().any(|c| c.is_uppercase());
@@ -140,5 +140,15 @@ pub fn is_strong_password(password: &str) -> bool {
     let has_special = password.chars().any(|c| !c.is_alphanumeric());
 
     // Password is considered strong if it meets all criteria
-    password.len() >= 10 && has_lowercase && has_uppercase && has_digit && has_special
+
+    match password.len() >= 10 && has_lowercase && has_uppercase && has_digit && has_special {
+        true => Ok(()),
+        false => {
+            error!("Password does not meet the criteria.");
+            Err(Template::render(
+                "register",
+                context! { error: "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character" },
+            ))
+        }
+    }
 }

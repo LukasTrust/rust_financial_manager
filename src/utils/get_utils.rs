@@ -1,7 +1,7 @@
 use log::{error, info};
 use rocket::{http::CookieJar, response::Redirect, State};
 
-use super::structs::AppState;
+use super::structs::{AppState, Bank};
 use crate::routes::error_page::show_error_page;
 
 /// Extract the user ID from the user ID cookie.
@@ -29,7 +29,7 @@ pub fn get_user_id(cookies: &CookieJar<'_>) -> Result<i32, Redirect> {
 pub async fn get_current_bank(
     cookie_user_id: i32,
     state: &State<AppState>,
-) -> Result<i32, Redirect> {
+) -> Result<Bank, Redirect> {
     let current_bank = state.current_bank.read().await;
 
     let current_bank = current_bank.get(&cookie_user_id);
@@ -37,7 +37,7 @@ pub async fn get_current_bank(
     match current_bank {
         Some(current_bank) => {
             info!("Current bank found: {:?}", current_bank.id);
-            Ok(current_bank.id)
+            Ok(current_bank.clone())
         }
         None => {
             error!("No current bank found.");
