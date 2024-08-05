@@ -20,9 +20,9 @@ use crate::database::models::{
 };
 use crate::schema::{banks as banks_without_dsl, transactions};
 use crate::structs::AppState;
-use crate::utils::{
-    extract_user_id, generate_balance_graph_data, show_home_or_subview_with_data, update_app_state,
-};
+use crate::utils::display_utils::show_home_or_subview_with_data;
+use crate::utils::get_utils::extract_user_id;
+use crate::utils::set_utils::update_app_state;
 
 #[get("/add-bank")]
 pub async fn add_bank(

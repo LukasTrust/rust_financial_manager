@@ -10,7 +10,7 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::CSVConverter;
 use crate::schema::csv_converters;
 use crate::structs::AppState;
-use crate::utils::{extract_user_id, generate_balance_graph_data};
+use crate::utils::get_utils::extract_user_id;
 
 #[derive(FromForm)]
 pub struct DateForm {

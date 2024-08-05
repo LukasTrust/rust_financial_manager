@@ -9,10 +9,10 @@ use std::collections::HashMap;
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, Transaction};
 use crate::structs::AppState;
-use crate::utils::{
-    extract_user_id, load_banks, load_csv_converters, load_transactions,
-    show_home_or_subview_with_data, update_app_state,
-};
+use crate::utils::display_utils::show_home_or_subview_with_data;
+use crate::utils::get_utils::extract_user_id;
+use crate::utils::loading_utils::{load_banks, load_csv_converters, load_transactions};
+use crate::utils::set_utils::update_app_state;
 
 /// Display the home page.
 /// The home page is the dashboard that displays the user's bank accounts and transactions.
