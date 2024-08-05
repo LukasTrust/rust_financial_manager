@@ -21,15 +21,15 @@ use crate::database::models::{
 use crate::schema::{banks as banks_without_dsl, transactions};
 use crate::structs::AppState;
 use crate::utils::display_utils::show_home_or_subview_with_data;
-use crate::utils::get_utils::extract_user_id;
-use crate::utils::set_utils::update_app_state;
+use crate::utils::get_utils::get_user_id;
+use crate::utils::set_utils::set_app_state;
 
 #[get("/add-bank")]
 pub async fn add_bank(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
-    match extract_user_id(cookies) {
+    match get_user_id(cookies) {
         Ok(cookie_user_id) => Ok(show_home_or_subview_with_data(
             cookie_user_id,
             state,
@@ -51,7 +51,7 @@ pub async fn add_bank_form(
     state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Result<Template, Box<Redirect>> {
-    match extract_user_id(cookies) {
+    match get_user_id(cookies) {
         Ok(cookie_user_id) => {
             let new_bank = NewBank {
                 user_id: cookie_user_id,
@@ -74,7 +74,7 @@ pub async fn add_bank_form(
 
                     match inserted_bank {
                         Ok(inserted_bank) => {
-                            update_app_state(
+                            set_app_state(
                                 cookie_user_id,
                                 state,
                                 Some(vec![inserted_bank.clone()]),
@@ -144,7 +144,7 @@ pub async fn bank_view(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
-    match extract_user_id(cookies) {
+    match get_user_id(cookies) {
         Ok(cookie_user_id) => {
             let banks = state
                 .banks
@@ -159,7 +159,7 @@ pub async fn bank_view(
 
             match bank {
                 Some(new_current_bank) => {
-                    update_app_state(
+                    set_app_state(
                         cookie_user_id,
                         state,
                         None,
@@ -198,7 +198,7 @@ pub async fn upload_csv(
     state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Result<Template, Box<Redirect>> {
-    match extract_user_id(cookies) {
+    match get_user_id(cookies) {
         Ok(cookie_user_id) => {
             let current_bank_id = {
                 let current_bank = state

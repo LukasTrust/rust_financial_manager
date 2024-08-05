@@ -1,12 +1,12 @@
 use log::{error, info};
-use rocket::{http::CookieJar, response::Redirect};
+use rocket::{http::CookieJar, response::Redirect, State};
 
-use crate::routes::error_page::show_error_page;
+use crate::{routes::error_page::show_error_page, structs::AppState};
 
 /// Extract the user ID from the user ID cookie.
 /// If the user ID cookie is not found or cannot be parsed, an error page is displayed.
 /// The user ID is returned if the user ID cookie is found and parsed successfully.
-pub fn extract_user_id(cookies: &CookieJar<'_>) -> Result<i32, Redirect> {
+pub fn get_user_id(cookies: &CookieJar<'_>) -> Result<i32, Redirect> {
     if let Some(cookie_user_id) = cookies.get_private("user_id") {
         info!("User ID cookie found: {:?}", cookie_user_id.value());
         cookie_user_id.value().parse::<i32>().map_err(|_| {
@@ -22,5 +22,28 @@ pub fn extract_user_id(cookies: &CookieJar<'_>) -> Result<i32, Redirect> {
             "Error validating the login!".to_string(),
             "Please login again.".to_string(),
         ))
+    }
+}
+
+pub async fn get_current_bank(
+    cookie_user_id: i32,
+    state: &State<AppState>,
+) -> Result<i32, Redirect> {
+    let current_bank = state.current_bank.read().await;
+
+    let current_bank = current_bank.get(&cookie_user_id);
+
+    match current_bank {
+        Some(current_bank) => {
+            info!("Current bank found: {:?}", current_bank.id);
+            Ok(current_bank.id)
+        }
+        None => {
+            error!("No current bank found.");
+            Err(show_error_page(
+                "Error validating the login!".to_string(),
+                "Please login again.".to_string(),
+            ))
+        }
     }
 }

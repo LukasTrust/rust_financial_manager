@@ -17,7 +17,7 @@ use routes::error_page::not_found;
 use routes::home::{dashboard, home, logout, settings};
 use routes::login::{login_form, login_user};
 use routes::register::{login_form_from_register, register_form, register_user};
-use routes::updated_csv::{
+use routes::update_csv::{
     update_amount, update_bank_balance_after, update_counterparty, update_date,
 };
 use rust_financial_manager::database::models::Bank;

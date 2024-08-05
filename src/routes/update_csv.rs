@@ -4,13 +4,13 @@ use rocket::{http::CookieJar, response::Redirect};
 use rocket::{post, State};
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 use rocket_dyn_templates::Template;
-use serde_json::json;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::CSVConverter;
 use crate::schema::csv_converters;
 use crate::structs::AppState;
-use crate::utils::get_utils::extract_user_id;
+use crate::utils::display_utils::show_home_or_subview_with_data;
+use crate::utils::get_utils::{get_current_bank, get_user_id};
 
 #[derive(FromForm)]
 pub struct DateForm {
@@ -39,13 +39,13 @@ pub async fn update_bank_balance_after(
     state: &State<AppState>,
     db: Connection<DbConn>,
 ) -> Result<Template, Box<Redirect>> {
-    match extract_user_id(cookies) {
-        Ok(cookie_user_id) => Ok(
+    match get_user_id(cookies) {
+        Ok(cookie_user_id) => {
             update_csv_converter(cookie_user_id, state, db, |converter| {
-                converter.bank_current_balance_after_conv = Some(form.bank_balance_after.clone());
+                converter.amount_conv = Some(form.bank_balance_after.clone());
             })
-            .await,
-        ),
+            .await
+        }
         Err(err) => {
             return Err(Box::new(err));
         }
@@ -59,13 +59,13 @@ pub async fn update_date(
     state: &State<AppState>,
     db: Connection<DbConn>,
 ) -> Result<Template, Box<Redirect>> {
-    match extract_user_id(cookies) {
-        Ok(cookie_user_id) => Ok(
+    match get_user_id(cookies) {
+        Ok(cookie_user_id) => {
             update_csv_converter(cookie_user_id, state, db, |converter| {
-                converter.date_conv = Some(form.date.clone());
+                converter.amount_conv = Some(form.date.clone());
             })
-            .await,
-        ),
+            .await
+        }
         Err(err) => {
             return Err(Box::new(err));
         }
@@ -79,13 +79,13 @@ pub async fn update_counterparty(
     state: &State<AppState>,
     db: Connection<DbConn>,
 ) -> Result<Template, Box<Redirect>> {
-    match extract_user_id(cookies) {
-        Ok(cookie_user_id) => Ok(
+    match get_user_id(cookies) {
+        Ok(cookie_user_id) => {
             update_csv_converter(cookie_user_id, state, db, |converter| {
-                converter.counterparty_conv = Some(form.counterparty.clone());
+                converter.amount_conv = Some(form.counterparty.clone());
             })
-            .await,
-        ),
+            .await
+        }
         Err(err) => {
             return Err(Box::new(err));
         }
@@ -99,13 +99,13 @@ pub async fn update_amount(
     state: &State<AppState>,
     db: Connection<DbConn>,
 ) -> Result<Template, Box<Redirect>> {
-    match extract_user_id(cookies) {
-        Ok(cookie_user_id) => Ok(
+    match get_user_id(cookies) {
+        Ok(cookie_user_id) => {
             update_csv_converter(cookie_user_id, state, db, |converter| {
                 converter.amount_conv = Some(form.amount.clone());
             })
-            .await,
-        ),
+            .await
+        }
         Err(err) => {
             return Err(Box::new(err));
         }
@@ -117,20 +117,18 @@ async fn update_csv_converter<F>(
     state: &State<AppState>,
     mut db: Connection<DbConn>,
     update_field: F,
-) -> Template
+) -> Result<Template, Box<Redirect>>
 where
     F: Fn(&mut CSVConverter),
 {
-    let current_bank_id;
-    {
-        let current_bank = state
-            .current_bank
-            .read()
-            .await
-            .get(&cookie_user_id)
-            .unwrap();
-        current_bank_id = current_bank.id;
-    }
+    let current_bank_id = get_current_bank(cookie_user_id, state).await;
+
+    let current_bank_id = match current_bank_id {
+        Ok(current_bank_id) => current_bank_id,
+        Err(err) => {
+            return Err(Box::new(err));
+        }
+    };
 
     let mut success = None;
     let mut error = None;
@@ -145,8 +143,8 @@ where
                 .await;
 
             match result {
-                Ok(_) => success = Some("Update successful"),
-                Err(_) => error = Some("Update failed"),
+                Ok(_) => success = Some("Update successful".to_string()),
+                Err(_) => error = Some("Update failed".to_string()),
             };
         } else {
             let mut new_csv_converter = CSVConverter {
@@ -165,24 +163,21 @@ where
 
             if result.is_ok() {
                 csv_converters_lock.insert(current_bank_id, new_csv_converter);
-                success = Some("Insert successful");
+                success = Some("Insert successful".to_string());
             } else {
-                error = Some("Insert failed");
+                error = Some("Insert failed".to_string());
             }
         }
     }
 
-    let banks = state.banks.read().await.clone();
-    let transactions = state.transactions.read().await.clone();
-    let plot_data = generate_balance_graph_data(&banks, &transactions);
-    let bank = state.current_bank.read().await.clone();
-    let context = json!({
-        "banks": banks,
-        "bank": bank,
-        "plot_data": plot_data.to_string(),
-        "success": success,
-        "error": error
-    });
-
-    Template::render("bank", &context)
+    Ok(show_home_or_subview_with_data(
+        cookie_user_id,
+        state,
+        "bank".to_string(),
+        true,
+        true,
+        success,
+        error,
+    )
+    .await)
 }

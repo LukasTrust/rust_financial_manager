@@ -8,7 +8,7 @@ use crate::structs::AppState;
 /// Update the application state with new data.
 /// The application state is updated with new banks, transactions, CSV converters, and the current bank.
 /// All the new data is optional and can be None.
-pub async fn update_app_state(
+pub async fn set_app_state(
     cookie_user_id: i32,
     state: &State<AppState>,
     new_banks: Option<Vec<Bank>>,

@@ -10,9 +10,9 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, Transaction};
 use crate::structs::AppState;
 use crate::utils::display_utils::show_home_or_subview_with_data;
-use crate::utils::get_utils::extract_user_id;
+use crate::utils::get_utils::get_user_id;
 use crate::utils::loading_utils::{load_banks, load_csv_converters, load_transactions};
-use crate::utils::set_utils::update_app_state;
+use crate::utils::set_utils::set_app_state;
 
 /// Display the home page.
 /// The home page is the dashboard that displays the user's bank accounts and transactions.
@@ -24,7 +24,7 @@ pub async fn home(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
-    match extract_user_id(cookies) {
+    match get_user_id(cookies) {
         Ok(cookie_user_id) => {
             info!("User is logged in: {}", cookie_user_id);
 
@@ -48,7 +48,7 @@ pub async fn home(
                 }
             }
 
-            update_app_state(
+            set_app_state(
                 cookie_user_id,
                 state,
                 Some(banks_result.clone()),
@@ -84,7 +84,7 @@ pub async fn dashboard(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
-    match extract_user_id(cookies) {
+    match get_user_id(cookies) {
         Ok(cookie_user_id) => Ok(show_home_or_subview_with_data(
             cookie_user_id,
             state,
@@ -107,7 +107,7 @@ pub async fn settings(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
-    match extract_user_id(cookies) {
+    match get_user_id(cookies) {
         Ok(cookie_user_id) => Ok(show_home_or_subview_with_data(
             cookie_user_id,
             state,
