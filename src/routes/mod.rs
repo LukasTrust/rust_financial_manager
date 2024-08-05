@@ -1,3 +1,4 @@
+pub mod add_bank;
 pub mod bank;
 pub mod delete_user;
 pub mod error_page;

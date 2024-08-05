@@ -5,8 +5,7 @@ use rocket_dyn_templates::{context, Template};
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
-use crate::database::models::{Bank, Transaction};
-use crate::structs::AppState;
+use super::structs::{AppState, Bank, Transaction};
 
 /// Display the home page or a subview with data.
 /// The view to show is passed as a parameter.

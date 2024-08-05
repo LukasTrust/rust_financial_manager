@@ -7,12 +7,12 @@ use rocket_dyn_templates::Template;
 use std::collections::HashMap;
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{CSVConverter, Transaction};
-use crate::structs::AppState;
+use crate::database::models::CSVConverter;
 use crate::utils::display_utils::show_home_or_subview_with_data;
 use crate::utils::get_utils::get_user_id;
 use crate::utils::loading_utils::{load_banks, load_csv_converters, load_transactions};
 use crate::utils::set_utils::set_app_state;
+use crate::utils::structs::{AppState, Transaction};
 
 /// Display the home page.
 /// The home page is the dashboard that displays the user's bank accounts and transactions.

@@ -8,9 +8,9 @@ use rocket_dyn_templates::Template;
 use crate::database::db_connector::DbConn;
 use crate::database::models::CSVConverter;
 use crate::schema::csv_converters;
-use crate::structs::AppState;
 use crate::utils::display_utils::show_home_or_subview_with_data;
 use crate::utils::get_utils::{get_current_bank, get_user_id};
+use crate::utils::structs::AppState;
 
 #[derive(FromForm)]
 pub struct DateForm {

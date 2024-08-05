@@ -5,12 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::{banks, csv_converters, transactions, users};
 
-#[derive(FromForm)]
-pub struct FormUser {
-    pub email: String,
-    pub password: String,
-}
-
 #[derive(FromForm, Insertable, Debug)]
 #[diesel(table_name = users)]
 pub struct NewUser {
@@ -18,14 +12,6 @@ pub struct NewUser {
     pub last_name: String,
     pub email: String,
     pub password: String,
-}
-
-#[derive(FromForm)]
-pub struct FormBank {
-    pub name: String,
-    pub link: Option<String>,
-    pub current_amount: f64,
-    pub interest_rate: Option<f64>,
 }
 
 #[derive(Queryable, Insertable, Debug, Deserialize, Serialize)]
@@ -37,48 +23,9 @@ pub struct NewBank {
     pub current_amount: f64,
 }
 
-#[derive(Debug, Queryable, Serialize, Clone)]
-pub struct Bank {
-    pub id: i32,
-    pub user_id: i32,
-    pub name: String,
-    pub link: Option<String>,
-    pub current_amount: Option<f64>,
-}
-
-impl Default for Bank {
-    fn default() -> Self {
-        Bank {
-            id: 0,
-            user_id: 0,
-            name: "".to_string(),
-            link: None,
-            current_amount: None,
-        }
-    }
-}
-
-#[derive(FromForm)]
-pub struct FormTransactions {
-    pub date: Date,
-    pub counterparty: String,
-    pub amount: f64,
-    pub current_amount_after: f64,
-}
-
 #[derive(Insertable, Debug)]
 #[diesel(table_name = transactions)]
 pub struct NewTransactions {
-    pub bank_id: i32,
-    pub date: NaiveDate,
-    pub counterparty: String,
-    pub amount: f64,
-    pub bank_current_balance_after: f64,
-}
-
-#[derive(Debug, Queryable, Serialize, Clone)]
-pub struct Transaction {
-    pub id: i32,
     pub bank_id: i32,
     pub date: NaiveDate,
     pub counterparty: String,

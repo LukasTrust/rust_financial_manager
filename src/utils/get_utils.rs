@@ -1,7 +1,8 @@
 use log::{error, info};
 use rocket::{http::CookieJar, response::Redirect, State};
 
-use crate::{routes::error_page::show_error_page, structs::AppState};
+use super::structs::AppState;
+use crate::routes::error_page::show_error_page;
 
 /// Extract the user ID from the user ID cookie.
 /// If the user ID cookie is not found or cannot be parsed, an error page is displayed.

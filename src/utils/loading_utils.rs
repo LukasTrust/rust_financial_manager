@@ -5,8 +5,9 @@ use rocket::response::Redirect;
 use rocket_db_pools::diesel::prelude::RunQueryDsl;
 use rocket_db_pools::diesel::AsyncPgConnection;
 
-use crate::database::models::{Bank, CSVConverter, Transaction};
-use crate::routes::error_page::show_error_page;
+use crate::{database::models::CSVConverter, routes::error_page::show_error_page};
+
+use super::structs::{Bank, Transaction};
 
 /// Load the transactions for a bank from the database.
 /// The transactions are loaded from the database using the bank ID.

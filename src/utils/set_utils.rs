@@ -2,8 +2,9 @@ use log::info;
 use rocket::State;
 use std::collections::HashMap;
 
-use crate::database::models::{Bank, CSVConverter, Transaction};
-use crate::structs::AppState;
+use crate::database::models::CSVConverter;
+
+use super::structs::{AppState, Bank, Transaction};
 
 /// Update the application state with new data.
 /// The application state is updated with new banks, transactions, CSV converters, and the current bank.

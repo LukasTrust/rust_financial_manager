@@ -9,8 +9,8 @@ use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 use rocket_dyn_templates::{context, Template};
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::FormUser;
 use crate::schema::users::dsl::*;
+use crate::utils::structs::FormUser;
 
 /// Display the login form.
 /// The form is used to collect user information such as email and password.
