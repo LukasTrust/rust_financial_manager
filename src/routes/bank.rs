@@ -30,7 +30,8 @@ pub async fn add_bank(
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
     match extract_user_id(cookies) {
-        Ok(_) => Ok(show_home_or_subview_with_data(
+        Ok(cookie_user_id) => Ok(show_home_or_subview_with_data(
+            cookie_user_id,
             state,
             "add_bank".to_string(),
             false,
@@ -74,6 +75,7 @@ pub async fn add_bank_form(
                     match inserted_bank {
                         Ok(inserted_bank) => {
                             update_app_state(
+                                cookie_user_id,
                                 state,
                                 Some(vec![inserted_bank.clone()]),
                                 None,
@@ -83,6 +85,7 @@ pub async fn add_bank_form(
                             .await;
 
                             Ok(show_home_or_subview_with_data(
+                                cookie_user_id,
                                 state,
                                 "add_bank".to_string(),
                                 false,
@@ -93,6 +96,7 @@ pub async fn add_bank_form(
                             .await)
                         }
                         Err(err) => Ok(show_home_or_subview_with_data(
+                            cookie_user_id,
                             state,
                             "add_bank".to_string(),
                             false,
@@ -105,6 +109,7 @@ pub async fn add_bank_form(
                 }
                 Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
                     Ok(show_home_or_subview_with_data(
+                        cookie_user_id,
                         state,
                         "add_bank".to_string(),
                         false,
@@ -118,6 +123,7 @@ pub async fn add_bank_form(
                     .await)
                 }
                 Err(err) => Ok(show_home_or_subview_with_data(
+                    cookie_user_id,
                     state,
                     "add_bank".to_string(),
                     false,
@@ -139,14 +145,31 @@ pub async fn bank_view(
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
     match extract_user_id(cookies) {
-        Ok(_) => {
-            let banks = state.banks.read().await.clone();
+        Ok(cookie_user_id) => {
+            let banks = state
+                .banks
+                .read()
+                .await
+                .clone()
+                .get(&cookie_user_id)
+                .cloned()
+                .unwrap_or_default();
+
             let bank = banks.iter().find(|&b| b.id == bank_id);
 
             match bank {
                 Some(new_current_bank) => {
-                    update_app_state(state, None, None, None, Some(new_current_bank.clone())).await;
+                    update_app_state(
+                        cookie_user_id,
+                        state,
+                        None,
+                        None,
+                        None,
+                        Some(new_current_bank.clone()),
+                    )
+                    .await;
                     return Ok(show_home_or_subview_with_data(
+                        cookie_user_id,
                         state,
                         "bank".to_string(),
                         true,
@@ -171,56 +194,73 @@ pub async fn bank_view(
 #[post("/upload_csv", data = "<data>")]
 pub async fn upload_csv(
     data: Data<'_>,
+    cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Template {
-    let current_bank_id = {
-        let current_bank = state.current_bank.read().await;
-        current_bank.id
-    };
+) -> Result<Template, Box<Redirect>> {
+    match extract_user_id(cookies) {
+        Ok(cookie_user_id) => {
+            let current_bank_id = {
+                let current_bank = state
+                    .current_bank
+                    .read()
+                    .await
+                    .get(&cookie_user_id)
+                    .cloned()
+                    .unwrap();
 
-    let mut csv_converters_lock = state.csv_convert.write().await;
-    let error = validate_csv_converters(&csv_converters_lock, current_bank_id);
+                current_bank.id
+            };
 
-    if let Some(err) = error {
-        return render_template_with_error(state, Some(err)).await;
-    }
+            let mut csv_converters_lock = state.csv_convert.write().await;
+            let error = validate_csv_converters(&csv_converters_lock, current_bank_id);
 
-    let csv_converter = csv_converters_lock.get_mut(&current_bank_id).unwrap();
-    let headers_to_extract = get_headers_to_extract(csv_converter);
+            if let Some(err) = error {
+                return Ok(render_template_with_error(state, Some(err)).await);
+            }
 
-    // Read the CSV file
-    let data_stream = match data.open(512.kibibytes()).into_bytes().await {
-        Ok(bytes) => bytes,
-        Err(_) => {
-            return render_template_with_error(state, Some("Failed to read data stream")).await
+            let csv_converter = csv_converters_lock.get_mut(&current_bank_id).unwrap();
+            let headers_to_extract = get_headers_to_extract(csv_converter);
+
+            // Read the CSV file
+            let data_stream = match data.open(512.kibibytes()).into_bytes().await {
+                Ok(bytes) => bytes,
+                Err(_) => {
+                    return Ok(render_template_with_error(
+                        state,
+                        Some("Failed to read data stream"),
+                    )
+                    .await)
+                }
+            };
+
+            let cursor = Cursor::new(data_stream.to_vec());
+            let mut rdr = ReaderBuilder::new()
+                .has_headers(true)
+                .flexible(true)
+                .from_reader(cursor);
+
+            let all_transactions = transactions::table
+                .load::<Transaction>(&mut db)
+                .await
+                .unwrap();
+
+            match extract_and_process_records(&mut rdr, &headers_to_extract, current_bank_id, db)
+                .await
+            {
+                Ok(inserts) => Ok(render_template_with_success(
+                    state,
+                    format!(
+                        "Succesfully insertet {} and {} were duplicates",
+                        inserts.0, inserts.1
+                    ),
+                    all_transactions,
+                )
+                .await),
+                Err(err) => Ok(render_template_with_error(state, Some(&err)).await),
+            }
         }
-    };
-
-    let cursor = Cursor::new(data_stream.to_vec());
-    let mut rdr = ReaderBuilder::new()
-        .has_headers(true)
-        .flexible(true)
-        .from_reader(cursor);
-
-    let all_transactions = transactions::table
-        .load::<Transaction>(&mut db)
-        .await
-        .unwrap();
-
-    match extract_and_process_records(&mut rdr, &headers_to_extract, current_bank_id, db).await {
-        Ok(inserts) => {
-            render_template_with_success(
-                state,
-                format!(
-                    "Succesfully insertet {} and {} were duplicates",
-                    inserts.0, inserts.1
-                ),
-                all_transactions,
-            )
-            .await
-        }
-        Err(err) => render_template_with_error(state, Some(&err)).await,
+        Err(err) => Err(Box::new(err)),
     }
 }
 

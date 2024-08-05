@@ -49,6 +49,7 @@ pub async fn home(
             }
 
             update_app_state(
+                cookie_user_id,
                 state,
                 Some(banks_result.clone()),
                 Some(transactions_map.clone()),
@@ -58,6 +59,7 @@ pub async fn home(
             .await;
 
             Ok(show_home_or_subview_with_data(
+                cookie_user_id,
                 state,
                 "dashboard".to_string(),
                 true,
@@ -83,7 +85,8 @@ pub async fn dashboard(
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
     match extract_user_id(cookies) {
-        Ok(_) => Ok(show_home_or_subview_with_data(
+        Ok(cookie_user_id) => Ok(show_home_or_subview_with_data(
+            cookie_user_id,
             state,
             "dashboard".to_string(),
             true,
@@ -105,7 +108,8 @@ pub async fn settings(
     state: &State<AppState>,
 ) -> Result<Template, Box<Redirect>> {
     match extract_user_id(cookies) {
-        Ok(_) => Ok(show_home_or_subview_with_data(
+        Ok(cookie_user_id) => Ok(show_home_or_subview_with_data(
+            cookie_user_id,
             state,
             "settings".to_string(),
             false,

@@ -46,7 +46,7 @@ pub async fn login_user(
         Ok((user_id, stored_password)) => match verify(password_of_user, &stored_password) {
             Ok(true) => {
                 info!("Login successful for user with email: {}", email_of_user);
-                cookies.add(Cookie::new("user_id", user_id.to_string()));
+                cookies.add_private(Cookie::new("user_id", user_id.to_string()));
                 Ok(Redirect::to("/home"))
             }
             Ok(false) => {

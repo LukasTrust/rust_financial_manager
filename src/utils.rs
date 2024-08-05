@@ -348,7 +348,7 @@ pub fn generate_balance_graph_data(
 /// If the user ID cookie is not found or cannot be parsed, an error page is displayed.
 /// The user ID is returned if the user ID cookie is found and parsed successfully.
 pub fn extract_user_id(cookies: &CookieJar<'_>) -> Result<i32, Redirect> {
-    if let Some(cookie_user_id) = cookies.get("user_id") {
+    if let Some(cookie_user_id) = cookies.get_private("user_id") {
         info!("User ID cookie found: {:?}", cookie_user_id.value());
         cookie_user_id.value().parse::<i32>().map_err(|_| {
             error!("Error parsing user ID cookie.");
