@@ -24,22 +24,14 @@ pub async fn load_transactions(
         .filter(bank_id.eq(bank_id_for_loading))
         .load::<Transaction>(db)
         .await
-        .map_err(|_| show_error_page("Error loading transactions!".to_string(), "".to_string()));
+        .map_err(|_| show_error_page("Error loading transactions!".to_string(), "".to_string()))?;
 
-    match transactions_result {
-        Ok(transactions_result) => {
-            info!(
-                "Transactions count for bank {}: {}",
-                bank_id_for_loading,
-                transactions_result.len()
-            );
-            Ok(transactions_result)
-        }
-        Err(err) => {
-            error!("Error loading transactions: {:?}", err);
-            Err(err)
-        }
-    }
+    info!(
+        "Transactions count for bank {}: {}",
+        bank_id_for_loading,
+        transactions_result.len()
+    );
+    Ok(transactions_result)
 }
 
 /// Load the banks for a user from the database.
@@ -57,22 +49,14 @@ pub async fn load_banks(
         .filter(user_id.eq(cookie_user_id))
         .load::<Bank>(db)
         .await
-        .map_err(|_| show_error_page("Error loading banks!".to_string(), "".to_string()));
+        .map_err(|_| show_error_page("Error loading banks!".to_string(), "".to_string()))?;
 
-    match banks_result {
-        Ok(banks_result) => {
-            info!(
-                "Banks count for user {}: {}",
-                cookie_user_id,
-                banks_result.len()
-            );
-            Ok(banks_result)
-        }
-        Err(err) => {
-            error!("Error loading banks: {:?}", err);
-            Err(err)
-        }
-    }
+    info!(
+        "Banks count for user {}: {}",
+        cookie_user_id,
+        banks_result.len()
+    );
+    Ok(banks_result)
 }
 
 /// Load the CSV converters for a bank from the database.

@@ -43,6 +43,7 @@ pub async fn show_home_or_subview_with_data(
             },
         );
     }
+
     let current_bank = current_bank.unwrap();
 
     let plot_data = if generate_graph_data {
