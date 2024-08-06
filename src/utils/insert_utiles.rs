@@ -6,7 +6,6 @@ use rocket_dyn_templates::Template;
 
 use crate::database::{db_connector::DbConn, models::NewBank};
 use crate::schema::banks as banks_without_dsl;
-use crate::utils::appstate;
 
 use super::appstate::AppState;
 use super::display_utils::show_home_or_subview_with_data;

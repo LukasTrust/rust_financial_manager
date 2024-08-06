@@ -22,7 +22,7 @@ pub struct NewBank {
     pub link: Option<String>,
 }
 
-#[derive(Insertable, Debug)]
+#[derive(Insertable, Debug, Queryable)]
 #[diesel(table_name = transactions)]
 pub struct NewTransactions {
     pub bank_id: i32,

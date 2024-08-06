@@ -3,10 +3,11 @@ use rocket::local::asynchronous::{Client, LocalResponse};
 use rocket::{routes, Build, Rocket};
 use rocket_db_pools::Database;
 use rocket_dyn_templates::Template;
+use rust_financial_manager::utils::structs::FormUser;
 use urlencoding::encode;
 
 use rust_financial_manager::database::db_connector::DbConn;
-use rust_financial_manager::database::models::{FormUser, NewUser};
+use rust_financial_manager::database::models::NewUser;
 use rust_financial_manager::routes::delete_user::delete_user;
 use rust_financial_manager::routes::home::home;
 use rust_financial_manager::routes::login::{login_form, login_user};

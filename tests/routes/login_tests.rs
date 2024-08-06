@@ -2,7 +2,7 @@
 mod tests {
     use rocket::http::Status;
 
-    use rust_financial_manager::database::models::{FormUser, NewUser};
+    use rust_financial_manager::{database::models::NewUser, utils::structs::FormUser};
 
     use crate::test_help_functions::{test_client, user_login, user_register};
 

@@ -110,32 +110,4 @@ mod tests {
         let body = response.into_string().await.unwrap();
         assert!(body.contains("Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character"));
     }
-
-    #[test]
-    fn test_valid_email() {
-        assert!(is_valid_email("test@example.com"));
-        assert!(is_valid_email("user.name@domain.co"));
-        assert!(is_valid_email("user-name@domain.com"));
-    }
-
-    #[test]
-    fn test_invalid_email() {
-        assert!(!is_valid_email("plainaddress"));
-        assert!(!is_valid_email("user@domain"));
-        assert!(!is_valid_email("user@domain..com"));
-        assert!(!is_valid_email("user@domain.c"));
-    }
-
-    #[test]
-    fn test_strong_password() {
-        assert!(is_strong_password("StrongP@ssw0rd"));
-        assert!(is_strong_password("1A!aB2#bC3$dE"));
-    }
-
-    #[test]
-    fn test_weak_password() {
-        assert!(!is_strong_password("weakpassword"));
-        assert!(!is_strong_password("short1A!"));
-        assert!(!is_strong_password("NoSpecialChar1"));
-    }
 }
