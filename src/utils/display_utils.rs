@@ -25,26 +25,32 @@ pub async fn show_home_or_subview_with_data(
 
     let transactions = state.transactions.read().await.clone();
 
-    let current_bank = get_current_bank(cookie_user_id, state).await;
-
-    if current_bank.is_err() {
-        return Template::render(
-            "error_page",
-            context! {
-                error: "Error finding the current bank".to_string(),
-                message: "Please login again.".to_string(),
-            },
-        );
-    }
-
-    let current_bank = current_bank.unwrap();
+    let mut current_bank = None;
 
     let plot_data = if generate_graph_data {
         match generate_only_current_bank {
             true => {
+                let current_bank_result = get_current_bank(cookie_user_id, state).await;
+
+                if current_bank_result.is_err() {
+                    let error = "No bank selected. Please select a bank.".to_string();
+                    return Template::render(
+                        "home",
+                        context! {
+                            banks: banks,
+                            plot_data: "".to_string(),
+                            success: success_message.unwrap_or_default(),
+                            error: error,
+                        },
+                    );
+                }
+
+                let bank_of_user = current_bank_result.unwrap();
+                current_bank = Some(bank_of_user.clone());
+
                 info!("Generating balance graph data for current bank only.");
 
-                generate_balance_graph_data(&[current_bank.clone()], &transactions).await
+                generate_balance_graph_data(&[bank_of_user], &transactions).await
             }
             false => {
                 info!("Generating balance graph data for all banks.");
