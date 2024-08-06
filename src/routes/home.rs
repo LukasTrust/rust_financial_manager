@@ -8,11 +8,11 @@ use std::collections::HashMap;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::CSVConverter;
+use crate::utils::appstate::AppState;
 use crate::utils::display_utils::show_home_or_subview_with_data;
 use crate::utils::get_utils::get_user_id;
 use crate::utils::loading_utils::{load_banks, load_csv_converters, load_transactions};
-use crate::utils::set_utils::set_app_state;
-use crate::utils::structs::{AppState, Transaction};
+use crate::utils::structs::Transaction;
 
 /// Display the home page.
 /// The home page is the dashboard that displays the user's bank accounts and transactions.
@@ -48,15 +48,15 @@ pub async fn home(
         }
     }
 
-    set_app_state(
-        cookie_user_id,
-        state,
-        Some(banks_result.clone()),
-        Some(transactions_map.clone()),
-        Some(csv_converters_map),
-        None,
-    )
-    .await;
+    state
+        .set_app_state(
+            cookie_user_id,
+            Some(banks_result.clone()),
+            Some(transactions_map.clone()),
+            Some(csv_converters_map),
+            None,
+        )
+        .await;
 
     Ok(show_home_or_subview_with_data(
         cookie_user_id,

@@ -1,7 +1,7 @@
 use log::{error, info};
 use rocket::{http::CookieJar, response::Redirect, State};
 
-use super::structs::{AppState, Bank};
+use super::{appstate::AppState, structs::Bank};
 use crate::routes::error_page::show_error_page;
 
 /// Extract the user ID from the user ID cookie.
@@ -48,4 +48,14 @@ pub async fn get_current_bank(
             ))
         }
     }
+}
+
+pub async fn get_banks_of_user(cookie_user_id: i32, state: &State<AppState>) -> Vec<Bank> {
+    state
+        .banks
+        .read()
+        .await
+        .get(&cookie_user_id)
+        .cloned()
+        .unwrap_or_default()
 }

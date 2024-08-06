@@ -5,10 +5,9 @@ use rocket_dyn_templates::{context, Template};
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
-use super::{
-    get_utils::get_current_bank,
-    structs::{AppState, Bank, Transaction},
-};
+use super::appstate::AppState;
+use super::get_utils::{get_banks_of_user, get_current_bank};
+use super::structs::{Bank, Transaction};
 
 /// Display the home page or a subview with data.
 /// The view to show is passed as a parameter.
@@ -22,13 +21,7 @@ pub async fn show_home_or_subview_with_data(
     success_message: Option<String>,
     error_message: Option<String>,
 ) -> Template {
-    let banks = state
-        .banks
-        .read()
-        .await
-        .get(&cookie_user_id)
-        .cloned()
-        .unwrap_or_default();
+    let banks = get_banks_of_user(cookie_user_id, state).await;
 
     let transactions = state.transactions.read().await.clone();
 

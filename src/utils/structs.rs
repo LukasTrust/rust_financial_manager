@@ -1,19 +1,7 @@
 use chrono::NaiveDate;
 use diesel::prelude::*;
-use rocket::tokio::sync::RwLock;
 use rocket::{time::Date, FromForm};
 use serde::Serialize;
-use std::{collections::HashMap, sync::Arc};
-
-use crate::database::models::CSVConverter;
-
-#[derive(Debug, Clone)]
-pub struct AppState {
-    pub banks: Arc<RwLock<HashMap<i32, Vec<Bank>>>>,
-    pub transactions: Arc<RwLock<HashMap<i32, Vec<Transaction>>>>,
-    pub csv_convert: Arc<RwLock<HashMap<i32, CSVConverter>>>,
-    pub current_bank: Arc<RwLock<HashMap<i32, Bank>>>,
-}
 
 #[derive(FromForm)]
 pub struct FormUser {

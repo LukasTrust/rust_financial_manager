@@ -14,7 +14,7 @@ pub struct NewUser {
     pub password: String,
 }
 
-#[derive(Queryable, Insertable, Debug, Deserialize, Serialize)]
+#[derive(Queryable, Insertable, Debug, Deserialize, Serialize, Clone)]
 #[diesel(table_name = banks)]
 pub struct NewBank {
     pub user_id: i32,

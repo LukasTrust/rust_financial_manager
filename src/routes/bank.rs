@@ -14,11 +14,10 @@ use super::error_page::show_error_page;
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewTransactions};
 use crate::schema::transactions;
+use crate::utils::appstate::AppState;
 use crate::utils::display_utils::show_home_or_subview_with_data;
-use crate::utils::get_utils::{get_current_bank, get_user_id};
+use crate::utils::get_utils::{get_banks_of_user, get_current_bank, get_user_id};
 use crate::utils::loading_utils::load_transactions;
-use crate::utils::set_utils::set_app_state;
-use crate::utils::structs::AppState;
 
 #[get("/bank/<bank_id>")]
 pub async fn bank_view(
@@ -28,28 +27,15 @@ pub async fn bank_view(
 ) -> Result<Template, Box<Redirect>> {
     match get_user_id(cookies) {
         Ok(cookie_user_id) => {
-            let banks = state
-                .banks
-                .read()
-                .await
-                .clone()
-                .get(&cookie_user_id)
-                .cloned()
-                .unwrap_or_default();
-
+            let banks = get_banks_of_user(cookie_user_id, state).await;
             let bank = banks.iter().find(|&b| b.id == bank_id);
 
             match bank {
                 Some(new_current_bank) => {
-                    set_app_state(
-                        cookie_user_id,
-                        state,
-                        None,
-                        None,
-                        None,
-                        Some(new_current_bank.clone()),
-                    )
-                    .await;
+                    state
+                        .update_current_bank(cookie_user_id, new_current_bank.clone())
+                        .await;
+
                     return Ok(show_home_or_subview_with_data(
                         cookie_user_id,
                         state,
@@ -192,10 +178,7 @@ async fn extract_and_process_records<R: std::io::Read>(
             match j {
                 idx if idx == date_index => {
                     date_from_csv = NaiveDate::parse_from_str(value, "%d.%m.%Y").map_err(|e| {
-                        show_error_page(
-                            "Failed to pase date".to_string(),
-                            "Please try again".to_string(),
-                        )
+                        show_error_page("Failed to pase date".to_string(), format!("Error: {}", e))
                     })?;
                 }
                 idx if idx == counterparty_index => {
@@ -222,7 +205,12 @@ async fn extract_and_process_records<R: std::io::Read>(
                     amount_from_csv = processed_value
                         .replace(',', ".") // Convert comma to dot for parsing
                         .parse::<f64>()
-                        .map_err(|e| {})?;
+                        .map_err(|e| {
+                            show_error_page(
+                                "Failed to parse amount".to_string(),
+                                format!("Error: {}", e),
+                            )
+                        })?;
                 }
                 idx if idx == bank_current_balance_after_index => {
                     // Determine and handle the decimal separator
@@ -242,18 +230,13 @@ async fn extract_and_process_records<R: std::io::Read>(
                         }
                     };
 
-                    // Print out the value after processing
-                    println!(
-                        "Parsing bank current balance after from value: '{}'",
-                        processed_value
-                    );
                     bank_current_balance_after = processed_value
                         .replace(',', ".") // Convert comma to dot for parsing
                         .parse::<f64>()
                         .map_err(|e| {
-                            format!(
-                                "Failed to parse bank current balance after '{}': {}",
-                                processed_value, e
+                            show_error_page(
+                                "Failed to parse bank current balance after".to_string(),
+                                format!("Error: {}", e),
                             )
                         })?;
                 }
