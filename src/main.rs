@@ -54,14 +54,17 @@ fn rocket() -> _ {
                 logout,
                 dashboard,
                 settings,
-                // Bank
+                // Add bank
                 add_bank,
                 add_bank_form,
+                // Bank
                 bank_view,
+                // Update CSV
                 update_amount,
                 update_bank_balance_after,
                 update_counterparty,
                 update_date,
+                // Upload CSV
                 upload_csv,
                 // Error page
                 error_page

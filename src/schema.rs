@@ -56,4 +56,9 @@ diesel::joinable!(banks -> users (user_id));
 diesel::joinable!(csv_converters -> banks (csv_bank_id));
 diesel::joinable!(transactions -> banks (bank_id));
 
-diesel::allow_tables_to_appear_in_same_query!(banks, csv_converters, transactions, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    banks,
+    csv_converters,
+    transactions,
+    users,
+);

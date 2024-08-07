@@ -13,6 +13,10 @@ pub struct FormUser {
 pub struct FormBank {
     pub name: String,
     pub link: Option<String>,
+    pub counterparty: Option<String>,
+    pub amount: Option<String>,
+    pub bank_balance_after: Option<String>,
+    pub date: Option<String>,
 }
 
 #[derive(Debug, Queryable, Serialize, Clone)]

@@ -13,6 +13,8 @@ use crate::utils::get_utils::get_user_id;
 use crate::utils::insert_utiles::insert_bank;
 use crate::utils::structs::FormBank;
 
+use super::update_csv::update_csv;
+
 #[get("/add-bank")]
 pub async fn add_bank(
     cookies: &CookieJar<'_>,
@@ -47,5 +49,96 @@ pub async fn add_bank_form(
         link: bank_form.link.clone(),
     };
 
-    Ok(insert_bank(cookie_user_id, new_bank.clone(), state, &mut db).await)
+    let result = insert_bank(cookie_user_id, new_bank.clone(), state, &mut db).await;
+
+    let mut error = None;
+
+    match result {
+        Ok(bank_id) => {
+            if error.is_none() && bank_form.counterparty.is_some() {
+                let counterparty_result = update_csv(
+                    cookie_user_id,
+                    state,
+                    db.as_mut(),
+                    |converter| {
+                        converter.counterparty_conv = bank_form.counterparty.clone();
+                    },
+                    bank_id,
+                )
+                .await;
+
+                if counterparty_result.is_err() {
+                    error = Some("Error updating counterparty".to_string());
+                }
+            }
+
+            if error.is_none() && bank_form.amount.is_some() {
+                let amount_result = update_csv(
+                    cookie_user_id,
+                    state,
+                    db.as_mut(),
+                    |converter| {
+                        converter.amount_conv = bank_form.amount.clone();
+                    },
+                    bank_id,
+                )
+                .await;
+
+                if amount_result.is_err() {
+                    error = Some("Error updating amount".to_string());
+                }
+            }
+
+            if error.is_none() && bank_form.bank_balance_after.is_some() {
+                let bank_balance_after_result = update_csv(
+                    cookie_user_id,
+                    state,
+                    db.as_mut(),
+                    |converter| {
+                        converter.amount_conv = bank_form.bank_balance_after.clone();
+                    },
+                    bank_id,
+                )
+                .await;
+
+                if bank_balance_after_result.is_err() {
+                    error = Some("Error updating bank balance after".to_string());
+                }
+            }
+
+            if error.is_none() && bank_form.date.is_some() {
+                let date_result = update_csv(
+                    cookie_user_id,
+                    state,
+                    db.as_mut(),
+                    |converter| {
+                        converter.amount_conv = bank_form.date.clone();
+                    },
+                    bank_id,
+                )
+                .await;
+
+                if date_result.is_err() {
+                    error = Some("Error updating date".to_string());
+                }
+            }
+        }
+        Err(e) => error = Some(e),
+    };
+
+    let mut succes = None;
+    if error.is_none() {
+        succes = Some(format!("Bank {} added", new_bank.name));
+    }
+
+    Ok(show_home_or_subview_with_data(
+        cookie_user_id,
+        state,
+        "add_bank".to_string(),
+        error.is_none(),
+        error.is_some(),
+        succes,
+        error,
+    )
+    .await)
 }

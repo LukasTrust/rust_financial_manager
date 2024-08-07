@@ -42,3 +42,13 @@ pub struct CSVConverter {
     pub amount_conv: Option<String>,
     pub bank_current_balance_after_conv: Option<String>,
 }
+
+#[derive(Insertable, Debug)]
+#[diesel(table_name = csv_converters)]
+pub struct NewCSVConverter {
+    pub csv_bank_id: i32,
+    pub date_conv: Option<String>,
+    pub counterparty_conv: Option<String>,
+    pub amount_conv: Option<String>,
+    pub bank_current_balance_after_conv: Option<String>,
+}

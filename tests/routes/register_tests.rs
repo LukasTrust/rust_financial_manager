@@ -3,7 +3,6 @@ mod tests {
     use rocket::http::Status;
 
     use rust_financial_manager::database::models::NewUser;
-    use rust_financial_manager::routes::register::{is_strong_password, is_valid_email};
 
     use crate::test_help_functions::{test_client, user_register};
 
