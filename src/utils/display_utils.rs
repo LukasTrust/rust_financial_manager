@@ -91,35 +91,66 @@ pub async fn generate_balance_graph_data(
             let mut plot_data = vec![];
 
             if let Some(bank_transactions) = transactions.get(&bank.id) {
-                let mut data: BTreeMap<NaiveDate, f64> = BTreeMap::new();
+                let mut data: BTreeMap<NaiveDate, (f64, String, f64)> = BTreeMap::new();
 
                 // Process transactions in reverse chronological order
                 for transaction in bank_transactions.iter().rev() {
                     data.entry(transaction.date)
-                        .and_modify(|e| *e = transaction.bank_current_balance_after)
-                        .or_insert(transaction.bank_current_balance_after);
+                        .and_modify(|e| {
+                            *e = (
+                                transaction.bank_current_balance_after,
+                                transaction.counterparty.clone(),
+                                transaction.amount,
+                            )
+                        })
+                        .or_insert((
+                            transaction.bank_current_balance_after,
+                            transaction.counterparty.clone(),
+                            transaction.amount,
+                        ));
                 }
 
                 // Ensure we plot the initial balance at the start of 2023
                 if let Some(start_date) = NaiveDate::from_ymd_opt(2023, 1, 1) {
-                    if let Some(&initial_balance) = data.values().next() {
-                        data.entry(start_date).or_insert(initial_balance);
+                    if let Some(&(initial_balance, ref initial_counterparty, initial_amount)) =
+                        data.values().next()
+                    {
+                        let initial_counterparty = initial_counterparty.clone();
+                        data.entry(start_date).or_insert((
+                            initial_balance,
+                            initial_counterparty,
+                            initial_amount,
+                        ));
                     }
                 }
 
                 // Prepare series data for plotting
-                let series_data: Vec<(String, f64)> = data
+                let series_data: Vec<(String, f64, String)> = data
                     .into_iter()
-                    .map(|(date, balance)| (date.to_string(), balance))
+                    .map(|(date, (balance, counterparty, amount))| {
+                        (
+                            date.to_string(),
+                            balance,
+                            format!(
+                                "{}<br>Date:{}<br>Amount: {} €<br>New balance: {} €",
+                                counterparty,
+                                date.format("%d.%m.%Y").to_string(),
+                                amount,
+                                balance
+                            ),
+                        )
+                    })
                     .collect();
 
                 // Add plot data for the bank
                 plot_data.push(json!({
                     "name": bank.name,
-                    "x": series_data.iter().map(|(date, _)| date.clone()).collect::<Vec<String>>(),
-                    "y": series_data.iter().map(|(_, balance)| *balance).collect::<Vec<f64>>(),
+                    "x": series_data.iter().map(|(date, _, _)| date.clone()).collect::<Vec<String>>(),
+                    "y": series_data.iter().map(|(_, balance, _)| *balance).collect::<Vec<f64>>(),
+                    "text": series_data.iter().map(|(_, _, text)| text.clone()).collect::<Vec<String>>(),
                     "type": "scatter",
-                    "mode": "lines+markers"
+                    "mode": "lines+markers",
+                    "hoverinfo": "text"
                 }));
             }
 
@@ -136,8 +167,6 @@ pub async fn generate_balance_graph_data(
             plot_data.extend(data);
         }
     }
-
-    info!("Plot data generated: {:?}", plot_data);
 
     // Return the plot data as JSON
     json!(plot_data)

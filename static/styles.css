@@ -162,6 +162,12 @@ header {
 }
 
 
+.balance-graph {
+    margin-left: -40px;
+    margin-right: 0px;
+    padding-right: 0px;
+}
+
 .header-container {
     display: flex;
     justify-content: space-between;
@@ -242,6 +248,8 @@ h1 {
 }
 
 .form-panel {
+    border-left: 1px solid #000000;
+    padding: 20px;
     flex: 1;
     max-width: 15%;
     display: flex;

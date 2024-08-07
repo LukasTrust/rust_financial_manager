@@ -7,14 +7,30 @@
 <div id="balance_graph"></div>
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        var plotData = {{ plot_data | safe }};
-        Plotly.newPlot('balance_graph', plotData, {
-            title: 'Bank Account Balances',
-            xaxis: { title: 'Date' },
-            yaxis: { title: 'Balance' }
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var plotData = {{ plot_data | safe }};
+            var layout = {
+                title: 'Bank Account Balances',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Balance' },
+                hovermode: 'closest',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+            };
+
+            Plotly.newPlot('balance_graph', plotData, layout);
+
+            document.getElementById('update_range').addEventListener('click', function() {
+                var startDate = document.getElementById('start_date').value;
+                var endDate = document.getElementById('end_date').value;
+
+                var update = {
+                    'xaxis.range': [startDate, endDate]
+                };
+                
+                Plotly.relayout('balance_graph', update);
+            });
         });
-    });
-</script>
+    </script>
 {% endblock %}

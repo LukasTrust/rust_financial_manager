@@ -3,7 +3,7 @@
 {% block title %}Bank Dashboard{% endblock %}
 
 {% block main_content %}
-        <h1>{{ bank.name }}</h1>
+    <h1>{{ bank.name }}</h1>
     <div class="header-messages">
         {% if error %}
             <p class="error">{{ error }}</p>
@@ -13,56 +13,72 @@
         {% endif %}
     </div>
 
-<div class="bank-container">
-    <div id="balance_graph" class="balance-graph"></div>
+    <div class="bank-container">
+        <div id="balance_graph" class="balance-graph"></div>
 
-    <!-- Form panel container -->
-    <div id="form_panel" class="form-panel">
-        <form action="/upload_csv" method="post" enctype="multipart/form-data" >
-        <input type="file" name="file" accept=".csv" required />
-        <button type="submit" >Upload</button>
-        </form>
-        <h2>Update CSV Conversion</h2>
+        <!-- Form panel container -->
+        <div id="form_panel" class="form-panel">
+            <form action="/upload_csv" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" accept=".csv" required />
+                <button type="submit">Upload</button>
+            </form>
+            <h2>Update CSV Conversion</h2>
 
-        <!-- Form for counterparty -->
-        <form action="/update_counterparty" method="post" class="form-group">
-            <label for="counterparty">Counterparty:</label>
-            <input type="text" id="counterparty" name="counterparty" required >
-            <button type="submit" >Change</button>
-        </form>
+            <!-- Form for counterparty -->
+            <form action="/update_counterparty" method="post" class="form-group">
+                <label for="counterparty">Counterparty:</label>
+                <input type="text" id="counterparty" name="counterparty" required>
+                <button type="submit">Change</button>
+            </form>
 
-        <!-- Form for amount -->
-        <form action="/update_amount" method="post" class="form-group">
-            <label for="amount">Amount:</label>
-            <input type="text" id="amount" name="amount" required >
-            <button type="submit" >Change</button>
-        </form>
+            <!-- Form for amount -->
+            <form action="/update_amount" method="post" class="form-group">
+                <label for="amount">Amount:</label>
+                <input type="text" id="amount" name="amount" required>
+                <button type="submit">Change</button>
+            </form>
 
-        <!-- Form for balance_after_update -->
-        <form action="/update_bank_balance_after" method="post" class="form-group">
-            <label for="bank_balance_after">Bank balance after trancaction:</label>
-            <input type="text" id="bank_balance_after" name="bank_balance_after" required>
-            <button type="submit">Change</button>
-        </form>
+            <!-- Form for balance_after_update -->
+            <form action="/update_bank_balance_after" method="post" class="form-group">
+                <label for="bank_balance_after">Bank balance after transaction:</label>
+                <input type="text" id="bank_balance_after" name="bank_balance_after" required>
+                <button type="submit">Change</button>
+            </form>
 
-        <!-- Form for date -->
-        <form action="/update_date" method="post" class="form-group">
-            <label for="date">Date:</label>
-            <input type="text" id="date" name="date" required>
-            <button type="submit">Change</button>
-        </form>
+            <!-- Form for date -->
+            <form action="/update_date" method="post" class="form-group">
+                <label for="date">Date:</label>
+                <input type="text" id="date" name="date" required>
+                <button type="submit">Change</button>
+            </form>
+        </div>
     </div>
-</div>
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        var plotData = {{ plot_data | safe }};
-        Plotly.newPlot('balance_graph', plotData, {
-            title: 'Bank Account Balances',
-            xaxis: { title: 'Date' },
-            yaxis: { title: 'Balance' }
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var plotData = {{ plot_data | safe }};
+            var layout = {
+                title: 'Bank Account Balances',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Balance' },
+                hovermode: 'closest',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+            };
+
+            Plotly.newPlot('balance_graph', plotData, layout);
+
+            document.getElementById('update_range').addEventListener('click', function() {
+                var startDate = document.getElementById('start_date').value;
+                var endDate = document.getElementById('end_date').value;
+
+                var update = {
+                    'xaxis.range': [startDate, endDate]
+                };
+                
+                Plotly.relayout('balance_graph', update);
+            });
         });
-    });
-</script>
+    </script>
 {% endblock %}
