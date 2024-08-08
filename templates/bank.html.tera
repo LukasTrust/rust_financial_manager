@@ -18,6 +18,12 @@
 
         <!-- Form panel container -->
         <div id="form_panel" class="form-panel">
+            <!-- Date Range Picker -->
+            <div class="date-picker-container">
+                <label for="dateRange">Select Date Range:</label>
+                <input type="text" id="dateRange" placeholder="Select Date Range">
+            </div>
+
             <form action="/upload_csv" method="post" enctype="multipart/form-data">
                 <input type="file" name="file" accept=".csv" required />
                 <button type="submit">Upload</button>
@@ -54,31 +60,14 @@
         </div>
     </div>
 
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Include Flatpickr CSS and JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>    
+
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            var plotData = {{ plot_data | safe }};
-            var layout = {
-                title: 'Bank Account Balances',
-                xaxis: { title: 'Date' },
-                yaxis: { title: 'Balance' },
-                hovermode: 'closest',
-                plot_bgcolor: 'rgba(0,0,0,0)',
-                paper_bgcolor: 'rgba(0,0,0,0)',
-            };
-
-            Plotly.newPlot('balance_graph', plotData, layout);
-
-            document.getElementById('update_range').addEventListener('click', function() {
-                var startDate = document.getElementById('start_date').value;
-                var endDate = document.getElementById('end_date').value;
-
-                var update = {
-                    'xaxis.range': [startDate, endDate]
-                };
-                
-                Plotly.relayout('balance_graph', update);
-            });
-        });
+        // Pass plotData to the global scope for script.js to access
+        window.plotData = {{ plot_data | safe }};
     </script>
+    <script src="/static/script.js"></script> <!-- Include your external script file -->
 {% endblock %}

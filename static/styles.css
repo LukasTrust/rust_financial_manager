@@ -255,3 +255,21 @@ h1 {
     display: flex;
     flex-direction: column;
 }
+
+.date-picker-container {
+    margin-bottom: 20px;
+    padding: 10px;
+    background: transparent;
+}
+
+.date-picker-container label {
+    display: block;
+    margin-bottom: 5px;
+    background: transparent;
+}
+
+.date-picker-container input {
+    padding: 8px;
+    background: white;
+
+}
