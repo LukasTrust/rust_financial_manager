@@ -1,9 +1,9 @@
 CREATE TABLE csv_converters (
     id SERIAL PRIMARY KEY,
     csv_bank_id INT NOT NULL,
-    date_conv VARCHAR(200),
-    counterparty_conv VARCHAR(200),
-    amount_conv VARCHAR(200),
-    bank_current_balance_after_conv VARCHAR(200),
+    date_column INT,
+    counterparty_column INT,
+    amount_column INT,
+    bank_balance_after_column INT,
     FOREIGN KEY (csv_bank_id) REFERENCES banks(id)
 );

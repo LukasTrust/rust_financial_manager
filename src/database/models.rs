@@ -29,26 +29,26 @@ pub struct NewTransactions {
     pub date: NaiveDate,
     pub counterparty: String,
     pub amount: f64,
-    pub bank_current_balance_after: f64,
+    pub bank_balance_after: f64,
 }
 
-#[derive(Queryable, Insertable, Debug, Clone, AsChangeset)]
+#[derive(Queryable, Insertable, Debug, Clone, AsChangeset, Copy)]
 #[diesel(table_name = csv_converters)]
 pub struct CSVConverter {
     pub id: i32,
     pub csv_bank_id: i32,
-    pub date_conv: Option<String>,
-    pub counterparty_conv: Option<String>,
-    pub amount_conv: Option<String>,
-    pub bank_current_balance_after_conv: Option<String>,
+    pub date_column: Option<i32>,
+    pub counterparty_column: Option<i32>,
+    pub amount_column: Option<i32>,
+    pub bank_balance_after_column: Option<i32>,
 }
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = csv_converters)]
 pub struct NewCSVConverter {
     pub csv_bank_id: i32,
-    pub date_conv: Option<String>,
-    pub counterparty_conv: Option<String>,
-    pub amount_conv: Option<String>,
-    pub bank_current_balance_after_conv: Option<String>,
+    pub date_column: Option<i32>,
+    pub counterparty_column: Option<i32>,
+    pub amount_column: Option<i32>,
+    pub bank_balance_after_column: Option<i32>,
 }

@@ -59,3 +59,26 @@ pub async fn get_banks_of_user(cookie_user_id: i32, state: &State<AppState>) -> 
         .cloned()
         .unwrap_or_default()
 }
+
+pub async fn get_csv_converter(
+    current_bank_id: i32,
+    state: &State<AppState>,
+) -> Result<crate::database::models::CSVConverter, Redirect> {
+    let csv_converters = state.csv_convert.read().await;
+
+    let csv_converter = csv_converters.get(&current_bank_id);
+
+    match csv_converter {
+        Some(csv_converter) => {
+            info!("CSV converter found: {:?}", csv_converter.id);
+            Ok(csv_converter.clone())
+        }
+        None => {
+            error!("No CSV converter found.");
+            Err(show_error_page(
+                "Error validating the login!".to_string(),
+                "Please login again.".to_string(),
+            ))
+        }
+    }
+}

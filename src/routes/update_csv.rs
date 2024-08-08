@@ -16,22 +16,22 @@ use crate::utils::get_utils::{get_current_bank, get_user_id};
 
 #[derive(FromForm)]
 pub struct DateForm {
-    date: String,
+    date_column: i32,
 }
 
 #[derive(FromForm)]
 pub struct CounterpartyForm {
-    counterparty: String,
+    counterparty_column: i32,
 }
 
 #[derive(FromForm)]
 pub struct AmountForm {
-    amount: String,
+    amount_column: i32,
 }
 
 #[derive(FromForm)]
 pub struct BankBalanceAfterTransactionForm {
-    bank_balance_after: String,
+    bank_balance_after_column: i32,
 }
 
 #[post("/update_bank_balance_after", data = "<form>")]
@@ -44,7 +44,7 @@ pub async fn update_bank_balance_after(
     let cookie_user_id = get_user_id(cookies)?;
 
     find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
-        converter.bank_current_balance_after_conv = Some(form.bank_balance_after.clone());
+        converter.bank_balance_after_column = Some(form.bank_balance_after_column.clone());
     })
     .await
 }
@@ -59,7 +59,7 @@ pub async fn update_date(
     let cookie_user_id = get_user_id(cookies)?;
 
     find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
-        converter.date_conv = Some(form.date.clone());
+        converter.date_column = Some(form.date_column.clone());
     })
     .await
 }
@@ -74,7 +74,7 @@ pub async fn update_counterparty(
     let cookie_user_id = get_user_id(cookies)?;
 
     find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
-        converter.counterparty_conv = Some(form.counterparty.clone());
+        converter.counterparty_column = Some(form.counterparty_column.clone());
     })
     .await
 }
@@ -89,7 +89,7 @@ pub async fn update_amount(
     let cookie_user_id = get_user_id(cookies)?;
 
     find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
-        converter.amount_conv = Some(form.amount.clone());
+        converter.amount_column = Some(form.amount_column.clone());
     })
     .await
 }
@@ -153,20 +153,20 @@ where
         let mut new_converter = CSVConverter {
             id: 0,
             csv_bank_id: current_bank_id,
-            date_conv: None,
-            counterparty_conv: None,
-            amount_conv: None,
-            bank_current_balance_after_conv: None,
+            date_column: None,
+            counterparty_column: None,
+            amount_column: None,
+            bank_balance_after_column: None,
         };
 
         update_field(&mut new_converter);
 
         let new_converter = NewCSVConverter {
             csv_bank_id: new_converter.csv_bank_id,
-            date_conv: new_converter.date_conv,
-            counterparty_conv: new_converter.counterparty_conv,
-            amount_conv: new_converter.amount_conv,
-            bank_current_balance_after_conv: new_converter.bank_current_balance_after_conv,
+            date_column: new_converter.date_column,
+            counterparty_column: new_converter.counterparty_column,
+            amount_column: new_converter.amount_column,
+            bank_balance_after_column: new_converter.bank_balance_after_column,
         };
 
         let result = diesel::insert_into(csv_converters::table)

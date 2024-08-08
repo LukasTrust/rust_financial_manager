@@ -32,29 +32,29 @@
 
             <!-- Form for counterparty -->
             <form action="/update_counterparty" method="post" class="form-group">
-                <label for="counterparty">Counterparty:</label>
-                <input type="text" id="counterparty" name="counterparty" required>
+                <label for="counterparty_column">Counterparty column (Optional)</label>
+                <input type="number" id="counterparty_column" name="counterparty_column">
                 <button type="submit">Change</button>
             </form>
 
             <!-- Form for amount -->
             <form action="/update_amount" method="post" class="form-group">
-                <label for="amount">Amount:</label>
-                <input type="text" id="amount" name="amount" required>
+                <label for="amount_column">Amount column (Optional)</label>
+                <input type="number" id="amount_column" name="amount_column">
                 <button type="submit">Change</button>
             </form>
 
             <!-- Form for balance_after_update -->
             <form action="/update_bank_balance_after" method="post" class="form-group">
-                <label for="bank_balance_after">Bank balance after transaction:</label>
-                <input type="text" id="bank_balance_after" name="bank_balance_after" required>
+                <label for="bank_balance_after_column">Bank balance after transaction column (Optional)</label>
+                <input type="number" id="bank_balance_after_column" name="bank_balance_after_column">
                 <button type="submit">Change</button>
             </form>
 
             <!-- Form for date -->
             <form action="/update_date" method="post" class="form-group">
-                <label for="date">Date:</label>
-                <input type="text" id="date" name="date" required>
+                <label for="date_column">Date column (Optional)</label>
+                <input type="number" id="date_column" name="date_column">
                 <button type="submit">Change</button>
             </form>
         </div>

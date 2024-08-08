@@ -13,10 +13,10 @@ pub struct FormUser {
 pub struct FormBank {
     pub name: String,
     pub link: Option<String>,
-    pub counterparty: Option<String>,
-    pub amount: Option<String>,
-    pub bank_balance_after: Option<String>,
-    pub date: Option<String>,
+    pub date_column: Option<i32>,
+    pub counterparty_column: Option<i32>,
+    pub amount_column: Option<i32>,
+    pub bank_balance_after_column: Option<i32>,
 }
 
 #[derive(Debug, Queryable, Serialize, Clone)]
@@ -53,5 +53,5 @@ pub struct Transaction {
     pub date: NaiveDate,
     pub counterparty: String,
     pub amount: f64,
-    pub bank_current_balance_after: f64,
+    pub bank_balance_after: f64,
 }

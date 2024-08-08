@@ -55,13 +55,13 @@ pub async fn add_bank_form(
 
     match result {
         Ok(bank_id) => {
-            if error.is_none() && bank_form.counterparty.is_some() {
+            if error.is_none() && bank_form.counterparty_column.is_some() {
                 let counterparty_result = update_csv(
                     cookie_user_id,
                     state,
                     db.as_mut(),
                     |converter| {
-                        converter.counterparty_conv = bank_form.counterparty.clone();
+                        converter.counterparty_column = bank_form.counterparty_column.clone();
                     },
                     bank_id,
                 )
@@ -72,13 +72,13 @@ pub async fn add_bank_form(
                 }
             }
 
-            if error.is_none() && bank_form.amount.is_some() {
+            if error.is_none() && bank_form.amount_column.is_some() {
                 let amount_result = update_csv(
                     cookie_user_id,
                     state,
                     db.as_mut(),
                     |converter| {
-                        converter.amount_conv = bank_form.amount.clone();
+                        converter.amount_column = bank_form.amount_column.clone();
                     },
                     bank_id,
                 )
@@ -89,13 +89,14 @@ pub async fn add_bank_form(
                 }
             }
 
-            if error.is_none() && bank_form.bank_balance_after.is_some() {
+            if error.is_none() && bank_form.bank_balance_after_column.is_some() {
                 let bank_balance_after_result = update_csv(
                     cookie_user_id,
                     state,
                     db.as_mut(),
                     |converter| {
-                        converter.amount_conv = bank_form.bank_balance_after.clone();
+                        converter.bank_balance_after_column =
+                            bank_form.bank_balance_after_column.clone();
                     },
                     bank_id,
                 )
@@ -106,13 +107,13 @@ pub async fn add_bank_form(
                 }
             }
 
-            if error.is_none() && bank_form.date.is_some() {
+            if error.is_none() && bank_form.date_column.is_some() {
                 let date_result = update_csv(
                     cookie_user_id,
                     state,
                     db.as_mut(),
                     |converter| {
-                        converter.amount_conv = bank_form.date.clone();
+                        converter.date_column = bank_form.date_column.clone();
                     },
                     bank_id,
                 )

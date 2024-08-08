@@ -98,13 +98,13 @@ pub async fn generate_balance_graph_data(
                     data.entry(transaction.date)
                         .and_modify(|e| {
                             *e = (
-                                transaction.bank_current_balance_after,
+                                transaction.bank_balance_after,
                                 transaction.counterparty.clone(),
                                 transaction.amount,
                             )
                         })
                         .or_insert((
-                            transaction.bank_current_balance_after,
+                            transaction.bank_balance_after,
                             transaction.counterparty.clone(),
                             transaction.amount,
                         ));
