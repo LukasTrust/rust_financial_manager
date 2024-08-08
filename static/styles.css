@@ -59,6 +59,7 @@ body {
     width: 100%;
     max-width: 400px;
     box-sizing: border-box;
+    display: none;
 }
 
 .success {
@@ -72,6 +73,7 @@ body {
     width: 100%;
     max-width: 400px;
     box-sizing: border-box;
+    display: none;
 }
 
 label {

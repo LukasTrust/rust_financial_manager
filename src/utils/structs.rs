@@ -80,3 +80,13 @@ impl Default for PerformanceData {
         }
     }
 }
+
+#[derive(Serialize)]
+pub struct SuccessResponse {
+    pub success: String,
+}
+
+#[derive(Serialize)]
+pub struct ErrorResponse {
+    pub error: String,
+}

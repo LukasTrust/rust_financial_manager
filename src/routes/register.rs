@@ -3,8 +3,8 @@ use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use log::{error, info};
 use regex::Regex;
 use rocket::form::Form;
-use rocket::response::Redirect;
-use rocket::{get, post, uri};
+use rocket::serde::json::Json;
+use rocket::{get, post};
 use rocket_db_pools::diesel::prelude::RunQueryDsl;
 use rocket_db_pools::{diesel, Connection};
 use rocket_dyn_templates::{context, Template};
@@ -12,6 +12,7 @@ use rocket_dyn_templates::{context, Template};
 use crate::database::db_connector::DbConn;
 use crate::database::models::NewUser;
 use crate::schema::users;
+use crate::utils::structs::{ErrorResponse, SuccessResponse};
 
 /// Display the login form after a successful registration.
 /// The `succes` query parameter is used to display a success message.
@@ -40,34 +41,25 @@ pub fn register_form() -> Template {
 pub async fn register_user(
     mut db: Connection<DbConn>,
     user_form: Form<NewUser>,
-) -> Result<Redirect, Template> {
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     if !is_valid_email(&user_form.email) {
-        error!("Invalid email format.");
-        return Err(Template::render(
-            "register",
-            context! { error: "Invalid email format. Please use a valid email." },
-        ));
+        return Err(Json(ErrorResponse {
+            error: "Invalid email format. Please use a valid email.".into(),
+        }));
     }
 
     if !is_strong_password(&user_form.password) {
-        error!("Password not strong enough.");
-        return Err(Template::render(
-            "register",
-            context! { error: "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character" },
-        ));
+        return Err(Json(ErrorResponse {
+            error: "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character".into(),
+        }));
     }
 
     let hashed_password = match hash(user_form.password.clone(), DEFAULT_COST) {
-        Ok(h) => {
-            info!("Password hashed.");
-            h
-        }
-        Err(err) => {
-            error!("Failed to hash password: {}", err);
-            return Err(Template::render(
-                "register",
-                context! { error: format!("Internal server error. Please try again later.") },
-            ));
+        Ok(h) => h,
+        Err(_) => {
+            return Err(Json(ErrorResponse {
+                error: "Internal server error. Please try again later.".into(),
+            }));
         }
     };
 
@@ -78,39 +70,25 @@ pub async fn register_user(
         password: hashed_password,
     };
 
-    info!("Registering new user with email: {}", new_user.email);
-
     let result = diesel::insert_into(users::table)
         .values(&new_user)
         .execute(&mut db)
         .await;
 
     match result {
-        Ok(_) => {
-            info!(
-                "Registration successful for user with email: {}",
-                new_user.email
-            );
-
-            Ok(Redirect::to(uri!(login_form_from_register(
-                "Registration successful. Please log in."
-            ))))
-        }
+        Ok(_) => Ok(Json(SuccessResponse {
+            success: "Registration successful. Please log in.".into(),
+        })),
         Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
-            error!("Email already exists.");
-
-            Err(Template::render(
-                "register",
-                context! { error: "Email already exists. Please use a different email." },
-            ))
+            Err(Json(ErrorResponse {
+                error: "Email already exists. Please use a different email.".into(),
+            }))
         }
-        Err(err) => {
-            error!("Registration failed: {}", err);
-
-            Err(Template::render(
-                "register",
-                context! { error: "Internal server error. Please try again later." },
-            ))
+        Err(_) => {
+            error!("Registration failed, database error.");
+            Err(Json(ErrorResponse {
+                error: "Internal server error. Please try again later.".into(),
+            }))
         }
     }
 }
