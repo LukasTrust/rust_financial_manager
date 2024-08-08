@@ -36,7 +36,8 @@ impl AppState {
         }
 
         if let Some(current_bank) = new_current_bank {
-            self.update_current_bank(cookie_user_id, current_bank).await;
+            self.update_current_bank(cookie_user_id, Some(current_bank))
+                .await;
         }
     }
 
@@ -104,18 +105,32 @@ impl AppState {
         );
     }
 
-    pub async fn update_current_bank(&self, cookie_user_id: i32, current_bank: Bank) {
+    pub async fn update_current_bank(&self, cookie_user_id: i32, current_bank: Option<Bank>) {
         let mut current_bank_state = self.current_bank.write().await;
 
         if let Some(bank_of_user) = current_bank_state.get(&cookie_user_id) {
-            info!("Current bank found: {:?}", bank_of_user);
-            if bank_of_user.id != current_bank.id {
-                current_bank_state.insert(cookie_user_id, current_bank.clone());
-                info!("Current bank updated: {:?}", current_bank);
+            match current_bank {
+                Some(bank) => {
+                    if bank_of_user.id != bank.id {
+                        current_bank_state.insert(cookie_user_id, bank.clone());
+                        info!("Current bank updated: {:?}", bank);
+                    }
+                }
+                None => {
+                    current_bank_state.remove(&cookie_user_id);
+                    info!("Current bank removed");
+                }
             }
         } else {
-            current_bank_state.insert(cookie_user_id, current_bank.clone());
-            info!("Current bank set for the first time: {:?}", current_bank);
+            match current_bank {
+                Some(bank) => {
+                    current_bank_state.insert(cookie_user_id, bank.clone());
+                    info!("Current bank set for the first time: {:?}", bank);
+                }
+                None => {
+                    info!("Current bank not set");
+                }
+            }
         }
     }
 }

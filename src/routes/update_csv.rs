@@ -11,8 +11,10 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewCSVConverter};
 use crate::schema::csv_converters;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::show_home_or_subview_with_data;
+use crate::utils::display_utils::show_base_or_subview_with_data;
 use crate::utils::get_utils::{get_current_bank, get_user_id};
+
+use super::error_page::show_error_page;
 
 #[derive(FromForm)]
 pub struct DateForm {
@@ -103,30 +105,41 @@ async fn find_bank_and_update<F>(
 where
     F: Fn(&mut CSVConverter),
 {
-    let current_bank_id = get_current_bank(cookie_user_id, state).await?.id;
+    let current_bank = get_current_bank(cookie_user_id, state).await;
+
+    if let Err(error) = current_bank {
+        return Err(show_error_page(
+            "Error updating CSV converter".to_string(),
+            error,
+        ));
+    }
+
+    let current_bank_id = current_bank.unwrap().id;
 
     let result = update_csv(state, db, update_field, current_bank_id).await;
 
     match result {
-        Ok(success) => Ok(show_home_or_subview_with_data(
+        Ok(success) => Ok(show_base_or_subview_with_data(
             cookie_user_id,
             state,
-            "home".to_string(),
+            "base".to_string(),
             false,
             false,
             Some(success),
             None,
+            None,
         )
         .await),
         Err(error) => Ok({
-            show_home_or_subview_with_data(
+            show_base_or_subview_with_data(
                 cookie_user_id,
                 state,
-                "home".to_string(),
+                "base".to_string(),
                 false,
                 false,
                 None,
                 Some(error),
+                None,
             )
             .await
         }),

@@ -22,7 +22,7 @@ pub fn login_form() -> Template {
 
 /// Login a user.
 /// The user information is collected from the login form and compared with the stored information in the database.
-/// If the login is successful, the user is redirected to the home page.
+/// If the login is successful, the user is redirected to the base page.
 /// If the email or password is incorrect, an error message is displayed.
 /// If there is an internal server error, an error message is displayed.
 #[post("/login", data = "<user_form>")]
@@ -47,7 +47,7 @@ pub async fn login_user(
             Ok(true) => {
                 info!("Login successful for user with email: {}", email_of_user);
                 cookies.add_private(Cookie::new("user_id", user_id.to_string()));
-                Ok(Redirect::to("/home"))
+                Ok(Redirect::to("/base"))
             }
             Ok(false) => {
                 info!(

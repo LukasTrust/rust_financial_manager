@@ -9,17 +9,17 @@ use std::collections::HashMap;
 use crate::database::db_connector::DbConn;
 use crate::database::models::CSVConverter;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::show_home_or_subview_with_data;
+use crate::utils::display_utils::show_base_or_subview_with_data;
 use crate::utils::get_utils::get_user_id;
 use crate::utils::loading_utils::{load_banks, load_csv_converters, load_transactions};
 use crate::utils::structs::Transaction;
 
-/// Display the home page.
-/// The home page is the dashboard that displays the user's bank accounts and transactions.
+/// Display the base page.
+/// The base page is the dashboard that displays the user's bank accounts and transactions.
 /// The user is redirected to the login page if they are not logged in.
 /// The user's bank accounts and transactions are loaded from the database and displayed on the dashboard.
-#[get("/home")]
-pub async fn home(
+#[get("/base")]
+pub async fn base(
     mut db: Connection<DbConn>,
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
@@ -58,12 +58,13 @@ pub async fn home(
         )
         .await;
 
-    Ok(show_home_or_subview_with_data(
+    Ok(show_base_or_subview_with_data(
         cookie_user_id,
         state,
         "dashboard".to_string(),
         true,
         false,
+        None,
         None,
         None,
     )
@@ -80,12 +81,15 @@ pub async fn dashboard(
 ) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
-    Ok(show_home_or_subview_with_data(
+    state.update_current_bank(cookie_user_id, None).await;
+
+    Ok(show_base_or_subview_with_data(
         cookie_user_id,
         state,
         "dashboard".to_string(),
         true,
         false,
+        None,
         None,
         None,
     )
@@ -102,12 +106,13 @@ pub async fn settings(
 ) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
-    Ok(show_home_or_subview_with_data(
+    Ok(show_base_or_subview_with_data(
         cookie_user_id,
         state,
         "settings".to_string(),
         false,
         false,
+        None,
         None,
         None,
     )

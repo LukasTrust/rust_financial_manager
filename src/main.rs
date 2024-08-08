@@ -13,9 +13,9 @@ use std::sync::Arc;
 use database::db_connector::DbConn;
 use routes::add_bank::{add_bank, add_bank_form};
 use routes::bank::bank_view;
+use routes::base::{base, dashboard, logout, settings};
 use routes::error_page::error_page;
 use routes::error_page::not_found;
-use routes::home::{dashboard, home, logout, settings};
 use routes::login::{login_form, login_user};
 use routes::register::{login_form_from_register, register_form, register_user};
 use routes::update_csv::{
@@ -50,8 +50,8 @@ fn rocket() -> _ {
                 // Login
                 login_form,
                 login_user,
-                // Home
-                home,
+                // base
+                base,
                 logout,
                 dashboard,
                 settings,

@@ -8,7 +8,7 @@ use rocket_dyn_templates::Template;
 use crate::database::db_connector::DbConn;
 use crate::database::models::NewBank;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::show_home_or_subview_with_data;
+use crate::utils::display_utils::show_base_or_subview_with_data;
 use crate::utils::get_utils::get_user_id;
 use crate::utils::insert_utiles::insert_bank;
 use crate::utils::structs::FormBank;
@@ -22,12 +22,13 @@ pub async fn add_bank(
 ) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
-    Ok(show_home_or_subview_with_data(
+    Ok(show_base_or_subview_with_data(
         cookie_user_id,
         state,
         "add_bank".to_string(),
         false,
         false,
+        None,
         None,
         None,
     )
@@ -128,7 +129,7 @@ pub async fn add_bank_form(
         succes = Some(format!("Bank {} added", new_bank.name));
     }
 
-    Ok(show_home_or_subview_with_data(
+    Ok(show_base_or_subview_with_data(
         cookie_user_id,
         state,
         "add_bank".to_string(),
@@ -136,6 +137,7 @@ pub async fn add_bank_form(
         error.is_some(),
         succes,
         error,
+        None,
     )
     .await)
 }

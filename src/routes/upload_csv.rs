@@ -14,9 +14,11 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewTransactions};
 use crate::schema::transactions;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::show_home_or_subview_with_data;
+use crate::utils::display_utils::show_base_or_subview_with_data;
 use crate::utils::get_utils::{get_csv_converter, get_current_bank, get_user_id};
 use crate::utils::structs::Transaction;
+
+use super::error_page::show_error_page;
 
 #[post("/upload_csv", data = "<data>")]
 pub async fn upload_csv(
@@ -26,14 +28,20 @@ pub async fn upload_csv(
     mut db: Connection<DbConn>,
 ) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
-    let current_bank_id = get_current_bank(cookie_user_id, state).await?.id;
+    let current_bank = get_current_bank(cookie_user_id, state).await;
+
+    if let Err(error) = current_bank {
+        return Err(show_error_page("Error uploading csv".to_string(), error));
+    }
+
+    let current_bank_id = current_bank.unwrap().id;
 
     // Read the CSV file
     let data_stream = match data.open(512.kibibytes()).into_bytes().await {
         Ok(bytes) => bytes,
         Err(_) => {
             error!("Failed to read CSV file");
-            return Ok(show_home_or_subview_with_data(
+            return Ok(show_base_or_subview_with_data(
                 cookie_user_id,
                 state,
                 "bank".to_string(),
@@ -41,6 +49,7 @@ pub async fn upload_csv(
                 true,
                 None,
                 Some("Failed to read CSV file".to_string()),
+                None,
             )
             .await);
         }
@@ -61,7 +70,7 @@ pub async fn upload_csv(
                 succesful_inserts, failed_inserts
             );
 
-            Ok(show_home_or_subview_with_data(
+            Ok(show_base_or_subview_with_data(
                 cookie_user_id,
                 state,
                 "bank".to_string(),
@@ -72,12 +81,13 @@ pub async fn upload_csv(
                     succesful_inserts, failed_inserts
                 )),
                 None,
+                None,
             )
             .await)
         }
         Err(e) => {
             error!("Failed to insert records: {}", e);
-            return Ok(show_home_or_subview_with_data(
+            return Ok(show_base_or_subview_with_data(
                 cookie_user_id,
                 state,
                 "bank".to_string(),
@@ -85,6 +95,7 @@ pub async fn upload_csv(
                 true,
                 None,
                 Some(e),
+                None,
             )
             .await);
         }

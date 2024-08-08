@@ -223,8 +223,8 @@ jobs:
 
       - name: Set up Cargo Tarpaulin
         run: |
-          mkdir -p $CARGO_HOME/bin
-          cargo install cargo-tarpaulin --root $CARGO_HOME
+          mkdir -p $CARGO_base/bin
+          cargo install cargo-tarpaulin --root $CARGO_base
 
       - name: Generate Coverage
         run: cargo tarpaulin --engine llvm --ignore-tests --out Xml

@@ -5,7 +5,7 @@ use rocket_dyn_templates::Template;
 
 use super::error_page::show_error_page;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::show_home_or_subview_with_data;
+use crate::utils::display_utils::show_base_or_subview_with_data;
 use crate::utils::get_utils::{get_banks_of_user, get_user_id};
 
 #[get("/bank/<bank_id>")]
@@ -22,15 +22,16 @@ pub async fn bank_view(
     match bank {
         Some(new_current_bank) => {
             state
-                .update_current_bank(cookie_user_id, new_current_bank.clone())
+                .update_current_bank(cookie_user_id, Some(new_current_bank.clone()))
                 .await;
 
-            Ok(show_home_or_subview_with_data(
+            Ok(show_base_or_subview_with_data(
                 cookie_user_id,
                 state,
                 "bank".to_string(),
                 true,
                 true,
+                None,
                 None,
                 None,
             )

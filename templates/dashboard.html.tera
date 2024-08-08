@@ -9,6 +9,12 @@
     <input type="text" id="dateRange" placeholder="Select Date Range">
 </div>
 <div id="balance_graph" style="height: 500px;"></div>
+<div id="performance_metrics">
+    <p>Total Number of Transactions: <span id="total_transactions">{{ performance_data.total_transactions }}</span></p>
+    <p>Average Transaction Amount: <span id="average_transaction_amount">{{ performance_data.average_transaction_amount }}</span></p>
+    <p>Net Gain/Loss: <span id="net_gain_loss">{{ performance_data.net_gain_loss }}</span></p>
+    <p>Performance: <span id="performance_percentage">{{ performance_data.performance_percentage }}%</span></p>
+</div>
 
 <!-- Include Flatpickr CSS and JS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">

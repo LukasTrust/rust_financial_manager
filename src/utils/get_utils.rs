@@ -30,7 +30,7 @@ pub fn get_user_id(cookies: &CookieJar<'_>) -> Result<i32, Redirect> {
 pub async fn get_current_bank(
     cookie_user_id: i32,
     state: &State<AppState>,
-) -> Result<Bank, Redirect> {
+) -> Result<Bank, String> {
     let current_bank = state.current_bank.read().await;
 
     let current_bank = current_bank.get(&cookie_user_id);
@@ -42,10 +42,7 @@ pub async fn get_current_bank(
         }
         None => {
             error!("No current bank found.");
-            Err(show_error_page(
-                "Error validating the login!".to_string(),
-                "Please login again.".to_string(),
-            ))
+            Err("No current bank found.".to_string())
         }
     }
 }

@@ -55,3 +55,28 @@ pub struct Transaction {
     pub amount: f64,
     pub bank_balance_after: f64,
 }
+
+#[derive(Debug, FromForm)]
+pub struct DateRangeForm {
+    pub start_date: String,
+    pub end_date: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct PerformanceData {
+    pub total_transactions: usize,
+    pub average_transaction_amount: f64,
+    pub net_gain_loss: f64,
+    pub performance_percentage: f64,
+}
+
+impl Default for PerformanceData {
+    fn default() -> Self {
+        PerformanceData {
+            total_transactions: 0,
+            average_transaction_amount: 0.0,
+            net_gain_loss: 0.0,
+            performance_percentage: 0.0,
+        }
+    }
+}
