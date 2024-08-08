@@ -14,6 +14,16 @@ pub struct NewUser {
     pub password: String,
 }
 
+#[derive(Queryable, Debug)]
+#[diesel(table_name = users)]
+pub struct User {
+    pub id: i32,
+    pub first_name: String,
+    pub last_name: String,
+    pub email: String,
+    pub password: String,
+}
+
 #[derive(Queryable, Insertable, Debug, Deserialize, Serialize, Clone)]
 #[diesel(table_name = banks)]
 pub struct NewBank {
