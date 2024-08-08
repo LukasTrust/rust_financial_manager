@@ -14,14 +14,6 @@ use crate::database::models::NewUser;
 use crate::schema::users;
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
 
-/// Display the login form after a successful registration.
-/// The `succes` query parameter is used to display a success message.
-#[get("/login?<succes>")]
-pub fn login_form_from_register(succes: String) -> Template {
-    info!("Registration successful.");
-    Template::render("login", context! { succes })
-}
-
 /// Display the registration form.
 /// The form is used to collect user information such as first name, last name, email, and password.
 #[get("/register")]

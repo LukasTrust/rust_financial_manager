@@ -16,8 +16,8 @@ use routes::bank::bank_view;
 use routes::base::{base, dashboard, logout, settings};
 use routes::error_page::error_page;
 use routes::error_page::not_found;
-use routes::login::{login_form, login_user};
-use routes::register::{login_form_from_register, register_form, register_user};
+use routes::login::{login_form, login_from_register, login_user};
+use routes::register::{register_form, register_user};
 use routes::update_csv::{
     update_amount, update_bank_balance_after, update_counterparty, update_date,
 };
@@ -46,10 +46,10 @@ fn rocket() -> _ {
                 // Register
                 register_form,
                 register_user,
-                login_form_from_register,
                 // Login
                 login_form,
                 login_user,
+                login_from_register,
                 // base
                 base,
                 logout,

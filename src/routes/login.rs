@@ -20,6 +20,12 @@ pub fn login_form() -> Template {
     Template::render("login", context! {})
 }
 
+#[get("/login?<success>")]
+pub fn login_from_register(success: String) -> Template {
+    info!("Registration successful.");
+    Template::render("login", context! { success })
+}
+
 /// Login a user.
 /// The user information is collected from the login form and compared with the stored information in the database.
 /// If the login is successful, the user is redirected to the base page.

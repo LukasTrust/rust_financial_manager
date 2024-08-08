@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link rel="stylesheet" href="/static/styles.css">
+        <script src="/static/login.js" defer></script>
 </head>
 
 <body>
@@ -13,12 +14,8 @@
         <div class="login-form">
             <h1>Rust Financial Manager</h1>
             <h2>Login:</h2>
-            {% if error %}
-            <p class="error">{{ error }}</p>
-            {% endif %}
-            {% if succes %}
-            <p class="success">{{ succes }}</p>
-            {% endif %}
+            <p class="error"></p>
+            <p class="success"></p>
             <form action="/login" method="post">
                 <div class="input-group">
                     <label for="email">Email</label>
@@ -34,5 +31,4 @@
         </div>
     </div>
 </body>
-
 </html>

@@ -6,8 +6,11 @@ async function handleSubmit(event) {
     const form = document.getElementById('registrationForm');
     const formData = new FormData(form);
     const submitButton = form.querySelector('button[type="submit"]');
-    const successMessage = document.getElementById('success');
     const errorMessage = document.getElementById('error');
+
+    // Reset messages
+    errorMessage.textContent = '';
+    errorMessage.style.display = 'none';
 
     try {
         submitButton.disabled = true;
@@ -20,6 +23,10 @@ async function handleSubmit(event) {
             },
         });
 
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         let result;
         const contentType = response.headers.get('Content-Type');
         if (contentType && contentType.includes('application/json')) {
@@ -29,28 +36,19 @@ async function handleSubmit(event) {
             result = {};
         }
 
-        if (response.ok && result.success) {
-            successMessage.textContent = result.success;
-            successMessage.style.display = 'block';
-            errorMessage.textContent = '';
-            errorMessage.style.display = 'none';
+        if (result.success) {
+            // Redirect to login page with success message in the query string
+            window.location.href = `/login?success=${encodeURIComponent(result.success)}`;
         } else if (result.error) {
             errorMessage.textContent = result.error;
             errorMessage.style.display = 'block';
-            successMessage.textContent = '';
-            successMessage.style.display = 'none';
         } else {
-            errorMessage.textContent = 'An unexpected error occurred. Please try again later.';
-            errorMessage.style.display = 'block';
-            successMessage.textContent = '';
-            successMessage.style.display = 'none';
+            throw new Error('Unexpected response format');
         }
     } catch (error) {
         console.error('Fetch error:', error);
         errorMessage.textContent = 'An unexpected error occurred. Please try again later.';
         errorMessage.style.display = 'block';
-        successMessage.textContent = '';
-        successMessage.style.display = 'none';
     } finally {
         submitButton.disabled = false;
     }
