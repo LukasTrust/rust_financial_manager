@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // Define your Plotly chart data and layout
+    // Check if plotData exists
     var plotData = window.plotData || [];
+
+    // Define Plotly chart layout and configuration
     var layout = {
         title: 'Bank Account Balances',
         xaxis: { title: 'Date', type: 'date' },
@@ -21,9 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
             'toggleSpikelines', 'resetViews', 'zoomInGeo',
             'zoomOutGeo', 'resetGeo', 'resetMapbox'
         ],
-        modeBarButtons: [
-            ['toImage']
-        ]
+        modeBarButtons: [['toImage']]
     };
 
     // Initialize Plotly chart
@@ -43,6 +43,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 };
 
                 Plotly.relayout('balance_graph', update);
+
+                // Make AJAX request to update date range
+                fetch(`/update_date_range/${startDate}/${endDate}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Handle response if needed
+                        console.log('Date range updated successfully:', data);
+                    })
+                    .catch(error => {
+                        console.error('Error updating date range:', error);
+                    });
             }
         }
     });

@@ -6,4 +6,5 @@ pub mod home;
 pub mod login;
 pub mod register;
 pub mod update_csv;
+pub mod update_date_range;
 pub mod upload_csv;

@@ -19,7 +19,7 @@ use super::update_csv::update_csv;
 pub async fn add_bank(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-) -> Result<Template, Box<Redirect>> {
+) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
     Ok(show_home_or_subview_with_data(
@@ -40,7 +40,7 @@ pub async fn add_bank_form(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Box<Redirect>> {
+) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
     let new_bank = NewBank {
@@ -57,7 +57,6 @@ pub async fn add_bank_form(
         Ok(bank_id) => {
             if error.is_none() && bank_form.counterparty_column.is_some() {
                 let counterparty_result = update_csv(
-                    cookie_user_id,
                     state,
                     db.as_mut(),
                     |converter| {
@@ -74,7 +73,6 @@ pub async fn add_bank_form(
 
             if error.is_none() && bank_form.amount_column.is_some() {
                 let amount_result = update_csv(
-                    cookie_user_id,
                     state,
                     db.as_mut(),
                     |converter| {
@@ -91,7 +89,6 @@ pub async fn add_bank_form(
 
             if error.is_none() && bank_form.bank_balance_after_column.is_some() {
                 let bank_balance_after_result = update_csv(
-                    cookie_user_id,
                     state,
                     db.as_mut(),
                     |converter| {
@@ -109,7 +106,6 @@ pub async fn add_bank_form(
 
             if error.is_none() && bank_form.date_column.is_some() {
                 let date_result = update_csv(
-                    cookie_user_id,
                     state,
                     db.as_mut(),
                     |converter| {

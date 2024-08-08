@@ -21,6 +21,7 @@ use routes::register::{login_form_from_register, register_form, register_user};
 use routes::update_csv::{
     update_amount, update_bank_balance_after, update_counterparty, update_date,
 };
+use routes::update_date_range::update_date_range;
 use routes::upload_csv::upload_csv;
 use rust_financial_manager::{database, routes};
 
@@ -67,7 +68,9 @@ fn rocket() -> _ {
                 // Upload CSV
                 upload_csv,
                 // Error page
-                error_page
+                error_page,
+                // Update date range
+                update_date_range
             ],
         )
         .mount("/static", FileServer::from(relative!("static")))

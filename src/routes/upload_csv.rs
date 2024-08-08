@@ -10,7 +10,6 @@ use rocket_dyn_templates::Template;
 use std::collections::HashMap;
 use std::io::Cursor;
 
-use super::error_page::show_error_page;
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewTransactions};
 use crate::schema::transactions;
@@ -34,10 +33,16 @@ pub async fn upload_csv(
         Ok(bytes) => bytes,
         Err(_) => {
             error!("Failed to read CSV file");
-            return Err(show_error_page(
-                "Failed to read CSV file".to_string(),
-                "Please try again.".to_string(),
-            ));
+            return Ok(show_home_or_subview_with_data(
+                cookie_user_id,
+                state,
+                "bank".to_string(),
+                true,
+                true,
+                None,
+                Some("Failed to read CSV file".to_string()),
+            )
+            .await);
         }
     };
 
@@ -47,21 +52,43 @@ pub async fn upload_csv(
         .flexible(true)
         .from_reader(cursor);
 
-    let result = extract_and_process_records(&mut rdr, current_bank_id, state, &mut db).await?;
+    let result = extract_and_process_records(&mut rdr, current_bank_id, state, &mut db).await;
 
-    Ok(show_home_or_subview_with_data(
-        cookie_user_id,
-        state,
-        "bank".to_string(),
-        true,
-        true,
-        Some(format!(
-            "Succesfully insertet {} and {} were duplicates",
-            result.0, result.1
-        )),
-        None,
-    )
-    .await)
+    match result {
+        Ok((succesful_inserts, failed_inserts)) => {
+            info!(
+                "Succesfully insertet {} and {} were duplicates",
+                succesful_inserts, failed_inserts
+            );
+
+            Ok(show_home_or_subview_with_data(
+                cookie_user_id,
+                state,
+                "bank".to_string(),
+                true,
+                true,
+                Some(format!(
+                    "Succesfully insertet {} and {} were duplicates",
+                    succesful_inserts, failed_inserts
+                )),
+                None,
+            )
+            .await)
+        }
+        Err(e) => {
+            error!("Failed to insert records: {}", e);
+            return Ok(show_home_or_subview_with_data(
+                cookie_user_id,
+                state,
+                "bank".to_string(),
+                true,
+                true,
+                None,
+                Some(e),
+            )
+            .await);
+        }
+    }
 }
 
 async fn extract_and_process_records<R: std::io::Read>(
@@ -69,7 +96,7 @@ async fn extract_and_process_records<R: std::io::Read>(
     current_bank_id: i32,
     state: &State<AppState>,
     db: &mut Connection<DbConn>,
-) -> Result<(i32, i32), Redirect> {
+) -> Result<(i32, i32), String> {
     let mut succesful_inserts = 0;
     let mut failed_inserts = 0;
 
@@ -93,10 +120,7 @@ async fn extract_and_process_records<R: std::io::Read>(
             Ok(rec) => rec,
             Err(_) => {
                 error!("Failed to read CSV file");
-                return Err(show_error_page(
-                    "Failed to read CSV file".to_string(),
-                    "Please try again.".to_string(),
-                ));
+                return Err("Failed to read CSV file".to_string());
             }
         };
 
@@ -108,9 +132,8 @@ async fn extract_and_process_records<R: std::io::Read>(
         for (j, value) in record.as_slice().split(';').enumerate() {
             match j {
                 idx if idx == date_index => {
-                    date_from_csv = NaiveDate::parse_from_str(value, "%d.%m.%Y").map_err(|e| {
-                        show_error_page("Failed to pase date".to_string(), format!("Error: {}", e))
-                    })?;
+                    date_from_csv = NaiveDate::parse_from_str(value, "%d.%m.%Y")
+                        .map_err(|e| format!("Failed to parse date: {}", e))?;
                 }
                 idx if idx == counterparty_index => {
                     counterparty_from_csv = value;
@@ -136,12 +159,7 @@ async fn extract_and_process_records<R: std::io::Read>(
                     amount_from_csv = processed_value
                         .replace(',', ".") // Convert comma to dot for parsing
                         .parse::<f64>()
-                        .map_err(|e| {
-                            show_error_page(
-                                "Failed to parse amount".to_string(),
-                                format!("Error: {}", e),
-                            )
-                        })?;
+                        .map_err(|e| format!("Failed to parse amount: {}", e))?;
                 }
                 idx if idx == bank_balance_after_index => {
                     // Determine and handle the decimal separator
@@ -164,12 +182,7 @@ async fn extract_and_process_records<R: std::io::Read>(
                     bank_balance_after = processed_value
                         .replace(',', ".") // Convert comma to dot for parsing
                         .parse::<f64>()
-                        .map_err(|e| {
-                            show_error_page(
-                                "Failed to parse bank current balance after".to_string(),
-                                format!("Error: {}", e),
-                            )
-                        })?;
+                        .map_err(|e| format!("Failed to parse bank balance after: {}", e))?;
                 }
                 _ => (),
             }
@@ -210,17 +223,14 @@ async fn extract_and_process_records<R: std::io::Read>(
     Ok((succesful_inserts, failed_inserts))
 }
 
-fn validate_csv_converters(csv_converter: CSVConverter) -> Result<(), Redirect> {
+fn validate_csv_converters(csv_converter: CSVConverter) -> Result<(), String> {
     if csv_converter.date_column.is_none()
         || csv_converter.counterparty_column.is_none()
         || csv_converter.amount_column.is_none()
         || csv_converter.bank_balance_after_column.is_none()
     {
         error!("CSV converter not set up");
-        return Err(show_error_page(
-            "CSV converter not set up".to_string(),
-            "Please set up the CSV converter before uploading a CSV file".to_string(),
-        ));
+        return Err("CSV converter not set up".to_string());
     }
     info!("CSV converter found");
 

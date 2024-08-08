@@ -105,16 +105,40 @@ where
 {
     let current_bank_id = get_current_bank(cookie_user_id, state).await?.id;
 
-    update_csv(cookie_user_id, state, db, update_field, current_bank_id).await
+    let result = update_csv(state, db, update_field, current_bank_id).await;
+
+    match result {
+        Ok(success) => Ok(show_home_or_subview_with_data(
+            cookie_user_id,
+            state,
+            "home".to_string(),
+            false,
+            false,
+            Some(success),
+            None,
+        )
+        .await),
+        Err(error) => Ok({
+            show_home_or_subview_with_data(
+                cookie_user_id,
+                state,
+                "home".to_string(),
+                false,
+                false,
+                None,
+                Some(error),
+            )
+            .await
+        }),
+    }
 }
 
 pub async fn update_csv<F>(
-    cookie_user_id: i32,
     state: &State<AppState>,
     db: &mut AsyncPgConnection,
     update_field: F,
     current_bank_id: i32,
-) -> Result<Template, Redirect>
+) -> Result<String, String>
 where
     F: Fn(&mut CSVConverter),
 {
@@ -188,14 +212,9 @@ where
         }
     }
 
-    Ok(show_home_or_subview_with_data(
-        cookie_user_id,
-        state,
-        "bank".to_string(),
-        true,
-        true,
-        success,
-        error,
-    )
-    .await)
+    if let Some(success) = success {
+        Ok(success)
+    } else {
+        Err(error.unwrap_or_else(|| "Internal server error".to_string()))
+    }
 }

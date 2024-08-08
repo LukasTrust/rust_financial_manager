@@ -23,7 +23,7 @@ pub async fn home(
     mut db: Connection<DbConn>,
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-) -> Result<Template, Box<Redirect>> {
+) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
     info!("User is logged in: {}", cookie_user_id);
@@ -77,7 +77,7 @@ pub async fn home(
 pub async fn dashboard(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-) -> Result<Template, Box<Redirect>> {
+) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
     Ok(show_home_or_subview_with_data(
@@ -99,7 +99,7 @@ pub async fn dashboard(
 pub async fn settings(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-) -> Result<Template, Box<Redirect>> {
+) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
     Ok(show_home_or_subview_with_data(
