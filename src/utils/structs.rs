@@ -82,6 +82,12 @@ impl Default for PerformanceData {
 }
 
 #[derive(Serialize)]
+pub struct ResponseData {
+    pub success: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Serialize)]
 pub struct SuccessResponse {
     pub success: String,
 }

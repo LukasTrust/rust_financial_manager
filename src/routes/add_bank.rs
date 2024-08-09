@@ -1,6 +1,7 @@
 use rocket::form::Form;
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
+use rocket::serde::json::{json, Json};
 use rocket::{get, post, State};
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::Template;
@@ -8,31 +9,17 @@ use rocket_dyn_templates::Template;
 use crate::database::db_connector::DbConn;
 use crate::database::models::NewBank;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::show_base_or_subview_with_data;
 use crate::utils::get_utils::get_user_id;
 use crate::utils::insert_utiles::insert_bank;
-use crate::utils::structs::FormBank;
+use crate::utils::structs::{FormBank, ResponseData};
 
 use super::update_csv::update_csv;
 
 #[get("/add-bank")]
-pub async fn add_bank(
-    cookies: &CookieJar<'_>,
-    state: &State<AppState>,
-) -> Result<Template, Redirect> {
-    let cookie_user_id = get_user_id(cookies)?;
+pub async fn add_bank(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
+    let _ = get_user_id(cookies)?;
 
-    Ok(show_base_or_subview_with_data(
-        cookie_user_id,
-        state,
-        "add_bank".to_string(),
-        false,
-        false,
-        None,
-        None,
-        None,
-    )
-    .await)
+    Ok(Template::render("add_bank", json!({})))
 }
 
 #[post("/add-bank", data = "<bank_form>")]
@@ -41,7 +28,7 @@ pub async fn add_bank_form(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Redirect> {
+) -> Result<Json<ResponseData>, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
     let new_bank = NewBank {
@@ -124,20 +111,10 @@ pub async fn add_bank_form(
         Err(e) => error = Some(e),
     };
 
-    let mut succes = None;
+    let mut success = None;
     if error.is_none() {
-        succes = Some(format!("Bank {} added", new_bank.name));
+        success = Some(format!("Bank {} added", new_bank.name));
     }
 
-    Ok(show_base_or_subview_with_data(
-        cookie_user_id,
-        state,
-        "add_bank".to_string(),
-        error.is_none(),
-        error.is_some(),
-        succes,
-        error,
-        None,
-    )
-    .await)
+    Ok(Json(ResponseData { success, error }))
 }

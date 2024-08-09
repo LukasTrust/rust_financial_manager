@@ -16,11 +16,11 @@ async function handleSubmit(event) {
     const form = document.getElementById('loginForm');
     const formData = new FormData(form);
     const submitButton = form.querySelector('button[type="submit"]');
-    const errorMessage = document.getElementById('error');
+    const errorDiv = document.getElementById('error');
 
     // Reset messages
-    errorMessage.textContent = '';
-    errorMessage.style.display = 'none';
+    errorDiv.textContent = '';
+    errorDiv.style.display = 'none';
 
     try {
         submitButton.disabled = true;
@@ -50,15 +50,15 @@ async function handleSubmit(event) {
             // Redirect to login page with success message in the query string
             window.location.href = `/base?success=${encodeURIComponent(result.success)}`;
         } else if (result.error) {
-            errorMessage.textContent = result.error;
-            errorMessage.style.display = 'block';
+            errorDiv.textContent = result.error;
+            errorDiv.style.display = 'block';
         } else {
             throw new Error('Unexpected response format');
         }
     } catch (error) {
         console.error('Fetch error:', error);
-        errorMessage.textContent = 'An unexpected error occurred. Please try again later.';
-        errorMessage.style.display = 'block';
+        errorDiv.textContent = 'An unexpected error occurred. Please try again later.';
+        errorDiv.style.display = 'block';
     } finally {
         submitButton.disabled = false;
     }

@@ -1,43 +1,42 @@
-{% extends "base" %}
-
-{% block title %}Add Bank{% endblock %}
-
-{% block main_content %}
-    <h1>Add Bank</h1>
-    <div class="header-messages">
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
-        {% if success %}
-            <p class="success">{{ success }}</p>
-        {% endif %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test</title>
+</head>
+<h1>Add Bank</h1>
+<div class="header-messages">
+    <p id="error" class="error"></p>
+    <p id="success" class="success"></p>
+</div>
+<form id="add_bankForm" action="/add-bank" method="post">
+    <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required>
     </div>
-    <form action="/add-bank" method="post" enctype="multipart/form-data">
-        <div class="form-group">
-            <label for="name">Name</label>
-            <input type="text" id="name" name="name" required>
-        </div>
-        <div class="form-group">
-            <label for="link">Link (Optional)</label>
-            <input type="text" id="link" name="link">
-        </div>
-        <h2>Add CSV Headers (Can be added later)</h2>
-        <div class="form-group">
-            <label for="counterparty_column">Counterparty column (Optional)</label>
-            <input type="number" id="counterparty_column" name="counterparty_column">
-        </div>
-        <div class="form-group">
-            <label for="amount_column">Amount column (Optional)</label>
-            <input type="number" id="amount_column" name="amount_column">
-        </div>
-        <div class="form-group">
-            <label for="bank_balance_after_column">Bank balance after transaction column (Optional)</label>
-            <input type="number" id="bank_balance_after_column" name="bank_balance_after_column">
-        </div>
-        <div class="form-group">
-            <label for="date_column">Date column (Optional)</label>
-            <input type="number" id="date_column" name="date_column">
-        </div>
-        <button type="submit">Submit</button>
-    </form>
-{% endblock %}
+    <div class="form-group">
+        <label for="link">Link (Optional)</label>
+        <input type="text" id="link" name="link">
+    </div>
+    <h2>Add CSV Headers (Can be added later)</h2>
+    <div class="form-group">
+        <label for="counterparty_column">Counterparty column (Optional)</label>
+        <input type="number" id="counterparty_column" name="counterparty_column" min="0" step="1">
+    </div>
+    <div class="form-group">
+        <label for="amount_column">Amount column (Optional)</label>
+        <input type="number" id="amount_column" name="amount_column" min="0" step="1">
+    </div>
+    <div class="form-group">
+        <label for="bank_balance_after_column">Bank balance after transaction column (Optional)</label>
+        <input type="number" id="bank_balance_after_column" name="bank_balance_after_column" min="0" step="1">
+    </div>
+    <div class="form-group">
+        <label for="date_column">Date column (Optional)</label>
+        <input type="number" id="date_column" name="date_column" min="0" step="1">
+    </div>
+    <button type="submit">Submit</button>
+</form>
+</body>
+</html>
