@@ -1,18 +1,12 @@
-{% extends "base" %}
-
-{% block title %}Bank Dashboard{% endblock %}
-
-{% block main_content %}
+    <script>
+    // Pass plotData and performanceData to the global scope
+    window.plotData = {{ graph_data | safe }};
+    window.performanceData = {{ performance_value | safe }};
+</script>
+<script src="/static/script.js"></script>
     <h1>{{ bank.name }}</h1>
-    <div class="header-messages">
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
-        {% if success %}
-            <p class="success">{{ success }}</p>
-        {% endif %}
-    </div>
-
+    <p id="success" class="success"></p>
+    <p id="error" class="error"></p>
     <div class="bank-container">
         <div id="balance_graph" class="balance-graph"></div>
 
@@ -59,15 +53,3 @@
             </form>
         </div>
     </div>
-
-    <!-- Include Flatpickr CSS and JS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>    
-
-    <script>
-        // Pass plotData to the global scope for script.js to access
-        window.plotData = {{ plot_data | safe }};
-    </script>
-    <script src="/static/script.js"></script> <!-- Include your external script file -->
-{% endblock %}

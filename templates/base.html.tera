@@ -15,7 +15,7 @@
             <button onclick="loadContent('/add-bank')">Add new bank</button>
             <div id="banks">
             {% for bank in banks %}
-                <button onclick="window.location.href='/bank/{{ bank.id }}'" class="bank-button">
+                <button onclick="loadContent('/bank/{{ bank.id }}')" class="bank-button">
                     {{ bank.name }}
                 </button>
             {% endfor %}

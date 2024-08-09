@@ -52,6 +52,8 @@ async function handleSubmit(event) {
         } else if (result.error) {
             errorDiv.textContent = result.error;
             errorDiv.style.display = 'block';
+            const successDiv = urlParams.get('success');
+            successDiv.style.display = 'none';
         } else {
             throw new Error('Unexpected response format');
         }

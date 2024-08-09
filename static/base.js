@@ -49,10 +49,12 @@ function add_bank_form() {
                 if (result.success) {
                     successDiv.textContent = result.success;
                     successDiv.style.display = 'block';
+                    errorDiv.style.display = 'none';
                 }
                 else if (result.error) {
                     errorDiv.textContent = result.error;
                     errorDiv.style.display = 'block';
+                    successDiv.style.display = 'none';
                 }
 
                 if (!errorMessage) {
