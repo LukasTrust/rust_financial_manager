@@ -1,18 +1,18 @@
 use diesel::QueryDsl;
 use rocket::form::{Form, FromForm};
+use rocket::serde::json::Json;
 use rocket::{http::CookieJar, response::Redirect};
 use rocket::{post, State};
 use rocket_db_pools::diesel::AsyncPgConnection;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
-use rocket_dyn_templates::Template;
 use std::collections::HashMap;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewCSVConverter};
 use crate::schema::csv_converters;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::show_base_or_subview_with_data;
 use crate::utils::get_utils::{get_current_bank, get_user_id};
+use crate::utils::structs::ResponseData;
 
 use super::error_page::show_error_page;
 
@@ -42,7 +42,7 @@ pub async fn update_bank_balance_after(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Redirect> {
+) -> Result<Json<ResponseData>, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
     find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
@@ -57,7 +57,7 @@ pub async fn update_date(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Redirect> {
+) -> Result<Json<ResponseData>, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
     find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
@@ -72,7 +72,7 @@ pub async fn update_counterparty(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Redirect> {
+) -> Result<Json<ResponseData>, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
     find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
@@ -87,7 +87,7 @@ pub async fn update_amount(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Redirect> {
+) -> Result<Json<ResponseData>, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
     find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
@@ -101,7 +101,7 @@ async fn find_bank_and_update<F>(
     state: &State<AppState>,
     db: &mut AsyncPgConnection,
     update_field: F,
-) -> Result<Template, Redirect>
+) -> Result<Json<ResponseData>, Redirect>
 where
     F: Fn(&mut CSVConverter),
 {
@@ -119,30 +119,14 @@ where
     let result = update_csv(state, db, update_field, current_bank_id).await;
 
     match result {
-        Ok(success) => Ok(show_base_or_subview_with_data(
-            cookie_user_id,
-            state,
-            "base".to_string(),
-            false,
-            false,
-            Some(success),
-            None,
-            None,
-        )
-        .await),
-        Err(error) => Ok({
-            show_base_or_subview_with_data(
-                cookie_user_id,
-                state,
-                "base".to_string(),
-                false,
-                false,
-                None,
-                Some(error),
-                None,
-            )
-            .await
-        }),
+        Ok(success) => Ok(Json(ResponseData {
+            error: None,
+            success: Some(success),
+        })),
+        Err(error) => Ok(Json(ResponseData {
+            error: Some(error),
+            success: None,
+        })),
     }
 }
 

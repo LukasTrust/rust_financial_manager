@@ -258,20 +258,40 @@ h1 {
     flex-direction: column;
 }
 
-.date-picker-container {
-    margin-bottom: 20px;
+/* Style for the date-picker container */
+.date-picker {
+    display: flex;
+    flex-direction: row;
     padding: 10px;
-    background: transparent;
+    background-color: transparent;
+    position: absolute;
+    right: 45%;
+    top: 30px;
 }
 
-.date-picker-container label {
-    display: block;
-    margin-bottom: 5px;
-    background: transparent;
+/* Style for the label */
+.date-picker label {
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    width: 250px;
+    color: #333;
 }
 
-.date-picker-container input {
+/* Style for the input field */
+.date-picker input[type="text"] {
     padding: 8px;
-    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    color: #333;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+}
 
+/* Focus style for the input field */
+.date-picker input[type="text"]:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
 }

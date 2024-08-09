@@ -1,14 +1,16 @@
+
 <script>
     // Pass plotData and performanceData to the global scope
     window.plotData = {{ graph_data | safe }};
     window.performanceData = {{ performance_value | safe }};
 </script>
-<script src="/static/script.js"></script>
 
+<div class="bank-container">
 <h1>Dashboard</h1>
 <div class="date-picker">
     <label for="dateRange">Select Date Range:</label>
     <input type="text" id="dateRange" placeholder="Select Date Range">
+</div>
 </div>
 <div id="balance_graph"></div>
 <div id="performance_metrics">

@@ -5,7 +5,6 @@ use rocket::serde::json::json;
 use rocket::{get, State};
 use rocket_dyn_templates::Template;
 
-use crate::schema::transactions;
 use crate::utils::appstate::AppState;
 use crate::utils::display_utils::{generate_balance_graph_data, generate_performance_value};
 use crate::utils::get_utils::{get_banks_of_user, get_user_id};

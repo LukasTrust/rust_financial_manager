@@ -3,7 +3,6 @@
     window.plotData = {{ graph_data | safe }};
     window.performanceData = {{ performance_value | safe }};
 </script>
-<script src="/static/script.js"></script>
     <h1>{{ bank.name }}</h1>
     <p id="success" class="success"></p>
     <p id="error" class="error"></p>
