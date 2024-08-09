@@ -1,8 +1,1 @@
-{% extends "base" %}
-
-{% block title %}Settings{% endblock %}
-
-{% block main_content %}
 <h1>Settings</h1>
-<!-- Settings specific content here -->
-{% endblock %}

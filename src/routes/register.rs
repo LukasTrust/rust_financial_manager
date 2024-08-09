@@ -12,7 +12,7 @@ use rocket_dyn_templates::{context, Template};
 use crate::database::db_connector::DbConn;
 use crate::database::models::NewUser;
 use crate::schema::users;
-use crate::utils::structs::{ErrorResponse, SuccessResponse};
+use crate::utils::structs::ResponseData;
 
 /// Display the registration form.
 /// The form is used to collect user information such as first name, last name, email, and password.
@@ -33,25 +33,28 @@ pub fn register_form() -> Template {
 pub async fn register_user(
     mut db: Connection<DbConn>,
     user_form: Form<NewUser>,
-) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
+) -> Json<ResponseData> {
     if !is_valid_email(&user_form.email) {
-        return Err(Json(ErrorResponse {
-            error: "Invalid email format. Please use a valid email.".into(),
-        }));
+        return Json(ResponseData {
+            error: Some("Invalid email format. Please use a valid email.".into()),
+            success: None,
+        });
     }
 
     if !is_strong_password(&user_form.password) {
-        return Err(Json(ErrorResponse {
-            error: "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character".into(),
-        }));
+        return Json(ResponseData {
+            error: Some("Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character".into()),
+            success: None,
+        });
     }
 
     let hashed_password = match hash(user_form.password.clone(), DEFAULT_COST) {
         Ok(h) => h,
         Err(_) => {
-            return Err(Json(ErrorResponse {
-                error: "Internal server error. Please try again later.".into(),
-            }));
+            return Json(ResponseData {
+                error: Some("Internal server error. Please try again later.".into()),
+                success: None,
+            });
         }
     };
 
@@ -68,19 +71,22 @@ pub async fn register_user(
         .await;
 
     match result {
-        Ok(_) => Ok(Json(SuccessResponse {
-            success: "Registration successful. Please log in.".into(),
-        })),
+        Ok(_) => Json(ResponseData {
+            success: Some("Registration successful. Please log in.".into()),
+            error: None,
+        }),
         Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
-            Err(Json(ErrorResponse {
-                error: "Email already exists. Please use a different email.".into(),
-            }))
+            Json(ResponseData {
+                error: Some("Email already exists. Please use a different email.".into()),
+                success: None,
+            })
         }
         Err(_) => {
             error!("Registration failed, database error.");
-            Err(Json(ErrorResponse {
-                error: "Internal server error. Please try again later.".into(),
-            }))
+            Json(ResponseData {
+                error: Some("Internal server error. Please try again later.".into()),
+                success: None,
+            })
         }
     }
 }

@@ -86,13 +86,3 @@ pub struct ResponseData {
     pub success: Option<String>,
     pub error: Option<String>,
 }
-
-#[derive(Serialize)]
-pub struct SuccessResponse {
-    pub success: String,
-}
-
-#[derive(Serialize)]
-pub struct ErrorResponse {
-    pub error: String,
-}

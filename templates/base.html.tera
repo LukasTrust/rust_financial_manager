@@ -13,8 +13,13 @@
             <h2>Rust Financial Manager</h2>
             <button onclick="loadContent('/dashboard')">Dashboard</button>
             <button onclick="loadContent('/add-bank')">Add new bank</button>
-            <div id="bank-list">
-            </div>
+            <div id="banks">
+            {% for bank in banks %}
+                <button onclick="window.location.href='/bank/{{ bank.id }}'" class="bank-button">
+                    {{ bank.name }}
+                </button>
+            {% endfor %}
+    </div>
         </div>
         <div class="main-content" id="main-content">
             <p>Loading...</p>

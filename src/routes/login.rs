@@ -11,7 +11,7 @@ use rocket_dyn_templates::{context, Template};
 use crate::database::db_connector::DbConn;
 use crate::database::models::User;
 use crate::schema::users::dsl::*;
-use crate::utils::structs::{ErrorResponse, FormUser, SuccessResponse};
+use crate::utils::structs::{FormUser, ResponseData};
 
 /// Display the login form.
 /// The form is used to collect user information such as email and password.
@@ -37,7 +37,7 @@ pub async fn login_user(
     mut db: Connection<DbConn>,
     user_form: Form<FormUser>,
     cookies: &CookieJar<'_>,
-) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
+) -> Json<ResponseData> {
     let email_of_user = &user_form.email.to_lowercase();
     let password_of_user = &user_form.password;
 
@@ -53,31 +53,38 @@ pub async fn login_user(
             Ok(true) => {
                 info!("Login successful for user with email: {}", email_of_user);
                 cookies.add_private(Cookie::new("user_id", user.id.to_string()));
-                Ok(Json(SuccessResponse {
-                    success: format!("Welcom back {} {}", user.first_name, user.last_name),
-                }))
+                Json(ResponseData {
+                    success: Some(format!(
+                        "Welcom back {} {}",
+                        user.first_name, user.last_name
+                    )),
+                    error: None,
+                })
             }
             Ok(false) => {
                 info!(
                     "Login failed for user with email, password did not match: {}",
                     email_of_user
                 );
-                Err(Json(ErrorResponse {
-                    error: "Login failed. Either the email or password was incorrect.".into(),
-                }))
+                Json(ResponseData {
+                    error: Some("Login failed. Either the email or password was incorrect.".into()),
+                    success: None,
+                })
             }
             Err(err) => {
                 error!("Login failed, bcrypt error: {}", err);
-                Err(Json(ErrorResponse {
-                    error: "Internal server error. Please try again later.".into(),
-                }))
+                Json(ResponseData {
+                    error: Some("Internal server error. Please try again later.".into()),
+                    success: None,
+                })
             }
         },
         Err(err) => {
             error!("Login failed, database error {}", err);
-            Err(Json(ErrorResponse {
-                error: "Login failed. Either the email or password was incorrect.".into(),
-            }))
+            Json(ResponseData {
+                error: Some("Login failed. Either the email or password was incorrect.".into()),
+                success: None,
+            })
         }
     }
 }

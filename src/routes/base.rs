@@ -10,9 +10,7 @@ use std::collections::HashMap;
 use crate::database::db_connector::DbConn;
 use crate::database::models::CSVConverter;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::{
-    generate_balance_graph_data, generate_performance_value, show_base_or_subview_with_data,
-};
+use crate::utils::display_utils::{generate_balance_graph_data, generate_performance_value};
 use crate::utils::get_utils::{get_banks_of_user, get_user_id};
 use crate::utils::loading_utils::{load_banks, load_csv_converters, load_transactions};
 use crate::utils::structs::Transaction;
@@ -117,17 +115,9 @@ pub async fn settings(
 ) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
-    Ok(show_base_or_subview_with_data(
-        cookie_user_id,
-        state,
-        "settings".to_string(),
-        false,
-        false,
-        None,
-        None,
-        None,
-    )
-    .await)
+    state.update_current_bank(cookie_user_id, None).await;
+
+    Ok(Template::render("settings", json!({})))
 }
 
 /// Display the login page.
