@@ -158,6 +158,7 @@ function initializeFormHandling() {
     const forms = document.querySelectorAll('form');
 
     forms.forEach(form => {
+        if (form.id === 'logout-form') return;
         handleFormSubmission(form);
     });
 }

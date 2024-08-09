@@ -86,6 +86,3 @@ pub struct ResponseData {
     pub success: Option<String>,
     pub error: Option<String>,
 }
-
-#[derive(Debug, Serialize)]
-pub struct Graph_data {}

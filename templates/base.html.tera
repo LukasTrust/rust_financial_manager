@@ -29,7 +29,7 @@
         </div>
         <div class="sidebar-right">
             <button onclick="loadContent('/settings')">Settings</button>
-            <form action="/logout" method="post">
+            <form id="logout-form" action="/logout" method="post">
                 <button type="submit">Logout</button>
             </form>
         </div>
