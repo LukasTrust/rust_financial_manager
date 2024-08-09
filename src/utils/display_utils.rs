@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, ParseError};
+use chrono::NaiveDate;
 use log::info;
 use rocket::{tokio::task, State};
 use rocket_dyn_templates::{context, Template};
@@ -80,7 +80,7 @@ pub async fn show_base_or_subview_with_data(
 /// The balance graph data is generated from the bank accounts and transactions.
 /// The balance graph data is used to plot the bank account balances over time.
 /// The balance graph data is returned as a JSON value.
-async fn generate_balance_graph_data(
+pub async fn generate_balance_graph_data(
     banks: &[Bank],
     transactions: &HashMap<i32, Vec<Transaction>>,
 ) -> serde_json::Value {
@@ -178,12 +178,9 @@ async fn generate_balance_graph_data(
 pub fn generate_performance_value(
     banks: &[Bank],
     transactions: &HashMap<i32, Vec<Transaction>>,
-    start_date: String,
-    end_date: String,
-) -> Result<PerformanceData, ParseError> {
-    let start_date = parse_date(&start_date)?;
-    let end_date = parse_date(&end_date)?;
-
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+) -> PerformanceData {
     let mut total_sum = 0.0;
     let mut total_transactions = 0;
     let mut starting_balance = None;
@@ -223,14 +220,10 @@ pub fn generate_performance_value(
         0.0
     };
 
-    Ok(PerformanceData {
+    PerformanceData {
         total_transactions,
         average_transaction_amount,
         net_gain_loss,
         performance_percentage,
-    })
-}
-
-fn parse_date(date_str: &str) -> Result<NaiveDate, ParseError> {
-    NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+    }
 }

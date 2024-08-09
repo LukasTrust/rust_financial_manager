@@ -1,8 +1,10 @@
-{% extends "base" %}
+<script>
+    // Pass plotData and performanceData to the global scope
+    window.plotData = {{ graph_data | safe }};
+    window.performanceData = {{ performance_value | safe }};
+</script>
+<script src="/static/script.js"></script>
 
-{% block title %}Dashboard{% endblock %}
-
-{% block main_content %}
 <h1>Dashboard</h1>
 <div class="date-picker">
     <label for="dateRange">Select Date Range:</label>
@@ -10,20 +12,8 @@
 </div>
 <div id="balance_graph" style="height: 500px;"></div>
 <div id="performance_metrics">
-    <p>Total Number of Transactions: <span id="total_transactions">{{ performance_data.total_transactions }}</span></p>
-    <p>Average Transaction Amount: <span id="average_transaction_amount">{{ performance_data.average_transaction_amount }}</span></p>
-    <p>Net Gain/Loss: <span id="net_gain_loss">{{ performance_data.net_gain_loss }}</span></p>
-    <p>Performance: <span id="performance_percentage">{{ performance_data.performance_percentage }}%</span></p>
+    <p>Total Number of Transactions: <span id="total_transactions">{{ performance_value.total_transactions }}</span></p>
+    <p>Average Transaction Amount: <span id="average_transaction_amount">{{ performance_value.average_transaction_amount }}</span></p>
+    <p>Net Gain/Loss: <span id="net_gain_loss">{{ performance_value.net_gain_loss }}</span></p>
+    <p>Performance: <span id="performance_percentage">{{ performance_value.performance_percentage }}</span></p>
 </div>
-
-<!-- Include Flatpickr CSS and JS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-
-<script>
-    // Pass plotData to the global scope
-    window.plotData = {{ plot_data | safe }};
-</script>
-<script src="/static/script.js"></script>
-{% endblock %}

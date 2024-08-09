@@ -1,36 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Dashboard{% endblock %}</title>
-  <link rel="stylesheet" href="/static/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust Financial Manager</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/base.js" defer></script>
 </head>
 <body>
-  <div class="full-page-container">
-    <div class="sidebar-left">
-      <h2>Rust Financial Manager</h2>
-      <button onclick="window.location.href='/dashboard'">Dashboard</button>
-      <button onclick="window.location.href='/add-bank'">Add new bank</button>
-      <div id="bank-list">
-        {% for bank in banks %}
-          <button onclick="window.location.href='/bank/{{ bank.id }}'">{{ bank.name }}</button>
-        {% else %}
-          <button disabled>No banks found.</button>
-        {% endfor %}
-      </div>
+    <div class="full-page-container">
+        <div class="sidebar-left">
+            <h2>Rust Financial Manager</h2>
+            <button onclick="loadContent('/dashboard')">Dashboard</button>
+            <button onclick="loadContent('/add-bank')">Add new bank</button>
+            <div id="bank-list">
+                {% if banks %}
+                    {% for bank in banks %}
+                        <button onclick="loadContent('/bank/{{ bank.id }}')">{{ bank.name }}</button>
+                    {% endfor %}
+                {% else %}
+                    <button disabled>No banks found.</button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="main-content" id="main-content">
+            <p>Loading...</p>
+        </div>
+        <div class="sidebar-right">
+            <button onclick="loadContent('/settings')">Settings</button>
+            <form action="/logout" method="post">
+                <button type="submit">Logout</button>
+            </form>
+        </div>
     </div>
-    <div class="main-content">
-      {% block main_content %}
-      <p>Welcome! Please select an option from the sidebar.</p>
-      {% endblock %}
-    </div>
-      <div class="sidebar-right">
-        <button onclick="window.location.href='/settings'">Settings</button>
-        <form action="/logout" method="post">
-          <button type="submit">Logout</button>
-        </form>
-      </div>
-  </div>
 </body>
 </html>

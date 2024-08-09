@@ -1,6 +1,7 @@
 use log::info;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
+use rocket::serde::json::json;
 use rocket::{get, post, State};
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::Template;
@@ -9,8 +10,10 @@ use std::collections::HashMap;
 use crate::database::db_connector::DbConn;
 use crate::database::models::CSVConverter;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::show_base_or_subview_with_data;
-use crate::utils::get_utils::get_user_id;
+use crate::utils::display_utils::{
+    generate_balance_graph_data, generate_performance_value, show_base_or_subview_with_data,
+};
+use crate::utils::get_utils::{get_banks_of_user, get_user_id};
 use crate::utils::loading_utils::{load_banks, load_csv_converters, load_transactions};
 use crate::utils::structs::Transaction;
 
@@ -35,16 +38,10 @@ pub async fn base(
 
     for bank in banks_result.iter() {
         let transactions_result = load_transactions(bank.id, &mut db).await?;
-
         transactions_map.insert(bank.clone().id, transactions_result);
 
-        let csv_converters_result = load_csv_converters(bank.id, &mut db).await?;
-
-        match csv_converters_result {
-            Some(csv_converter) => {
-                csv_converters_map.insert(bank.id, csv_converter);
-            }
-            None => {}
+        if let Some(csv_converter) = load_csv_converters(bank.id, &mut db).await? {
+            csv_converters_map.insert(bank.id, csv_converter);
         }
     }
 
@@ -58,17 +55,13 @@ pub async fn base(
         )
         .await;
 
-    Ok(show_base_or_subview_with_data(
-        cookie_user_id,
-        state,
-        "dashboard".to_string(),
-        true,
-        false,
-        None,
-        None,
-        None,
-    )
-    .await)
+    Ok(Template::render(
+        "base",
+        json!({
+            "banks": banks_result,
+            "view_name": "dashboard",
+        }),
+    ))
 }
 
 /// Display the login page.
@@ -83,17 +76,35 @@ pub async fn dashboard(
 
     state.update_current_bank(cookie_user_id, None).await;
 
-    Ok(show_base_or_subview_with_data(
-        cookie_user_id,
-        state,
-        "dashboard".to_string(),
-        true,
-        false,
-        None,
-        None,
-        None,
-    )
-    .await)
+    let transactions_map = state.transactions.read().await;
+
+    let banks = get_banks_of_user(cookie_user_id, state).await;
+
+    let first_date = transactions_map
+        .values()
+        .flatten()
+        .map(|transaction| transaction.date)
+        .min()
+        .unwrap_or_default();
+
+    let last_date = transactions_map
+        .values()
+        .flatten()
+        .map(|transaction| transaction.date)
+        .max()
+        .unwrap_or_default();
+
+    let graph_data = generate_balance_graph_data(&banks, &transactions_map).await;
+    let performance_value =
+        generate_performance_value(&banks, &transactions_map, first_date, last_date);
+
+    Ok(Template::render(
+        "dashboard",
+        json!({
+            "graph_data": graph_data,
+            "performance_value": performance_value,
+        }),
+    ))
 }
 
 /// Display the settings page.
