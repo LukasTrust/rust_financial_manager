@@ -4,10 +4,18 @@
     window.performanceData = {{ performance_value | safe }};
 </script>
     <h1>{{ bank.name }}</h1>
+    <div class="header-messages">
     <p id="success" class="success"></p>
     <p id="error" class="error"></p>
+    </div>
     <div class="bank-container">
         <div id="balance_graph" class="balance-graph"></div>
+        <div id="performance_metrics">
+    <p>Total Number of Transactions: <span id="total_transactions">{{ performance_value.total_transactions }}</span></p>
+    <p>Average Transaction Amount: <span id="average_transaction_amount">{{ performance_value.average_transaction_amount }}</span></p>
+    <p>Net Gain/Loss: <span id="net_gain_loss">{{ performance_value.net_gain_loss }}</span></p>
+    <p>Performance: <span id="performance_percentage">{{ performance_value.performance_percentage }}</span></p>
+</div>
 
         <!-- Form panel container -->
         <div id="form_panel" class="form-panel">

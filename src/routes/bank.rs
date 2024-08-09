@@ -1,4 +1,3 @@
-use chrono::NaiveDate;
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::serde::json::json;
@@ -7,7 +6,9 @@ use rocket_dyn_templates::Template;
 
 use crate::utils::appstate::AppState;
 use crate::utils::display_utils::{generate_balance_graph_data, generate_performance_value};
-use crate::utils::get_utils::{get_banks_of_user, get_user_id};
+use crate::utils::get_utils::{
+    get_banks_of_user, get_first_date_and_last_date_from_bank, get_user_id,
+};
 
 use super::error_page::show_error_page;
 
@@ -32,27 +33,8 @@ pub async fn bank_view(
 
             let banks = vec![bank.clone()];
 
-            // Fetch the transactions for the bank_id
             let transactions = transactions_map.get(&bank_id);
-
-            let mut first_date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
-            let mut last_date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
-
-            if transactions.is_some() {
-                let transactions = transactions.unwrap();
-
-                first_date = transactions
-                    .iter()
-                    .min_by_key(|t| t.date)
-                    .map(|t| t.date)
-                    .unwrap_or_else(|| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
-
-                last_date = transactions
-                    .iter()
-                    .min_by_key(|t| t.date)
-                    .map(|t| t.date)
-                    .unwrap_or_else(|| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
-            }
+            let (first_date, last_date) = get_first_date_and_last_date_from_bank(transactions);
 
             let graph_data = generate_balance_graph_data(&banks, &transactions_map).await;
             let performance_value =

@@ -31,10 +31,6 @@ function loadContent(url) {
 
 // Function to initialize the Plotly chart and Flatpickr date range picker
 function initializeChartAndDatePicker() {
-    // Check if flatpickr is already applied to the element
-    if (document.querySelector(".flatpickr-input")) {
-        return; // Exit if date-picker is already initialized
-    }
 
     // Check if plotData exists
     var plotData = window.plotData || [];
@@ -105,11 +101,13 @@ function initializeChartAndDatePicker() {
 }
 
 // Function to handle form submissions
-function handleFormSubmission(form) {
+async function handleFormSubmission(form) {
     form.addEventListener('submit', async function (event) {
         event.preventDefault();
 
         const formData = new FormData(form);
+        const errorDiv = document.getElementById('error');
+        const successDiv = document.getElementById('success');
 
         try {
             const response = await fetch(form.action, {
@@ -117,9 +115,7 @@ function handleFormSubmission(form) {
                 body: formData
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
             let result;
             try {
@@ -129,25 +125,30 @@ function handleFormSubmission(form) {
                 throw new Error('Error parsing JSON response');
             }
 
-            const errorDiv = document.getElementById('error');
-            const successDiv = document.getElementById('success');
-
+            // Handle success and error messages
             if (result.success) {
                 successDiv.textContent = result.success;
                 successDiv.style.display = 'block';
                 errorDiv.style.display = 'none';
+
+                // Update the graph if `graph_data` is available
+                if (result.graph_data) {
+                    console.log('Updating graph with new data:', result.graph_data);
+                    window.plotData = result.graph_data;
+                    initializeChartAndDatePicker(); // Reinitialize chart with new data
+                }
             } else if (result.error) {
                 errorDiv.textContent = result.error;
                 errorDiv.style.display = 'block';
                 successDiv.style.display = 'none';
             }
 
-            if (!result.error) {
-                form.reset();
-            }
+            if (!result.error) form.reset();
         } catch (error) {
             console.error('An unexpected error occurred:', error);
-            document.getElementById("error").textContent = `An unexpected error occurred: ${error.message}`;
+            errorDiv.textContent = `An unexpected error occurred: ${error.message}`;
+            errorDiv.style.display = 'block';
+            successDiv.style.display = 'none';
         }
     });
 }

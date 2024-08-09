@@ -1,7 +1,11 @@
+use chrono::NaiveDate;
 use log::{error, info};
 use rocket::{http::CookieJar, response::Redirect, State};
 
-use super::{appstate::AppState, structs::Bank};
+use super::{
+    appstate::AppState,
+    structs::{Bank, Transaction},
+};
 use crate::routes::error_page::show_error_page;
 
 /// Extract the user ID from the user ID cookie.
@@ -75,4 +79,29 @@ pub async fn get_csv_converter(
             Err("No CSV converter found.".to_string())
         }
     }
+}
+
+pub fn get_first_date_and_last_date_from_bank(
+    transactions: Option<&Vec<Transaction>>,
+) -> (NaiveDate, NaiveDate) {
+    let mut first_date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
+    let mut last_date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
+
+    if transactions.is_some() {
+        let transactions = transactions.unwrap();
+
+        first_date = transactions
+            .iter()
+            .min_by_key(|t| t.date)
+            .map(|t| t.date)
+            .unwrap_or_else(|| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+
+        last_date = transactions
+            .iter()
+            .min_by_key(|t| t.date)
+            .map(|t| t.date)
+            .unwrap_or_else(|| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+    }
+
+    (first_date, last_date)
 }

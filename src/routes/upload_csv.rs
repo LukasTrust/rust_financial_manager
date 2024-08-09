@@ -4,9 +4,10 @@ use log::{error, info};
 use rocket::data::{Data, ToByteUnit};
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
+use rocket::serde::json::Json;
 use rocket::{post, State};
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
-use rocket_dyn_templates::Template;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::io::Cursor;
 
@@ -14,8 +15,10 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewTransactions};
 use crate::schema::transactions;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::show_base_or_subview_with_data;
-use crate::utils::get_utils::{get_csv_converter, get_current_bank, get_user_id};
+use crate::utils::display_utils::{generate_balance_graph_data, generate_performance_value};
+use crate::utils::get_utils::{
+    get_csv_converter, get_current_bank, get_first_date_and_last_date_from_bank, get_user_id,
+};
 use crate::utils::structs::Transaction;
 
 use super::error_page::show_error_page;
@@ -26,7 +29,7 @@ pub async fn upload_csv(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Redirect> {
+) -> Result<Json<Value>, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
     let current_bank = get_current_bank(cookie_user_id, state).await;
 
@@ -34,24 +37,16 @@ pub async fn upload_csv(
         return Err(show_error_page("Error uploading csv".to_string(), error));
     }
 
-    let current_bank_id = current_bank.unwrap().id;
+    let current_bank_id = current_bank.clone().unwrap().id;
 
     // Read the CSV file
     let data_stream = match data.open(512.kibibytes()).into_bytes().await {
         Ok(bytes) => bytes,
         Err(_) => {
             error!("Failed to read CSV file");
-            return Ok(show_base_or_subview_with_data(
-                cookie_user_id,
-                state,
-                "bank".to_string(),
-                true,
-                true,
-                None,
-                Some("Failed to read CSV file".to_string()),
-                None,
-            )
-            .await);
+            return Ok(Json(json!({
+                "error": "Failed to read CSV file",
+            })));
         }
     };
 
@@ -70,34 +65,27 @@ pub async fn upload_csv(
                 succesful_inserts, failed_inserts
             );
 
-            Ok(show_base_or_subview_with_data(
-                cookie_user_id,
-                state,
-                "bank".to_string(),
-                true,
-                true,
-                Some(format!(
-                    "Succesfully insertet {} and {} were duplicates",
-                    succesful_inserts, failed_inserts
-                )),
-                None,
-                None,
-            )
-            .await)
+            let transactions_map = state.transactions.read().await;
+            let transactions = transactions_map.get(&current_bank_id);
+            let banks = vec![current_bank.unwrap()];
+
+            let (first_date, last_date) = get_first_date_and_last_date_from_bank(transactions);
+            let graph_data = generate_balance_graph_data(&banks, &transactions_map).await;
+            let performance_value =
+                generate_performance_value(&banks, &transactions_map, first_date, last_date);
+
+            Ok(Json(json!({
+                "success": format!("Succesfully insertet {} and {} were duplicates", succesful_inserts, failed_inserts),
+                "graph_data": graph_data,
+                "performance_value": performance_value,
+            })))
         }
         Err(e) => {
             error!("Failed to insert records: {}", e);
-            return Ok(show_base_or_subview_with_data(
-                cookie_user_id,
-                state,
-                "bank".to_string(),
-                true,
-                true,
-                None,
-                Some(e),
-                None,
-            )
-            .await);
+            return Ok(Json(json!({
+                "error": e.to_string(),
+                "success": false
+            })));
         }
     }
 }
