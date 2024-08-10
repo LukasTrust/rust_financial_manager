@@ -8,7 +8,7 @@
     <script src="/static/register.js" defer></script>
 </head>
 <body>
-    <div class="container">
+    <div class="container-with-border">
         <div id="error" class="error"></div>
         <form id="registrationForm" action="/register" method="post">
             <div class="input-group">

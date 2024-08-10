@@ -1,21 +1,29 @@
+    <script id="graph-data" type="application/json">
+        {{ graph_data }}
+    </script>
+    <body>
 
-<script>
-    // Pass plotData and performanceData to the global scope
-    window.plotData = {{ graph_data | safe }};
-    window.performanceData = {{ performance_value | safe }};
-</script>
-
-<div class="bank-container">
-<h1>Dashboard</h1>
-<div class="date-picker">
-    <label for="dateRange">Select Date Range:</label>
-    <input type="text" id="dateRange" placeholder="Select Date Range">
-</div>
-</div>
-<div id="balance_graph"></div>
-<div id="performance_metrics">
-    <p>Total Number of Transactions: <span id="total_transactions">{{ performance_value.total_transactions }}</span></p>
-    <p>Average Transaction Amount: <span id="average_transaction_amount">{{ performance_value.average_transaction_amount }}</span></p>
-    <p>Net Gain/Loss: <span id="net_gain_loss">{{ performance_value.net_gain_loss }}</span></p>
-    <p>Performance: <span id="performance_percentage">{{ performance_value.performance_percentage }}</span></p>
-</div>
+        <div class="container-without-border">
+            <div class="container-without-border-horizontally">
+                <h1>Dashboard</h1>
+                <label for="dateRange" class="date-label">Select Date
+                    Range:</label>
+                <input type="text" id="dateRange" class="date-input"
+                    placeholder="Select Date Range">
+            </div>
+            <div id="balance_graph"></div>
+            <div class="container-without-border-horizontally">
+                <p class="box">Total Number of Transactions: <span
+                        id="total_transactions">{{
+                        performance_value.total_transactions }}</span></p>
+                <p class="box">Average Transaction Amount: <span
+                        id="average_transaction_amount">{{
+                        performance_value.average_transaction_amount
+                        }}</span></p>
+                <p class="box">Net Gain/Loss: <span id="net_gain_loss">{{
+                        performance_value.net_gain_loss }}</span></p>
+                <p class="box">Performance: <span id="performance_percentage">{{
+                        performance_value.performance_percentage }}</span></p>
+            </div>
+        </div>
+</body>

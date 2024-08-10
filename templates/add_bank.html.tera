@@ -1,8 +1,9 @@
+<div class="container-without-border">
+    <div class="container-without-border-horizontally">
 <h1>Add Bank</h1>
-<div class="header-messages">
     <p id="error" class="error"></p>
     <p id="success" class="success"></p>
-</div>
+    </div>
 <form id="add_bankForm" action="/add-bank" method="post">
     <div class="form-group">
         <label for="name">Name</label>
@@ -31,3 +32,4 @@
     </div>
     <button type="submit">Submit</button>
 </form>
+</div>

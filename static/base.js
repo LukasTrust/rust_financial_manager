@@ -12,10 +12,19 @@ function loadContent(url) {
         .then(html => {
             document.getElementById('main-content').innerHTML = html;
 
+            var main = document.getElementById('main-content');
+
+            var graphDataScript = main.querySelector('#graph-data');
+
+            var graphData = graphDataScript.textContent || graphDataScript.innerText;
+
+            window.plotData = graphData;
+
             // Reinitialize chart and date picker for both dashboard and bank views
             if (url === '/dashboard' || /^\/bank\/\d+$/.test(url)) {
-                initializeChartAndDatePicker();
                 initializeFormHandling();
+                formatAndColorNumbers();
+                initializeChartAndDatePicker();
             }
 
             // Reinitialize form handling if on add bank page
@@ -165,8 +174,6 @@ function initializeFormHandling() {
 
 // Initialize event listeners when DOM content is loaded
 document.addEventListener("DOMContentLoaded", function () {
-    console.log('DOM fully loaded and parsed');
-
     // Attach event listeners to sidebar buttons
     document.querySelectorAll(".sidebar-left button").forEach(button => {
         button.addEventListener("click", function () {
@@ -178,3 +185,30 @@ document.addEventListener("DOMContentLoaded", function () {
     // Optionally load initial content (e.g., dashboard) as default
     loadContent('/dashboard');
 });
+
+
+// Function to format numbers and apply color based on their value
+function formatAndColorNumbers() {
+    const elements = [
+        document.getElementById("net_gain_loss"),
+        document.getElementById("performance_percentage"),
+        document.getElementById("average_transaction_amount")
+    ];
+
+    elements.forEach(element => {
+        if (element) {
+            let value = parseFloat(element.textContent);
+            value = value.toFixed(2); // Format to 2 decimal places
+
+            element.textContent = value;
+
+            if (value >= 0) {
+                element.classList.add("positive");
+                element.classList.remove("negative");
+            } else {
+                element.classList.add("negative");
+                element.classList.remove("positive");
+            }
+        }
+    });
+}
