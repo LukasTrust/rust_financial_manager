@@ -1,80 +1,9 @@
 use chrono::NaiveDate;
-use log::info;
-use rocket::{tokio::task, State};
-use rocket_dyn_templates::{context, Template};
+use rocket::tokio::task;
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
-use super::appstate::AppState;
-use super::get_utils::{get_banks_of_user, get_current_bank};
 use super::structs::{Bank, PerformanceData, Transaction};
-
-/// Display the base page or a subview with data.
-/// The view to show is passed as a parameter.
-/// The success message and error message are optional and are displayed on the page.
-pub async fn show_base_or_subview_with_data(
-    cookie_user_id: i32,
-    state: &State<AppState>,
-    view_to_show: String,
-    generate_graph_data: bool,
-    generate_only_current_bank: bool,
-    success_message: Option<String>,
-    error_message: Option<String>,
-    performance_data: Option<PerformanceData>,
-) -> Template {
-    let banks = get_banks_of_user(cookie_user_id, state).await;
-
-    let transactions = state.transactions.read().await.clone();
-
-    let mut current_bank = None;
-
-    let plot_data = if generate_graph_data {
-        match generate_only_current_bank {
-            true => {
-                let current_bank_result = get_current_bank(cookie_user_id, state).await;
-
-                if current_bank_result.is_err() {
-                    let error = "No bank selected. Please select a bank.".to_string();
-                    return Template::render(
-                        "base",
-                        context! {
-                            banks: banks,
-                            plot_data: "".to_string(),
-                            success: success_message.unwrap_or_default(),
-                            error: error,
-                            performance_data: performance_data.unwrap_or_default(),
-                        },
-                    );
-                }
-
-                let bank_of_user = current_bank_result.unwrap();
-                current_bank = Some(bank_of_user.clone());
-
-                info!("Generating balance graph data for current bank only.");
-
-                generate_balance_graph_data(&[bank_of_user], &transactions).await
-            }
-            false => {
-                info!("Generating balance graph data for all banks.");
-                generate_balance_graph_data(&banks, &transactions).await
-            }
-        }
-    } else {
-        "".to_string()
-    };
-
-    Template::render(
-        view_to_show,
-        context! {
-            banks: banks,
-            bank: current_bank,
-            plot_data: plot_data.to_string(),
-            success: success_message.unwrap_or_default(),
-            error: error_message.unwrap_or_default(),
-            performance_data: performance_data.unwrap_or_default(),
-        },
-    )
-}
 
 /// Generate balance graph data for plotting.
 /// The balance graph data is generated from the bank accounts and transactions.
@@ -157,8 +86,6 @@ pub async fn generate_balance_graph_data(
         }
     }
 
-    info!("Data: {:?}", plot_data);
-
     // Return the plot data as JSON
     let plot_data = json!(plot_data);
 
@@ -198,7 +125,7 @@ pub fn generate_performance_value(
 
     let starting_balance = starting_balance.unwrap_or(0.0);
     let ending_balance = ending_balance.unwrap_or(starting_balance); // If no transactions in range, balance doesn't change
-    let net_gain_loss = ending_balance - starting_balance;
+    let net_gain_loss = starting_balance - ending_balance;
     let performance_percentage = if starting_balance != 0.0 {
         (net_gain_loss / starting_balance) * 100.0
     } else {

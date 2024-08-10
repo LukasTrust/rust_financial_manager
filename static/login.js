@@ -48,7 +48,7 @@ async function handleSubmit(event) {
 
         if (result.success) {
             // Redirect to login page with success message in the query string
-            window.location.href = `/base?success=${encodeURIComponent(result.success)}`;
+            window.location.href = `/base`;
         } else if (result.error) {
             errorDiv.textContent = result.error;
             errorDiv.style.display = 'block';

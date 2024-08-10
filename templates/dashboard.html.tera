@@ -5,7 +5,7 @@
 
         <div class="container-without-border">
             <div class="container-without-border-horizontally">
-                <h1>Dashboard</h1>
+                <h1>{{ success }}</h1>
                 <label for="dateRange" class="date-label">Select Date
                     Range:</label>
                 <input type="text" id="dateRange" class="date-input"
@@ -13,17 +13,17 @@
             </div>
             <div id="balance_graph"></div>
             <div class="container-without-border-horizontally">
-                <p class="box">Total Number of Transactions: <span
+                <p class="box">Total number: <span
                         id="total_transactions">{{
                         performance_value.total_transactions }}</span></p>
-                <p class="box">Average Transaction Amount: <span
+                <p class="box">Average amount: <span
                         id="average_transaction_amount">{{
                         performance_value.average_transaction_amount
                         }}</span></p>
-                <p class="box">Net Gain/Loss: <span id="net_gain_loss">{{
+                <p class="box">Net gain/loss: <span id="net_gain_loss">{{
                         performance_value.net_gain_loss }}</span></p>
                 <p class="box">Performance: <span id="performance_percentage">{{
-                        performance_value.performance_percentage }}</span></p>
+                        performance_value.performance_percentage }}</span> </p>
             </div>
         </div>
 </body>

@@ -34,9 +34,9 @@ pub fn login_from_register(success: String) -> Template {
 /// If there is an internal server error, an error message is displayed.
 #[post("/login", data = "<user_form>")]
 pub async fn login_user(
-    mut db: Connection<DbConn>,
     user_form: Form<FormUser>,
     cookies: &CookieJar<'_>,
+    mut db: Connection<DbConn>,
 ) -> Json<ResponseData> {
     let email_of_user = &user_form.email.to_lowercase();
     let password_of_user = &user_form.password;
@@ -54,10 +54,7 @@ pub async fn login_user(
                 info!("Login successful for user with email: {}", email_of_user);
                 cookies.add_private(Cookie::new("user_id", user.id.to_string()));
                 Json(ResponseData {
-                    success: Some(format!(
-                        "Welcom back {} {}",
-                        user.first_name, user.last_name
-                    )),
+                    success: Some("Login successful.".into()),
                     error: None,
                 })
             }

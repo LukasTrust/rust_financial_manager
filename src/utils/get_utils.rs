@@ -98,7 +98,7 @@ pub fn get_first_date_and_last_date_from_bank(
 
         last_date = transactions
             .iter()
-            .min_by_key(|t| t.date)
+            .max_by_key(|t| t.date)
             .map(|t| t.date)
             .unwrap_or_else(|| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
     }

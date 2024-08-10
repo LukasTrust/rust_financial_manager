@@ -1,14 +1,17 @@
+use ::diesel::{ExpressionMethods, QueryDsl};
 use log::info;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
 use rocket::serde::json::json;
 use rocket::{get, post, State};
-use rocket_db_pools::Connection;
+use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 use rocket_dyn_templates::Template;
 use std::collections::HashMap;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::CSVConverter;
+use crate::routes::error_page::show_error_page;
+use crate::schema::users::{self, first_name, last_name};
 use crate::utils::appstate::AppState;
 use crate::utils::display_utils::{generate_balance_graph_data, generate_performance_value};
 use crate::utils::get_utils::{
@@ -71,8 +74,22 @@ pub async fn base(
 pub async fn dashboard(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
+    mut db: Connection<DbConn>,
 ) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
+
+    let (user_first_name, user_last_name) = users::table
+        .filter(users::id.eq(cookie_user_id))
+        .select((first_name, last_name))
+        .first::<(String, String)>(&mut db)
+        .await
+        .map_err(|_| {
+            info!("User not found: {}", cookie_user_id);
+            show_error_page(
+                "User not found!".to_string(),
+                "Please login again.".to_string(),
+            )
+        })?;
 
     state.update_current_bank(cookie_user_id, None).await;
 
@@ -93,6 +110,7 @@ pub async fn dashboard(
     Ok(Template::render(
         "dashboard",
         json!({
+            "success": format!("Welcome, {} {}!", user_first_name, user_last_name),
             "graph_data": graph_data,
             "performance_value": performance_value,
         }),

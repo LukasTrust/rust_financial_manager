@@ -204,7 +204,11 @@ function formatAndColorNumbers() {
             let value = parseFloat(element.textContent);
             value = value.toFixed(2); // Format to 2 decimal places
 
-            element.textContent = value;
+            if (element.id === "performance_percentage") {
+                element.textContent = `${value} %`;
+            } else {
+                element.textContent = `${value} €`;
+            }
 
             if (value >= 0) {
                 element.classList.add("positive");
