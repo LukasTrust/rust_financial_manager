@@ -36,16 +36,18 @@ pub async fn bank_view(
             let transactions = Some(transactions_map.get(&bank_id).unwrap());
             let (first_date, last_date) = get_first_date_and_last_date_from_bank(transactions);
 
-            let graph_data = generate_balance_graph_data(&banks, &transactions_map).await;
             let performance_value =
                 generate_performance_value(&banks, &transactions_map, first_date, last_date);
+
+            let graph_data =
+                generate_balance_graph_data(&banks, &transactions_map, performance_value.1).await;
 
             Ok(Template::render(
                 "bank",
                 json!({
                     "bank": bank,
                     "graph_data": graph_data,
-                    "performance_value": performance_value,
+                    "performance_value": performance_value.0,
                 }),
             ))
         }

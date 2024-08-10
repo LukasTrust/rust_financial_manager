@@ -1,6 +1,6 @@
-    <script id="graph-data" type="application/json">
-        {{ graph_data }}
-    </script>
+<script id="graph-data" type="application/json">
+    {{ graph_data | safe }}
+</script>
 <body>
     <div class="container-without-border-horizontally">
         <div class="container-without-border">
@@ -9,7 +9,7 @@
                 <p id="success" class="success"></p>
                 <p id="error" class="error"></p>
             </div>
-            <div id="balance_graph"></div>
+            <div id="balance_graph" class="balance_graph"></div>
             <div class="container-without-border-horizontally">
                 <p class="box">Total number: <span
                         id="total_transactions">{{
@@ -22,6 +22,8 @@
                         performance_value.net_gain_loss }}</span></p>
                 <p class="box">Performance: <span id="performance_percentage">{{
                         performance_value.performance_percentage }}</span> </p>
+                <p class="box">Discrepancy: <span id="total_discrepancy">{{
+                        performance_value.total_discrepancy }}</span></p>
             </div>
         </div>
         <!-- Form panel container -->

@@ -1,9 +1,8 @@
 use chrono::NaiveDate;
-use rocket::tokio::task;
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
-use super::structs::{Bank, PerformanceData, Transaction};
+use super::structs::{Bank, Discrepancy, PerformanceData, Transaction};
 
 /// Generate balance graph data for plotting.
 /// The balance graph data is generated from the bank accounts and transactions.
@@ -12,77 +11,84 @@ use super::structs::{Bank, PerformanceData, Transaction};
 pub async fn generate_balance_graph_data(
     banks: &[Bank],
     transactions: &HashMap<i32, Vec<Transaction>>,
+    transactions_with_discrepancy: Vec<Discrepancy>,
 ) -> String {
-    let mut tasks = vec![];
-
-    for bank in banks {
-        let bank = bank.clone();
-        let transactions = transactions.clone();
-
-        let task = task::spawn(async move {
-            let mut plot_data = vec![];
-
-            if let Some(bank_transactions) = transactions.get(&bank.id) {
-                let mut data: BTreeMap<NaiveDate, (f64, String, f64)> = BTreeMap::new();
-
-                // Process transactions in reverse chronological order
-                for transaction in bank_transactions.iter().rev() {
-                    data.entry(transaction.date)
-                        .and_modify(|e| {
-                            *e = (
-                                transaction.bank_balance_after,
-                                transaction.counterparty.clone(),
-                                transaction.amount,
-                            )
-                        })
-                        .or_insert((
-                            transaction.bank_balance_after,
-                            transaction.counterparty.clone(),
-                            transaction.amount,
-                        ));
-                }
-
-                // Prepare series data for plotting
-                let series_data: Vec<(String, f64, String)> = data
-                    .into_iter()
-                    .map(|(date, (balance, counterparty, amount))| {
-                        (
-                            date.to_string(),
-                            balance,
-                            format!(
-                                "{}<br>Date:{}<br>Amount: {} €<br>New balance: {} €",
-                                counterparty,
-                                date.format("%d.%m.%Y").to_string(),
-                                amount,
-                                balance
-                            ),
-                        )
-                    })
-                    .collect();
-
-                // Add plot data for the bank
-                plot_data.push(json!({
-                    "name": bank.name,
-                    "x": series_data.iter().map(|(date, _, _)| date.clone()).collect::<Vec<String>>(),
-                    "y": series_data.iter().map(|(_, balance, _)| *balance).collect::<Vec<f64>>(),
-                    "text": series_data.iter().map(|(_, _, text)| text.clone()).collect::<Vec<String>>(),
-                    "type": "scatter",
-                    "mode": "lines+markers",
-                    "hoverinfo": "text"
-                }));
-            }
-
-            plot_data
-        });
-
-        tasks.push(task);
-    }
+    // Convert the transactions_with_discrepancy into a HashMap for quick lookup
+    let discrepancy_map: HashMap<i32, f64> = transactions_with_discrepancy
+        .into_iter()
+        .map(|d| (d.transaction_id, d.discrepancy_amount))
+        .collect();
 
     let mut plot_data = vec![];
 
-    for task in tasks {
-        if let Ok(data) = task.await {
-            plot_data.extend(data);
+    for bank in banks {
+        let bank = bank.clone();
+        let bank_transactions = transactions.get(&bank.id);
+
+        if let Some(bank_transactions) = bank_transactions {
+            // Use a BTreeMap to maintain order and store multiple transactions per day
+            let mut data: BTreeMap<NaiveDate, Vec<(f64, String, f64, Option<f64>)>> =
+                BTreeMap::new();
+
+            for transaction in bank_transactions.iter().rev() {
+                // Check if the transaction is in the discrepancy map
+                let discrepancy_amount = discrepancy_map.get(&transaction.id).cloned();
+
+                data.entry(transaction.date).or_insert_with(Vec::new).push((
+                    transaction.bank_balance_after,
+                    transaction.counterparty.clone(),
+                    transaction.amount,
+                    discrepancy_amount,
+                ));
+            }
+
+            // Prepare series data for plotting
+            let mut series_data = vec![];
+            for (date, transactions) in data {
+                for (balance, counterparty, amount, discrepancy_amount) in transactions {
+                    let color = if discrepancy_amount.is_some() {
+                        "red"
+                    } else {
+                        "blue"
+                    };
+
+                    // Adjust hover text based on discrepancy
+                    let hover_text = if let Some(discrepancy_amount) = discrepancy_amount {
+                        format!(
+                            "{}<br>Date:{}<br>Amount: {} €<br>New balance: {} €<br>Discrepancy Amount: {} €",
+                            counterparty,
+                            date.format("%d.%m.%Y").to_string(),
+                            amount,
+                            balance,
+                            discrepancy_amount
+                        )
+                    } else {
+                        format!(
+                            "{}<br>Date:{}<br>Amount: {} €<br>New balance: {} €",
+                            counterparty,
+                            date.format("%d.%m.%Y").to_string(),
+                            amount,
+                            balance
+                        )
+                    };
+
+                    series_data.push((date.to_string(), balance, hover_text, color.to_string()));
+                }
+            }
+
+            // Add plot data for the bank
+            plot_data.push(json!({
+                "name": bank.name,
+                "x": series_data.iter().map(|(date, _, _, _)| date.clone()).collect::<Vec<String>>(),
+                "y": series_data.iter().map(|(_, balance, _, _)| *balance).collect::<Vec<f64>>(),
+                "text": series_data.iter().map(|(_, _, text, _)| text.clone()).collect::<Vec<String>>(),
+                "marker": {
+                    "color": series_data.iter().map(|(_, _, _, color)| color.clone()).collect::<Vec<String>>(),
+                },
+                "type": "scatter",
+                "mode": "lines+markers",
+                "hoverinfo": "text"
+            }));
         }
     }
 
@@ -97,50 +103,79 @@ pub fn generate_performance_value(
     transactions: &HashMap<i32, Vec<Transaction>>,
     start_date: NaiveDate,
     end_date: NaiveDate,
-) -> PerformanceData {
+) -> (PerformanceData, Vec<Discrepancy>) {
     let mut total_sum = 0.0;
     let mut total_transactions = 0;
-    let mut starting_balance = None;
-    let mut ending_balance = None;
+    let mut starting_balance = 0.0;
+    let mut ending_balance = 0.0;
+    let mut total_discrepancy = 0.0;
+
+    let mut transactions_with_discrepancy = vec![];
 
     for bank in banks {
         if let Some(transaction_of_bank) = transactions.get(&bank.id) {
-            for transaction in transaction_of_bank {
+            let mut first_transaction_in_range = true;
+            let mut initial_balance_set = false;
+            let mut previous_balance = 0.0;
+
+            for (index, transaction) in transaction_of_bank.iter().enumerate() {
                 if transaction.date >= start_date && transaction.date <= end_date {
                     total_sum += transaction.amount;
                     total_transactions += 1;
 
-                    // Determine the starting balance
-                    if starting_balance.is_none() {
-                        starting_balance =
-                            Some(transaction.bank_balance_after - transaction.amount);
+                    if index > 0 && index < transaction_of_bank.len() - 1 {
+                        let discrepancy = (transaction.bank_balance_after - previous_balance).abs();
+                        if discrepancy > 0.01 {
+                            total_discrepancy += discrepancy;
+                            transactions_with_discrepancy.push(Discrepancy {
+                                transaction_id: transaction.id,
+                                discrepancy_amount: discrepancy,
+                            });
+                        }
                     }
 
-                    // Continuously update the ending balance
-                    ending_balance = Some(transaction.bank_balance_after);
+                    if first_transaction_in_range {
+                        starting_balance = transaction.bank_balance_after - transaction.amount;
+                        first_transaction_in_range = false;
+                        initial_balance_set = true;
+                    }
+
+                    ending_balance = transaction.bank_balance_after;
+                    previous_balance = transaction.bank_balance_after - transaction.amount;
+                }
+            }
+
+            if first_transaction_in_range && initial_balance_set {
+                // Handle cases where no transactions are in range
+                if let Some(last_transaction) = transaction_of_bank.last() {
+                    starting_balance = last_transaction.bank_balance_after;
+                    ending_balance = last_transaction.bank_balance_after;
                 }
             }
         }
     }
 
-    let starting_balance = starting_balance.unwrap_or(0.0);
-    let ending_balance = ending_balance.unwrap_or(starting_balance); // If no transactions in range, balance doesn't change
-    let net_gain_loss = starting_balance - ending_balance;
+    let net_gain_loss = ending_balance - starting_balance;
     let performance_percentage = if starting_balance != 0.0 {
         (net_gain_loss / starting_balance) * 100.0
     } else {
         0.0
     };
+
     let average_transaction_amount = if total_transactions > 0 {
         total_sum / total_transactions as f64
     } else {
         0.0
     };
 
-    PerformanceData {
-        total_transactions,
-        average_transaction_amount,
-        net_gain_loss,
-        performance_percentage,
-    }
+    (
+        PerformanceData {
+            total_transactions,
+            average_transaction_amount,
+            net_gain_loss,
+            performance_percentage,
+            total_discrepancy,
+        },
+        transactions_with_discrepancy,
+    )
 }

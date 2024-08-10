@@ -56,6 +56,12 @@ pub struct Transaction {
     pub bank_balance_after: f64,
 }
 
+#[derive(Debug)]
+pub struct Discrepancy {
+    pub transaction_id: i32,
+    pub discrepancy_amount: f64,
+}
+
 #[derive(Debug, FromForm)]
 pub struct DateRangeForm {
     pub start_date: String,
@@ -68,6 +74,7 @@ pub struct PerformanceData {
     pub average_transaction_amount: f64,
     pub net_gain_loss: f64,
     pub performance_percentage: f64,
+    pub total_discrepancy: f64,
 }
 
 impl Default for PerformanceData {
@@ -77,6 +84,7 @@ impl Default for PerformanceData {
             average_transaction_amount: 0.0,
             net_gain_loss: 0.0,
             performance_percentage: 0.0,
+            total_discrepancy: 0.0,
         }
     }
 }

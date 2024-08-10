@@ -9,21 +9,22 @@
 </head>
 <body>
     <div class="container-with-border">
+        <h2>Register:</h2>
         <div id="error" class="error"></div>
         <form id="registrationForm" action="/register" method="post">
-            <div class="input-group">
+            <div class="form-group">
                 <label for="first_name">First Name</label>
                 <input type="text" id="first_name" name="first_name" required>
             </div>
-            <div class="input-group">
+            <div class="form-group">
                 <label for="last_name">Last Name</label>
                 <input type="text" id="last_name" name="last_name" required>
             </div>
-            <div class="input-group">
+            <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" required>
             </div>
-            <div class="input-group">
+            <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
             </div>

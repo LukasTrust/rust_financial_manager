@@ -61,15 +61,15 @@ function initializeChartAndDatePicker() {
     var config = {
         displayModeBar: true,
         modeBarButtonsToRemove: [
-            'zoom', 'pan', 'resetScale', 'hoverClosestCartesian',
+            'zoom', 'pan', 'hoverClosestCartesian',
             'hoverCompareCartesian', 'zoomIn2d', 'zoomOut2d',
             'pan2d', 'select2d', 'lasso2d', 'zoom3d', 'pan3d',
             'orbitRotation', 'tableRotation', 'resetCameraDefault3d',
             'resetCameraLastSave3d', 'toImage', 'sendDataToCloud',
-            'toggleSpikelines', 'resetViews', 'zoomInGeo',
+            'toggleSpikelines', 'zoomInGeo',
             'zoomOutGeo', 'resetGeo', 'resetMapbox'
         ],
-        modeBarButtons: [['toImage']]
+        modeBarButtons: [['toImage', 'resetViews']]
     };
 
     // Initialize Plotly chart if data is available
@@ -196,7 +196,8 @@ function formatAndColorNumbers() {
     const elements = [
         document.getElementById("net_gain_loss"),
         document.getElementById("performance_percentage"),
-        document.getElementById("average_transaction_amount")
+        document.getElementById("average_transaction_amount"),
+        document.getElementById("total_discrepancy")
     ];
 
     elements.forEach(element => {
@@ -208,6 +209,17 @@ function formatAndColorNumbers() {
                 element.textContent = `${value} %`;
             } else {
                 element.textContent = `${value} €`;
+            }
+
+            if (element.id === "total_discrepancy") {
+                if (value == 0) {
+                    console.log("value is 0");
+                    element.display = "none";
+                }
+                else {
+                    console.log("value is not 0");
+                    element.display = "block";
+                }
             }
 
             if (value >= 0) {

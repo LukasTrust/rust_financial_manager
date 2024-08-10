@@ -1,7 +1,7 @@
 .full-page-container {
     display: flex;
     height: 100vh;
-    width: 100%;
+    width: 100vw;
 }
 
 .sidebar-left {
@@ -19,7 +19,7 @@
 
 button {
     padding: 10px;
-    margin: 5px;
+    margin-bottom: 10px;
     background-color: #007BFF;
     color: white;
     border: none;
@@ -27,6 +27,10 @@ button {
     cursor: pointer;
     max-height: 50px;
     width: inherit;
+}
+
+.balance_graph {
+    flex-grow: 1;
 }
 
 button:hover {
@@ -44,13 +48,15 @@ form {
     width: inherit;
 }
 
+html,
 body {
+    height: 100%;
     margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
+    margin: 0;
     background-color: #f0f0f0;
-    font-family: Arial, sans-serif;
 }
 
 .container-with-border {
@@ -60,7 +66,9 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 400px;
+    min-width: 400px;
     box-sizing: border-box;
+
 }
 
 .container-without-border {
@@ -75,6 +83,7 @@ body {
     flex-direction: row;
     width: 100%;
     gap: 20px;
+    flex-grow: 5;
 }
 
 .error {
@@ -116,7 +125,8 @@ body {
 
 .form-group input {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
+    box-sizing: border-box;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
@@ -141,7 +151,8 @@ body {
     padding: 15px;
     margin: 10px;
     box-sizing: border-box;
-    width: 22%;
+    text-align: center;
+    width: 18%;
     height: auto;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -156,22 +167,9 @@ body {
     margin-top: 10px;
 }
 
-.input-group {
-    margin-bottom: 15px;
-    text-align: left;
-}
-
 label {
     display: block;
     margin-bottom: 5px;
-}
-
-input {
-    width: 100%;
-    padding: 8px;
-    box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 4px;
 }
 
 /* Style for the label */
