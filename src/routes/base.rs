@@ -11,7 +11,9 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::CSVConverter;
 use crate::utils::appstate::AppState;
 use crate::utils::display_utils::{generate_balance_graph_data, generate_performance_value};
-use crate::utils::get_utils::{get_banks_of_user, get_user_id};
+use crate::utils::get_utils::{
+    get_banks_of_user, get_first_date_and_last_date_from_bank, get_user_id,
+};
 use crate::utils::loading_utils::{load_banks, load_csv_converters, load_transactions};
 use crate::utils::structs::Transaction;
 
@@ -75,24 +77,16 @@ pub async fn dashboard(
     state.update_current_bank(cookie_user_id, None).await;
 
     let transactions_map = state.transactions.read().await;
+    let transactions_vec: Vec<Transaction> =
+        transactions_map.clone().into_values().flatten().collect();
+
+    let transactions: Option<&Vec<Transaction>> = Some(&transactions_vec);
+
+    let (first_date, last_date) = get_first_date_and_last_date_from_bank(transactions);
 
     let banks = get_banks_of_user(cookie_user_id, state).await;
-
-    let first_date = transactions_map
-        .values()
-        .flatten()
-        .map(|transaction| transaction.date)
-        .min()
-        .unwrap_or_default();
-
-    let last_date = transactions_map
-        .values()
-        .flatten()
-        .map(|transaction| transaction.date)
-        .max()
-        .unwrap_or_default();
-
     let graph_data = generate_balance_graph_data(&banks, &transactions_map).await;
+
     let performance_value =
         generate_performance_value(&banks, &transactions_map, first_date, last_date);
 

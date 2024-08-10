@@ -12,13 +12,17 @@ function loadContent(url) {
         .then(html => {
             document.getElementById('main-content').innerHTML = html;
 
-            var main = document.getElementById('main-content');
-
-            var graphDataScript = main.querySelector('#graph-data');
-
-            var graphData = graphDataScript.textContent || graphDataScript.innerText;
-
-            window.plotData = graphData;
+            const graphDataElement = document.getElementById('graph-data');
+            if (graphDataElement) {
+                try {
+                    // Parse JSON data
+                    const jsonText = graphDataElement.textContent.trim();
+                    window.plotData = JSON.parse(jsonText);
+                    console.log('Graph data:', window.plotData);
+                } catch (e) {
+                    console.error('Error parsing graph data:', e);
+                }
+            }
 
             // Reinitialize chart and date picker for both dashboard and bank views
             if (url === '/dashboard' || /^\/bank\/\d+$/.test(url)) {
@@ -40,9 +44,9 @@ function loadContent(url) {
 
 // Function to initialize the Plotly chart and Flatpickr date range picker
 function initializeChartAndDatePicker() {
+    plotData = window.plotData;
 
-    // Check if plotData exists
-    var plotData = window.plotData || [];
+    console.log('Initializing chart with data:', plotData);
 
     // Define Plotly chart layout and configuration
     var layout = {

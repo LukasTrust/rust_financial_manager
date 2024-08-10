@@ -60,7 +60,7 @@ pub async fn show_base_or_subview_with_data(
             }
         }
     } else {
-        serde_json::Value::String("".to_string())
+        "".to_string()
     };
 
     Template::render(
@@ -83,7 +83,7 @@ pub async fn show_base_or_subview_with_data(
 pub async fn generate_balance_graph_data(
     banks: &[Bank],
     transactions: &HashMap<i32, Vec<Transaction>>,
-) -> serde_json::Value {
+) -> String {
     let mut tasks = vec![];
 
     for bank in banks {
@@ -111,20 +111,6 @@ pub async fn generate_balance_graph_data(
                             transaction.counterparty.clone(),
                             transaction.amount,
                         ));
-                }
-
-                // Ensure we plot the initial balance at the start of 2023
-                if let Some(start_date) = NaiveDate::from_ymd_opt(2023, 1, 1) {
-                    if let Some(&(initial_balance, ref initial_counterparty, initial_amount)) =
-                        data.values().next()
-                    {
-                        let initial_counterparty = initial_counterparty.clone();
-                        data.entry(start_date).or_insert((
-                            initial_balance,
-                            initial_counterparty,
-                            initial_amount,
-                        ));
-                    }
                 }
 
                 // Prepare series data for plotting
@@ -171,8 +157,12 @@ pub async fn generate_balance_graph_data(
         }
     }
 
+    info!("Data: {:?}", plot_data);
+
     // Return the plot data as JSON
-    json!(plot_data)
+    let plot_data = json!(plot_data);
+
+    serde_json::to_string(&plot_data).unwrap()
 }
 
 pub fn generate_performance_value(

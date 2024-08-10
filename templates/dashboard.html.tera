@@ -1,6 +1,6 @@
-    <script id="graph-data" type="application/json">
-        {{ graph_data }}
-    </script>
+<script id="graph-data" type="application/json">
+    {{ graph_data | safe }}
+</script>
     <body>
 
         <div class="container-without-border">
