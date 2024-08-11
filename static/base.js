@@ -240,7 +240,7 @@ function formatAndColorNumbers() {
             }
 
             if (element.id === "total_discrepancy") {
-                element.style.display = value == 0 ? "none" : "block";
+                element.parentNode.style.display = value == 0.00 ? "none" : "block";
             }
 
             element.classList.toggle("positive", value >= 0);

@@ -196,7 +196,7 @@ async fn extract_and_process_records<R: std::io::Read>(
             }
         }
 
-        if date_from_csv.year() == 1 || counterparty_from_csv == "" || amount_from_csv == 0.0 {
+        if date_from_csv.year() == 1 || amount_from_csv == 0.0 {
             continue;
         }
 
