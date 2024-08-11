@@ -173,7 +173,7 @@ where
     } else {
         let mut new_converter = CSVConverter {
             id: 0,
-            csv_bank_id: current_bank_id,
+            bank_id: current_bank_id,
             date_column: None,
             counterparty_column: None,
             amount_column: None,
@@ -183,7 +183,7 @@ where
         update_field(&mut new_converter);
 
         let new_converter = NewCSVConverter {
-            csv_bank_id: new_converter.csv_bank_id,
+            bank_id: new_converter.bank_id,
             date_column: new_converter.date_column,
             counterparty_column: new_converter.counterparty_column,
             amount_column: new_converter.amount_column,

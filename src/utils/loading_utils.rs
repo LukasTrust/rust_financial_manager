@@ -71,7 +71,7 @@ pub async fn load_csv_converters(
     use diesel::result::Error;
 
     let csv_converters_result = csv_converters
-        .filter(csv_bank_id.eq(bank_id_for_loading))
+        .filter(bank_id.eq(bank_id_for_loading))
         .first::<CSVConverter>(db)
         .await;
 

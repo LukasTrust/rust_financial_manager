@@ -46,7 +46,7 @@ pub struct NewTransactions {
 #[diesel(table_name = csv_converters)]
 pub struct CSVConverter {
     pub id: i32,
-    pub csv_bank_id: i32,
+    pub bank_id: i32,
     pub date_column: Option<i32>,
     pub counterparty_column: Option<i32>,
     pub amount_column: Option<i32>,
@@ -56,7 +56,7 @@ pub struct CSVConverter {
 #[derive(Insertable, Debug)]
 #[diesel(table_name = csv_converters)]
 pub struct NewCSVConverter {
-    pub csv_bank_id: i32,
+    pub bank_id: i32,
     pub date_column: Option<i32>,
     pub counterparty_column: Option<i32>,
     pub amount_column: Option<i32>,

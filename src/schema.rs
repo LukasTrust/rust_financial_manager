@@ -12,9 +12,29 @@ diesel::table! {
 }
 
 diesel::table! {
+    contract_amount_change (id) {
+        id -> Int4,
+        contract_id -> Nullable<Int4>,
+        old_amount -> Float8,
+        new_amount -> Float8,
+        changed_at -> Nullable<Timestamp>,
+    }
+}
+
+diesel::table! {
+    contracts (id) {
+        id -> Int4,
+        bank_id -> Int4,
+        #[max_length = 200]
+        name -> Varchar,
+        curren_amount -> Float8,
+    }
+}
+
+diesel::table! {
     csv_converters (id) {
         id -> Int4,
-        csv_bank_id -> Int4,
+        bank_id -> Int4,
         date_column -> Nullable<Int4>,
         counterparty_column -> Nullable<Int4>,
         amount_column -> Nullable<Int4>,
@@ -49,11 +69,15 @@ diesel::table! {
 }
 
 diesel::joinable!(banks -> users (user_id));
-diesel::joinable!(csv_converters -> banks (csv_bank_id));
+diesel::joinable!(contract_amount_change -> contracts (contract_id));
+diesel::joinable!(contracts -> banks (bank_id));
+diesel::joinable!(csv_converters -> banks (bank_id));
 diesel::joinable!(transactions -> banks (bank_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     banks,
+    contract_amount_change,
+    contracts,
     csv_converters,
     transactions,
     users,
