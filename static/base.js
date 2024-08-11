@@ -1,7 +1,18 @@
+// Utility function to log messages with timestamp and context
+function log(message, context = '', ...data) {
+    console.log(`[${new Date().toISOString()}] [${context}] ${message}`, ...data);
+}
+
+// Utility function to log errors with timestamp and context
+function error(message, context = '', ...data) {
+    console.error(`[${new Date().toISOString()}] [${context}] ${message}`, ...data);
+}
+
 // Function to load content dynamically
 function loadContent(url) {
-    document.getElementById('main-content').innerHTML = '';
+    log('Loading content from URL:', 'loadContent', url);
     document.getElementById('main-content').innerHTML = '<p>Loading...</p>'; // Show loading state
+
     fetch(url)
         .then(response => {
             if (!response.ok) {
@@ -18,14 +29,15 @@ function loadContent(url) {
                     // Parse JSON data
                     const jsonText = graphDataElement.textContent.trim();
                     window.plotData = JSON.parse(jsonText);
-                    console.log('Graph data:', window.plotData);
+                    log('Graph data successfully parsed:', 'loadContent', window.plotData);
                 } catch (e) {
-                    console.error('Error parsing graph data:', e);
+                    error('Error parsing graph data:', 'loadContent', e);
                 }
             }
 
-            // Reinitialize chart and date picker for both dashboard and bank views
+            // Reinitialize chart and date picker for dashboard and bank views
             if (url === '/dashboard' || /^\/bank\/\d+$/.test(url)) {
+                log('Reinitializing chart and date picker for URL:', 'loadContent', url);
                 initializeFormHandling();
                 formatAndColorNumbers();
                 initializeChartAndDatePicker();
@@ -33,23 +45,21 @@ function loadContent(url) {
 
             // Reinitialize form handling if on add bank page
             if (url === '/add-bank') {
+                log('Reinitializing form handling for add bank page:', 'loadContent');
                 initializeFormHandling();
             }
         })
-        .catch(error => {
-            console.error('Error loading content:', error);
+        .catch(err => {
+            error('Error loading content:', 'loadContent', err);
             document.getElementById('main-content').innerHTML = '<p>Error loading content. Please try again.</p>';
         });
 }
 
 // Function to initialize the Plotly chart and Flatpickr date range picker
 function initializeChartAndDatePicker() {
-    plotData = window.plotData;
+    log('Initializing Plotly chart and Flatpickr date range picker with data:', 'initializeChartAndDatePicker', window.plotData);
 
-    console.log('Initializing chart with data:', plotData);
-
-    // Define Plotly chart layout and configuration
-    var layout = {
+    const layout = {
         title: 'Bank Account Balances',
         xaxis: { title: 'Date', type: 'date' },
         yaxis: { title: 'Balance' },
@@ -58,55 +68,45 @@ function initializeChartAndDatePicker() {
         paper_bgcolor: 'rgba(0,0,0,0)',
     };
 
-    var config = {
+    const config = {
         displayModeBar: true,
         modeBarButtonsToRemove: [
-            'zoom', 'pan', 'hoverClosestCartesian',
-            'hoverCompareCartesian', 'zoomIn2d', 'zoomOut2d',
-            'pan2d', 'select2d', 'lasso2d', 'zoom3d', 'pan3d',
-            'orbitRotation', 'tableRotation', 'resetCameraDefault3d',
-            'resetCameraLastSave3d', 'toImage', 'sendDataToCloud',
-            'toggleSpikelines', 'zoomInGeo',
-            'zoomOutGeo', 'resetGeo', 'resetMapbox'
+            'zoom', 'pan', 'hoverClosestCartesian', 'hoverCompareCartesian', 'zoomIn2d', 'zoomOut2d',
+            'pan2d', 'select2d', 'lasso2d', 'zoom3d', 'pan3d', 'orbitRotation', 'tableRotation',
+            'resetCameraDefault3d', 'resetCameraLastSave3d', 'toImage', 'sendDataToCloud',
+            'toggleSpikelines', 'zoomInGeo', 'zoomOutGeo', 'resetGeo', 'resetMapbox'
         ],
         modeBarButtons: [['toImage', 'resetViews']]
     };
 
     // Initialize Plotly chart if data is available
-    if (plotData.length) {
-        Plotly.newPlot('balance_graph', plotData, layout, config);
+    if (window.plotData && window.plotData.length) {
+        log('Plotly chart data available:', 'initializeChartAndDatePicker', window.plotData);
+        Plotly.newPlot('balance_graph', window.plotData, layout, config);
+    } else {
+        log('No plot data available for Plotly chart.', 'initializeChartAndDatePicker');
     }
 
-    setTimeout(function () {
+    setTimeout(() => {
         flatpickr("#dateRange", {
             mode: "range",
             dateFormat: "Y-m-d",
             onChange: function (selectedDates) {
                 if (selectedDates.length === 2) {
-                    var startDate = selectedDates[0].toISOString().split('T')[0];
-                    var endDate = selectedDates[1].toISOString().split('T')[0];
+                    const [startDate, endDate] = selectedDates.map(date => date.toISOString().split('T')[0]);
 
-                    var update = {
-                        'xaxis.range': [startDate, endDate]
-                    };
+                    const update = { 'xaxis.range': [startDate, endDate] };
 
+                    log('Updating chart date range:', 'initializeChartAndDatePicker', update);
                     Plotly.relayout('balance_graph', update);
 
-                    // Make AJAX request to update date range
                     fetch(`/update_date_range/${startDate}/${endDate}`, {
                         method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
+                        headers: { 'Content-Type': 'application/json' }
                     })
                         .then(response => response.json())
-                        .then(data => {
-                            // Handle response if needed
-                            console.log('Date range updated successfully:', data);
-                        })
-                        .catch(error => {
-                            console.error('Error updating date range:', error);
-                        });
+                        .then(data => log('Date range updated successfully:', 'initializeChartAndDatePicker', data))
+                        .catch(err => error('Error updating date range:', 'initializeChartAndDatePicker', err));
                 }
             }
         });
@@ -133,7 +133,6 @@ async function handleFormSubmission(form) {
             let result;
             try {
                 result = await response.json();
-                console.log('Parsed JSON result:', result);
             } catch (jsonError) {
                 throw new Error('Error parsing JSON response');
             }
@@ -146,20 +145,91 @@ async function handleFormSubmission(form) {
 
                 // Update the graph if `graph_data` is available
                 if (result.graph_data) {
-                    console.log('Updating graph with new data:', result.graph_data);
-                    window.plotData = result.graph_data;
+                    window.plotData = JSON.parse(result.graph_data);
+                    log('Form submitted successfully. Reinitializing chart with new data:', 'handleFormSubmission', window.plotData);
                     initializeChartAndDatePicker(); // Reinitialize chart with new data
                 }
+
+                if (result.performance_value) {
+                    const total_transactions = document.getElementById("total_transactions");
+                    const net_gain_loss = document.getElementById("net_gain_loss");
+                    const performance_percentage = document.getElementById("performance_percentage");
+                    const average_transaction_amount = document.getElementById("average_transaction_amount");
+                    const total_discrepancy = document.getElementById("total_discrepancy");
+
+                    if (total_transactions && net_gain_loss && performance_percentage && average_transaction_amount && total_discrepancy) {
+                        total_transactions.textContent = result.performance_value.total_transactions;
+                        net_gain_loss.textContent = result.performance_value.net_gain_loss;
+                        performance_percentage.textContent = result.performance_value.performance_percentage;
+                        average_transaction_amount.textContent = result.performance_value.average_transaction_amount;
+                        total_discrepancy.textContent = result.performance_value.total_discrepancy;
+
+                        formatAndColorNumbers();
+
+                        log('Performance metrics updated and formatted successfully:', 'handleFormSubmission');
+                    }
+                    else {
+                        // Log missing elements
+                        error('One or more performance elements are missing.', 'handleFormSubmission', {
+                            total_transactions,
+                            net_gain_loss,
+                            performance_percentage,
+                            average_transaction_amount,
+                            total_discrepancy
+                        });
+                    }
+                }
+
+                if (result.banks) {
+                    log('Updating bank list:', 'handleFormSubmission', result.banks);
+                    const banksContainer = document.getElementById('banks');
+
+                    if (banksContainer) {
+                        const newBankIds = new Set(result.banks.map(bank => bank.id));
+
+                        Array.from(banksContainer.children).forEach(button => {
+                            const bankId = button.getAttribute('data-bank-id');
+                            if (!newBankIds.has(bankId)) {
+                                banksContainer.removeChild(button);
+                            }
+                        });
+
+                        result.banks.forEach(bank => {
+                            let bankButton = banksContainer.querySelector(`button[data-bank-id="${bank.id}"]`);
+
+                            if (!bankButton) {
+                                bankButton = document.createElement('button');
+                                bankButton.setAttribute('data-bank-id', bank.id);
+                                bankButton.setAttribute('data-url', `/bank/${bank.id}`);
+                                bankButton.setAttribute('style', 'width: 100%');
+                                bankButton.textContent = bank.name;
+
+                                bankButton.addEventListener("click", function () {
+                                    const url = this.getAttribute("data-url");
+                                    log('Bank button clicked. Loading content from URL:', 'handleFormSubmission', url);
+                                    loadContent(url);
+                                });
+
+                                banksContainer.appendChild(bankButton);
+                            } else {
+                                bankButton.textContent = bank.name;
+                            }
+                        });
+
+                        log('Bank list updated.', 'handleFormSubmission');
+                    }
+                }
             } else if (result.error) {
+                error('Form submission error:', 'handleFormSubmission', result.error);
                 errorDiv.textContent = result.error;
                 errorDiv.style.display = 'block';
                 successDiv.style.display = 'none';
             }
 
             if (!result.error) form.reset();
-        } catch (error) {
-            console.error('An unexpected error occurred:', error);
-            errorDiv.textContent = `An unexpected error occurred: ${error.message}`;
+        } catch (err) {
+            error('An unexpected error occurred:', 'handleFormSubmission', err);
+            errorDiv.textContent = `An unexpected error occurred: ${err.message}`;
             errorDiv.style.display = 'block';
             successDiv.style.display = 'none';
         }
@@ -168,20 +238,23 @@ async function handleFormSubmission(form) {
 
 // Function to initialize form handling for multiple forms
 function initializeFormHandling() {
+    log('Initializing form handling for all forms:', 'initializeFormHandling');
     const forms = document.querySelectorAll('form');
 
     forms.forEach(form => {
-        if (form.id === 'logout-form') return;
-        handleFormSubmission(form);
+        if (form.id !== 'logout-form') {
+            handleFormSubmission(form);
+        }
     });
 }
 
 // Initialize event listeners when DOM content is loaded
 document.addEventListener("DOMContentLoaded", function () {
-    // Attach event listeners to sidebar buttons
+    log('DOM content loaded. Initializing sidebar buttons and loading default content:', 'DOMContentLoaded');
     document.querySelectorAll(".sidebar-left button").forEach(button => {
         button.addEventListener("click", function () {
             const url = this.getAttribute("onclick").match(/'([^']+)'/)[1];
+            log('Sidebar button clicked. Loading content from URL:', 'DOMContentLoaded', url);
             loadContent(url);
         });
     });
@@ -190,9 +263,9 @@ document.addEventListener("DOMContentLoaded", function () {
     loadContent('/dashboard');
 });
 
-
 // Function to format numbers and apply color based on their value
 function formatAndColorNumbers() {
+    log('Formatting and coloring numbers:', 'formatAndColorNumbers');
     const elements = [
         document.getElementById("net_gain_loss"),
         document.getElementById("performance_percentage"),
@@ -202,8 +275,7 @@ function formatAndColorNumbers() {
 
     elements.forEach(element => {
         if (element) {
-            let value = parseFloat(element.textContent);
-            value = value.toFixed(2); // Format to 2 decimal places
+            let value = parseFloat(element.textContent).toFixed(2); // Format to 2 decimal places
 
             if (element.id === "performance_percentage") {
                 element.textContent = `${value} %`;
@@ -212,23 +284,13 @@ function formatAndColorNumbers() {
             }
 
             if (element.id === "total_discrepancy") {
-                if (value == 0) {
-                    console.log("value is 0");
-                    element.display = "none";
-                }
-                else {
-                    console.log("value is not 0");
-                    element.display = "block";
-                }
+                element.style.display = value == 0 ? "none" : "block";
             }
 
-            if (value >= 0) {
-                element.classList.add("positive");
-                element.classList.remove("negative");
-            } else {
-                element.classList.add("negative");
-                element.classList.remove("positive");
-            }
+            element.classList.toggle("positive", value >= 0);
+            element.classList.toggle("negative", value < 0);
         }
     });
+
+    log('Numbers formatted and colored based on value.', 'formatAndColorNumbers');
 }

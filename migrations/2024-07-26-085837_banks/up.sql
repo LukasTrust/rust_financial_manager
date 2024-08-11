@@ -3,5 +3,5 @@ CREATE TABLE banks (
     user_id INT NOT NULL,
     name VARCHAR(50) NOT NULL UNIQUE,
     link VARCHAR(200),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

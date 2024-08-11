@@ -72,19 +72,32 @@ body {
 }
 
 .container-without-border {
+    display: flex;
+    flex-direction: column;
     background-color: transparent;
     width: 100%;
+    justify-content: flex-start;
 }
 
 .container-without-border-horizontally {
-    align-items: center;
     display: flex;
-    background-color: transparent;
     flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    background-color: transparent;
     width: 100%;
     gap: 20px;
-    flex-grow: 5;
 }
+
+.container-without-border-horizontally-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background-color: transparent;
+    width: 100%;
+    gap: 20px;
+}
+
 
 .error {
     color: #ff0000;
@@ -98,6 +111,7 @@ body {
     max-width: 400px;
     margin-bottom: 10px;
     box-sizing: border-box;
+    display: none;
 }
 
 .success {
@@ -112,6 +126,7 @@ body {
     max-width: 400px;
     margin-bottom: 10px;
     box-sizing: border-box;
+    display: none;
 }
 
 .form-group {
@@ -145,6 +160,8 @@ body {
 }
 
 .box {
+    display: flex;
+    flex-direction: column;
     background: #f5f5f5;
     border: 1px solid #ccc;
     border-radius: 8px;

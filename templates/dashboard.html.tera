@@ -3,7 +3,7 @@
 </script>
     <body>
         <div class="container-without-border">
-            <div class="container-without-border-horizontally">
+            <div class="container-without-border-horizontally-header">
                 <h1>{{ success }}</h1>
                 <label for="dateRange" class="date-label">Select Date
                     Range:</label>

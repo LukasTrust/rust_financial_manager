@@ -1,4 +1,5 @@
 use chrono::NaiveDate;
+use log::info;
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
@@ -106,17 +107,32 @@ pub fn generate_performance_value(
 ) -> (PerformanceData, Vec<Discrepancy>) {
     let mut total_sum = 0.0;
     let mut total_transactions = 0;
+    let mut total_discrepancy = 0.0;
     let mut starting_balance = 0.0;
     let mut ending_balance = 0.0;
-    let mut total_discrepancy = 0.0;
-
     let mut transactions_with_discrepancy = vec![];
 
     for bank in banks {
         if let Some(transaction_of_bank) = transactions.get(&bank.id) {
             let mut first_transaction_in_range = true;
-            let mut initial_balance_set = false;
             let mut previous_balance = 0.0;
+
+            if transaction_of_bank.is_empty() {
+                continue;
+            }
+
+            let mut transactions_for_start_end = transaction_of_bank.clone();
+            transactions_for_start_end.sort_by(|a, b| a.date.cmp(&b.date));
+
+            ending_balance += transactions_for_start_end
+                .last()
+                .unwrap()
+                .bank_balance_after
+                + transactions_for_start_end.last().unwrap().amount;
+            starting_balance += transactions_for_start_end
+                .first()
+                .unwrap()
+                .bank_balance_after;
 
             for (index, transaction) in transaction_of_bank.iter().enumerate() {
                 if transaction.date >= start_date && transaction.date <= end_date {
@@ -124,8 +140,8 @@ pub fn generate_performance_value(
                     total_transactions += 1;
 
                     if index > 0 && index < transaction_of_bank.len() - 1 {
-                        let discrepancy = (transaction.bank_balance_after - previous_balance).abs();
-                        if discrepancy > 0.01 {
+                        let discrepancy = previous_balance - transaction.bank_balance_after;
+                        if discrepancy > 0.01 || discrepancy < -0.01 {
                             total_discrepancy += discrepancy;
                             transactions_with_discrepancy.push(Discrepancy {
                                 transaction_id: transaction.id,
@@ -135,21 +151,10 @@ pub fn generate_performance_value(
                     }
 
                     if first_transaction_in_range {
-                        starting_balance = transaction.bank_balance_after - transaction.amount;
                         first_transaction_in_range = false;
-                        initial_balance_set = true;
                     }
 
-                    ending_balance = transaction.bank_balance_after;
                     previous_balance = transaction.bank_balance_after - transaction.amount;
-                }
-            }
-
-            if first_transaction_in_range && initial_balance_set {
-                // Handle cases where no transactions are in range
-                if let Some(last_transaction) = transaction_of_bank.last() {
-                    starting_balance = last_transaction.bank_balance_after;
-                    ending_balance = last_transaction.bank_balance_after;
                 }
             }
         }
@@ -168,14 +173,15 @@ pub fn generate_performance_value(
         0.0
     };
 
-    (
-        PerformanceData {
-            total_transactions,
-            average_transaction_amount,
-            net_gain_loss,
-            performance_percentage,
-            total_discrepancy,
-        },
-        transactions_with_discrepancy,
-    )
+    let performance_data = PerformanceData {
+        total_transactions,
+        average_transaction_amount,
+        net_gain_loss,
+        performance_percentage,
+        total_discrepancy,
+    };
+
+    info!("Performance data: {:?}", performance_data);
+
+    (performance_data, transactions_with_discrepancy)
 }

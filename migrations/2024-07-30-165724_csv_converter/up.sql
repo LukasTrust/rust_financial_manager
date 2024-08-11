@@ -5,5 +5,5 @@ CREATE TABLE csv_converters (
     counterparty_column INT,
     amount_column INT,
     bank_balance_after_column INT,
-    FOREIGN KEY (csv_bank_id) REFERENCES banks(id)
+    FOREIGN KEY (csv_bank_id) REFERENCES banks(id) ON DELETE CASCADE
 );

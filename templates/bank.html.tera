@@ -1,7 +1,6 @@
 <script id="graph-data" type="application/json">
     {{ graph_data | safe }}
 </script>
-<body>
     <div class="container-without-border-horizontally">
         <div class="container-without-border">
             <div class="container-without-border-horizontally">
@@ -27,7 +26,7 @@
             </div>
         </div>
         <!-- Form panel container -->
-        <div>
+        <div class="container-without-border" style="width: auto">
             <!-- Date Range Picker -->
             <div class="form-group">
                 <label for="dateRange" class="date-label">Select Date Range:</label>
@@ -76,4 +75,3 @@
             </form>
         </div>
     </div>
-</body>

@@ -5,7 +5,6 @@ if (successMessage) {
     const successElement = document.getElementById('success');
     successElement.textContent = successMessage;
     successElement.style.display = 'block';
-    document.querySelector('.login-form').prepend(successElement);
 }
 
 document.getElementById('loginForm').addEventListener('submit', handleSubmit);

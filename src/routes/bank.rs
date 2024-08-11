@@ -33,7 +33,13 @@ pub async fn bank_view(
 
             let banks = vec![bank.clone()];
 
-            let transactions = Some(transactions_map.get(&bank_id).unwrap());
+            let transactions_of_bank = transactions_map.get(&bank_id);
+
+            let transactions = match transactions_of_bank {
+                Some(transactions) => Some(transactions),
+                None => None,
+            };
+
             let (first_date, last_date) = get_first_date_and_last_date_from_bank(transactions);
 
             let performance_value =

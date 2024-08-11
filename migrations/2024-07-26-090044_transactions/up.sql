@@ -5,6 +5,6 @@ CREATE TABLE transactions (
     counterparty VARCHAR(200) NOT NULL,
     amount FLOAT NOT NULL,
     bank_balance_after FLOAT NOT NULL,
-    FOREIGN KEY (bank_id) REFERENCES banks(id),
+    FOREIGN KEY (bank_id) REFERENCES banks(id) ON DELETE CASCADE,
     UNIQUE (date, counterparty, amount, bank_balance_after)
 );
