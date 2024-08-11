@@ -74,8 +74,14 @@ pub async fn upload_csv(
             let performance_value =
                 generate_performance_value(&banks, &transactions_map, first_date, last_date);
 
-            let graph_data =
-                generate_balance_graph_data(&banks, &transactions_map, performance_value.1).await;
+            let graph_data = generate_balance_graph_data(
+                &banks,
+                &transactions_map,
+                performance_value.1,
+                None,
+                None,
+            )
+            .await;
 
             Ok(Json(json!({
                 "success": format!("Succesfully insertet {} and {} were duplicates", succesful_inserts, failed_inserts),

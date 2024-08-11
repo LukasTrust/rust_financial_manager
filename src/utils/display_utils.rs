@@ -13,6 +13,8 @@ pub async fn generate_balance_graph_data(
     banks: &[Bank],
     transactions: &HashMap<i32, Vec<Transaction>>,
     transactions_with_discrepancy: Vec<Discrepancy>,
+    start_date: Option<NaiveDate>,
+    end_date: Option<NaiveDate>,
 ) -> String {
     // Convert the transactions_with_discrepancy into a HashMap for quick lookup
     let discrepancy_map: HashMap<i32, f64> = transactions_with_discrepancy
@@ -33,7 +35,19 @@ pub async fn generate_balance_graph_data(
             let mut data: BTreeMap<NaiveDate, Vec<(f64, String, f64, Option<f64>)>> =
                 BTreeMap::new();
 
-            for transaction in bank_transactions.iter().rev() {
+            // Filter transactions within the date range
+            let filtered_transactions: Vec<&Transaction> = bank_transactions
+                .iter()
+                .filter(|t| {
+                    if let (Some(start_date), Some(end_date)) = (start_date, end_date) {
+                        t.date >= start_date && t.date <= end_date
+                    } else {
+                        true
+                    }
+                })
+                .collect();
+
+            for transaction in filtered_transactions.iter().rev() {
                 // Check if the transaction is in the discrepancy map
                 let discrepancy_amount = discrepancy_map.get(&transaction.id).cloned();
 

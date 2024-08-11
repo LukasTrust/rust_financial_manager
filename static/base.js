@@ -59,33 +59,7 @@ function loadContent(url) {
 function initializeChartAndDatePicker() {
     log('Initializing Plotly chart and Flatpickr date range picker with data:', 'initializeChartAndDatePicker', window.plotData);
 
-    const layout = {
-        title: 'Bank Account Balances',
-        xaxis: { title: 'Date', type: 'date' },
-        yaxis: { title: 'Balance' },
-        hovermode: 'closest',
-        plot_bgcolor: 'rgba(0,0,0,0)',
-        paper_bgcolor: 'rgba(0,0,0,0)',
-    };
-
-    const config = {
-        displayModeBar: true,
-        modeBarButtonsToRemove: [
-            'zoom', 'pan', 'hoverClosestCartesian', 'hoverCompareCartesian', 'zoomIn2d', 'zoomOut2d',
-            'pan2d', 'select2d', 'lasso2d', 'zoom3d', 'pan3d', 'orbitRotation', 'tableRotation',
-            'resetCameraDefault3d', 'resetCameraLastSave3d', 'toImage', 'sendDataToCloud',
-            'toggleSpikelines', 'zoomInGeo', 'zoomOutGeo', 'resetGeo', 'resetMapbox'
-        ],
-        modeBarButtons: [['toImage', 'resetViews']]
-    };
-
-    // Initialize Plotly chart if data is available
-    if (window.plotData && window.plotData.length) {
-        log('Plotly chart data available:', 'initializeChartAndDatePicker', window.plotData);
-        Plotly.newPlot('balance_graph', window.plotData, layout, config);
-    } else {
-        log('No plot data available for Plotly chart.', 'initializeChartAndDatePicker');
-    }
+    update_graph();
 
     setTimeout(() => {
         flatpickr("#dateRange", {
@@ -95,11 +69,6 @@ function initializeChartAndDatePicker() {
                 if (selectedDates.length === 2) {
                     const [startDate, endDate] = selectedDates.map(date => date.toISOString().split('T')[0]);
 
-                    const update = { 'xaxis.range': [startDate, endDate] };
-
-                    log('Updating chart date range:', 'initializeChartAndDatePicker', update);
-                    Plotly.relayout('balance_graph', update);
-
                     fetch(`/update_date_range/${startDate}/${endDate}`, {
                         method: 'GET',
                         headers: { 'Content-Type': 'application/json' }
@@ -108,8 +77,15 @@ function initializeChartAndDatePicker() {
                         .then(data => {
                             if (data.performance_value) {
                                 update_performance(data);
+                                log('Update date range form submitted successfully. Updating performance metrics:', 'setTimeout', data.performance_value);
                             }
-                            log('Date range updated successfully:', 'initializeChartAndDatePicker', data)
+
+                            // Update the graph if `graph_data` is available
+                            if (data.graph_data) {
+                                window.plotData = JSON.parse(data.graph_data);
+                                log('Update date range form submitted successfully. Reinitializing chart with new data:', 'setTimeout', window.plotData);
+                                update_graph();
+                            }
                         })
 
                         .catch(err => error('Error updating date range:', 'initializeChartAndDatePicker', err));
@@ -153,7 +129,7 @@ async function handleFormSubmission(form) {
                 if (result.graph_data) {
                     window.plotData = JSON.parse(result.graph_data);
                     log('Form submitted successfully. Reinitializing chart with new data:', 'handleFormSubmission', window.plotData);
-                    initializeChartAndDatePicker(); // Reinitialize chart with new data
+                    initializeChartAndDatePicker();
                 }
 
                 if (result.performance_value) {
@@ -305,3 +281,33 @@ function update_performance(result) {
     }
 }
 
+function update_graph() {
+    const layout = {
+        title: 'Bank Account Balances',
+        xaxis: { title: 'Date', type: 'date' },
+        yaxis: { title: 'Balance' },
+        hovermode: 'closest',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+    };
+
+    const config = {
+        displayModeBar: true,
+        modeBarButtonsToRemove: [
+            'zoom', 'pan', 'hoverClosestCartesian', 'hoverCompareCartesian', 'zoomIn2d', 'zoomOut2d',
+            'pan2d', 'select2d', 'lasso2d', 'zoom3d', 'pan3d', 'orbitRotation', 'tableRotation',
+            'resetCameraDefault3d', 'resetCameraLastSave3d', 'toImage', 'sendDataToCloud',
+            'toggleSpikelines', 'zoomInGeo', 'zoomOutGeo', 'resetGeo', 'resetMapbox'
+        ],
+        modeBarButtons: [['toImage', 'resetViews']]
+    };
+
+    // Initialize Plotly chart if data is available
+    if (window.plotData && window.plotData.length) {
+        log('Plotly chart data available:', 'initializeChartAndDatePicker', window.plotData);
+        Plotly.newPlot('balance_graph', window.plotData, layout, config);
+    } else {
+        log('No plot data available for Plotly chart.', 'initializeChartAndDatePicker');
+    }
+
+}
