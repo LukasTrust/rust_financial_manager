@@ -21,6 +21,13 @@ function loadContent(url) {
             return response.text();
         })
         .then(html => {
+
+            if (html.includes('Please login again')) {
+                log('Error validating the login. Redirecting to error page:', 'loadContent');
+                window.location.href = '/error?error_title=Error%20validating%20the%20login!&error_message=Please%20login%20again.';
+                return;
+            }
+
             document.getElementById('main-content').innerHTML = html;
 
             const graphDataElement = document.getElementById('graph-data');
