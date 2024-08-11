@@ -22,6 +22,8 @@ pub async fn generate_balance_graph_data(
 
     let mut plot_data = vec![];
 
+    info!("Generating graph data for {} banks", banks.len());
+
     for bank in banks {
         let bank = bank.clone();
         let bank_transactions = transactions.get(&bank.id);
@@ -112,55 +114,69 @@ pub fn generate_performance_value(
     let mut ending_balance = 0.0;
     let mut transactions_with_discrepancy = vec![];
 
+    info!("Generating performance data for {} banks", banks.len());
+
     for bank in banks {
         if let Some(transaction_of_bank) = transactions.get(&bank.id) {
-            let mut first_transaction_in_range = true;
             let mut previous_balance = 0.0;
 
             if transaction_of_bank.is_empty() {
                 continue;
             }
 
-            let mut transactions_for_start_end = transaction_of_bank.clone();
-            transactions_for_start_end.sort_by(|a, b| a.date.cmp(&b.date));
+            info!("Processing transactions for bank: {}", bank.name);
 
-            ending_balance += transactions_for_start_end
-                .last()
-                .unwrap()
-                .bank_balance_after
-                + transactions_for_start_end.last().unwrap().amount;
-            starting_balance += transactions_for_start_end
-                .first()
-                .unwrap()
-                .bank_balance_after;
+            // Filter transactions within the date range
+            let mut transactions_for_start_end: Vec<&Transaction> = transaction_of_bank
+                .iter()
+                .filter(|&t| t.date >= start_date && t.date <= end_date)
+                .collect();
 
-            for (index, transaction) in transaction_of_bank.iter().enumerate() {
-                if transaction.date >= start_date && transaction.date <= end_date {
-                    total_sum += transaction.amount;
-                    total_transactions += 1;
-
-                    if index > 0 && index < transaction_of_bank.len() - 1 {
-                        let discrepancy = previous_balance - transaction.bank_balance_after;
-                        if discrepancy > 0.01 || discrepancy < -0.01 {
-                            total_discrepancy += discrepancy;
-                            transactions_with_discrepancy.push(Discrepancy {
-                                transaction_id: transaction.id,
-                                discrepancy_amount: discrepancy,
-                            });
-                        }
-                    }
-
-                    if first_transaction_in_range {
-                        first_transaction_in_range = false;
-                    }
-
-                    previous_balance = transaction.bank_balance_after - transaction.amount;
+            // Sort filtered transactions by date
+            transactions_for_start_end.sort_by(|a, b| {
+                match a.date.cmp(&b.date) {
+                    std::cmp::Ordering::Equal => b.id.cmp(&a.id), // If dates are equal, sort by id in descending order
+                    other => other,                               // Otherwise, sort by date
                 }
+            });
+
+            if let Some(first_transaction) = transactions_for_start_end.first() {
+                info!("First transaction: {:?}", first_transaction);
+                starting_balance += first_transaction.bank_balance_after;
+            }
+
+            if let Some(last_transaction) = transactions_for_start_end.last() {
+                info!("Last transaction: {:?}", last_transaction);
+                ending_balance += last_transaction.bank_balance_after + last_transaction.amount;
+            }
+
+            for (index, transaction) in transactions_for_start_end.iter().enumerate() {
+                total_sum += transaction.amount;
+                total_transactions += 1;
+
+                if index > 0 && index < transactions_for_start_end.len() - 1 {
+                    let discrepancy =
+                        previous_balance - (transaction.bank_balance_after - transaction.amount);
+                    if discrepancy > 0.01 || discrepancy < -0.01 {
+                        info!(
+                            "Discrepancy found in transaction: {} with amount: {}",
+                            transaction.id, discrepancy
+                        );
+                        total_discrepancy += discrepancy;
+                        transactions_with_discrepancy.push(Discrepancy {
+                            transaction_id: transaction.id,
+                            discrepancy_amount: discrepancy,
+                        });
+                    }
+                }
+
+                previous_balance = transaction.bank_balance_after;
             }
         }
     }
 
     let net_gain_loss = ending_balance - starting_balance;
+
     let performance_percentage = if starting_balance != 0.0 {
         (net_gain_loss / starting_balance) * 100.0
     } else {

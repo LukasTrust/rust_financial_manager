@@ -105,7 +105,13 @@ function initializeChartAndDatePicker() {
                         headers: { 'Content-Type': 'application/json' }
                     })
                         .then(response => response.json())
-                        .then(data => log('Date range updated successfully:', 'initializeChartAndDatePicker', data))
+                        .then(data => {
+                            if (data.performance_value) {
+                                update_performance(data);
+                            }
+                            log('Date range updated successfully:', 'initializeChartAndDatePicker', data)
+                        })
+
                         .catch(err => error('Error updating date range:', 'initializeChartAndDatePicker', err));
                 }
             }
@@ -151,33 +157,7 @@ async function handleFormSubmission(form) {
                 }
 
                 if (result.performance_value) {
-                    const total_transactions = document.getElementById("total_transactions");
-                    const net_gain_loss = document.getElementById("net_gain_loss");
-                    const performance_percentage = document.getElementById("performance_percentage");
-                    const average_transaction_amount = document.getElementById("average_transaction_amount");
-                    const total_discrepancy = document.getElementById("total_discrepancy");
-
-                    if (total_transactions && net_gain_loss && performance_percentage && average_transaction_amount && total_discrepancy) {
-                        total_transactions.textContent = result.performance_value.total_transactions;
-                        net_gain_loss.textContent = result.performance_value.net_gain_loss;
-                        performance_percentage.textContent = result.performance_value.performance_percentage;
-                        average_transaction_amount.textContent = result.performance_value.average_transaction_amount;
-                        total_discrepancy.textContent = result.performance_value.total_discrepancy;
-
-                        formatAndColorNumbers();
-
-                        log('Performance metrics updated and formatted successfully:', 'handleFormSubmission');
-                    }
-                    else {
-                        // Log missing elements
-                        error('One or more performance elements are missing.', 'handleFormSubmission', {
-                            total_transactions,
-                            net_gain_loss,
-                            performance_percentage,
-                            average_transaction_amount,
-                            total_discrepancy
-                        });
-                    }
+                    update_performance(result);
                 }
 
                 if (result.banks) {
@@ -294,3 +274,34 @@ function formatAndColorNumbers() {
 
     log('Numbers formatted and colored based on value.', 'formatAndColorNumbers');
 }
+
+function update_performance(result) {
+    const total_transactions = document.getElementById("total_transactions");
+    const net_gain_loss = document.getElementById("net_gain_loss");
+    const performance_percentage = document.getElementById("performance_percentage");
+    const average_transaction_amount = document.getElementById("average_transaction_amount");
+    const total_discrepancy = document.getElementById("total_discrepancy");
+
+    if (total_transactions && net_gain_loss && performance_percentage && average_transaction_amount && total_discrepancy) {
+        total_transactions.textContent = result.performance_value.total_transactions;
+        net_gain_loss.textContent = result.performance_value.net_gain_loss;
+        performance_percentage.textContent = result.performance_value.performance_percentage;
+        average_transaction_amount.textContent = result.performance_value.average_transaction_amount;
+        total_discrepancy.textContent = result.performance_value.total_discrepancy;
+
+        formatAndColorNumbers();
+
+        log('Performance metrics updated and formatted successfully:', 'handleFormSubmission');
+    }
+    else {
+        // Log missing elements
+        error('One or more performance elements are missing.', 'handleFormSubmission', {
+            total_transactions,
+            net_gain_loss,
+            performance_percentage,
+            average_transaction_amount,
+            total_discrepancy
+        });
+    }
+}
+
