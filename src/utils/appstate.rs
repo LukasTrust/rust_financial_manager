@@ -2,7 +2,7 @@ use log::info;
 use rocket::tokio::sync::RwLock;
 use std::{collections::HashMap, sync::Arc};
 
-use crate::database::models::CSVConverter;
+use crate::database::models::{CSVConverter, Contract};
 
 use super::structs::{Bank, Transaction};
 
@@ -11,6 +11,7 @@ pub struct AppState {
     pub banks: Arc<RwLock<HashMap<i32, Vec<Bank>>>>,
     pub transactions: Arc<RwLock<HashMap<i32, Vec<Transaction>>>>,
     pub csv_convert: Arc<RwLock<HashMap<i32, CSVConverter>>>,
+    pub contracts: Arc<RwLock<HashMap<i32, Vec<Contract>>>>,
     pub current_bank: Arc<RwLock<HashMap<i32, Bank>>>,
 }
 
@@ -21,6 +22,7 @@ impl AppState {
         new_banks: Option<Vec<Bank>>,
         new_transactions: Option<HashMap<i32, Vec<Transaction>>>,
         new_csv_converters: Option<HashMap<i32, CSVConverter>>,
+        new_contracts: Option<HashMap<i32, Vec<Contract>>>,
         new_current_bank: Option<Bank>,
     ) {
         if let Some(banks) = new_banks {
@@ -33,6 +35,10 @@ impl AppState {
 
         if let Some(csv_converters) = new_csv_converters {
             self.update_csv_converters(csv_converters).await;
+        }
+
+        if let Some(contracts) = new_contracts {
+            self.update_contracts(contracts).await;
         }
 
         if let Some(current_bank) = new_current_bank {
@@ -87,12 +93,36 @@ impl AppState {
         );
     }
 
+    pub async fn update_contracts(&self, new_contracts: HashMap<i32, Vec<Contract>>) {
+        let mut contracts_state = self.contracts.write().await;
+
+        info!(
+            "Contracts length before update: {}",
+            contracts_state.values().flatten().count()
+        );
+
+        for (bank_id, bank_contract) in new_contracts.iter() {
+            let existing_contract = contracts_state.entry(*bank_id).or_insert_with(Vec::new);
+
+            for contract in bank_contract.iter() {
+                if !existing_contract.into_iter().any(|c| c.id == contract.id) {
+                    existing_contract.push(contract.clone());
+                }
+            }
+        }
+
+        info!(
+            "Contracts length after update: {}",
+            contracts_state.values().flatten().count()
+        );
+    }
+
     pub async fn update_csv_converters(&self, new_csv_converters: HashMap<i32, CSVConverter>) {
         let mut csv_converters_state = self.csv_convert.write().await;
 
         info!(
-            "CSV converters state before update: {:?}",
-            *csv_converters_state
+            "CSV converters length before update: {}",
+            csv_converters_state.len()
         );
 
         for (bank_id, csv_converter) in new_csv_converters.iter() {
@@ -100,8 +130,8 @@ impl AppState {
         }
 
         info!(
-            "CSV converters state after update: {:?}",
-            *csv_converters_state
+            "CSV converters length after update: {:?}",
+            csv_converters_state.len()
         );
     }
 

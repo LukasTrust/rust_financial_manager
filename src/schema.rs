@@ -12,9 +12,9 @@ diesel::table! {
 }
 
 diesel::table! {
-    contract_amount_change (id) {
+    contract_history (id) {
         id -> Int4,
-        contract_id -> Nullable<Int4>,
+        contract_id -> Int4,
         old_amount -> Float8,
         new_amount -> Float8,
         changed_at -> Nullable<Timestamp>,
@@ -27,7 +27,8 @@ diesel::table! {
         bank_id -> Int4,
         #[max_length = 200]
         name -> Varchar,
-        curren_amount -> Float8,
+        current_amount -> Float8,
+        months_between_payment -> Int4,
     }
 }
 
@@ -69,14 +70,14 @@ diesel::table! {
 }
 
 diesel::joinable!(banks -> users (user_id));
-diesel::joinable!(contract_amount_change -> contracts (contract_id));
+diesel::joinable!(contract_history -> contracts (contract_id));
 diesel::joinable!(contracts -> banks (bank_id));
 diesel::joinable!(csv_converters -> banks (bank_id));
 diesel::joinable!(transactions -> banks (bank_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     banks,
-    contract_amount_change,
+    contract_history,
     contracts,
     csv_converters,
     transactions,

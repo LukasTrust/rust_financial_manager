@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use rocket::FromForm;
 use serde::{Deserialize, Serialize};
 
-use crate::schema::{banks, csv_converters, transactions, users};
+use crate::schema::{banks, contract_history, contracts, csv_converters, transactions, users};
 
 #[derive(FromForm, Insertable, Debug)]
 #[diesel(table_name = users)]
@@ -42,7 +42,7 @@ pub struct NewTransactions {
     pub bank_balance_after: f64,
 }
 
-#[derive(Queryable, Insertable, Debug, Clone, AsChangeset, Copy)]
+#[derive(Queryable, Debug, Clone, AsChangeset, Copy)]
 #[diesel(table_name = csv_converters)]
 pub struct CSVConverter {
     pub id: i32,
@@ -61,4 +61,42 @@ pub struct NewCSVConverter {
     pub counterparty_column: Option<i32>,
     pub amount_column: Option<i32>,
     pub bank_balance_after_column: Option<i32>,
+}
+
+#[derive(Insertable, Debug, Clone)]
+#[diesel(table_name = contracts)]
+pub struct NewContract {
+    pub bank_id: i32,
+    pub name: String,
+    pub current_amount: f64,
+    pub months_between_payment: i32,
+}
+
+#[derive(Queryable, Insertable, Debug, Clone)]
+#[diesel(table_name = contracts)]
+pub struct Contract {
+    pub id: i32,
+    pub bank_id: i32,
+    pub name: String,
+    pub current_amount: f64,
+    pub months_between_payment: i32,
+}
+
+#[derive(Insertable, Debug)]
+#[diesel(table_name = contract_history)]
+pub struct NewContractHistory {
+    pub contract_id: i32,
+    pub old_amount: f64,
+    pub new_amount: f64,
+    pub changed_at: Option<chrono::NaiveDateTime>,
+}
+
+#[derive(Queryable, Debug, Clone)]
+#[diesel(table_name = contract_history)]
+pub struct ContractHistory {
+    pub id: i32,
+    pub contract_id: i32,
+    pub old_amount: f64,
+    pub new_amount: f64,
+    pub changed_at: Option<chrono::NaiveDateTime>,
 }

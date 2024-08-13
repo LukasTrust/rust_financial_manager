@@ -9,7 +9,7 @@ use rocket_dyn_templates::Template;
 use std::collections::HashMap;
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::CSVConverter;
+use crate::database::models::{CSVConverter, Contract};
 use crate::routes::error_page::show_error_page;
 use crate::schema::users::{self, first_name, last_name};
 use crate::utils::appstate::AppState;
@@ -17,7 +17,9 @@ use crate::utils::display_utils::{generate_balance_graph_data, generate_performa
 use crate::utils::get_utils::{
     get_banks_of_user, get_first_date_and_last_date_from_bank, get_user_id,
 };
-use crate::utils::loading_utils::{load_banks, load_csv_converters, load_transactions};
+use crate::utils::loading_utils::{
+    load_banks, load_contracts_of_bank, load_csv_converters_of_bank, load_transactions_of_bank,
+};
 use crate::utils::structs::Transaction;
 
 /// Display the base page.
@@ -38,14 +40,18 @@ pub async fn base(
 
     let mut transactions_map: HashMap<i32, Vec<Transaction>> = HashMap::new();
     let mut csv_converters_map: HashMap<i32, CSVConverter> = HashMap::new();
+    let mut contract_map: HashMap<i32, Vec<Contract>> = HashMap::new();
 
     for bank in banks_result.iter() {
-        let transactions_result = load_transactions(bank.id, &mut db).await?;
+        let transactions_result = load_transactions_of_bank(bank.id, &mut db).await?;
         transactions_map.insert(bank.clone().id, transactions_result);
 
-        if let Some(csv_converter) = load_csv_converters(bank.id, &mut db).await? {
+        if let Some(csv_converter) = load_csv_converters_of_bank(bank.id, &mut db).await? {
             csv_converters_map.insert(bank.id, csv_converter);
         }
+
+        let contracts_result = load_contracts_of_bank(bank.id, &mut db).await?;
+        contract_map.insert(bank.id, contracts_result);
     }
 
     state
@@ -54,6 +60,7 @@ pub async fn base(
             Some(banks_result.clone()),
             Some(transactions_map.clone()),
             Some(csv_converters_map),
+            Some(contract_map),
             None,
         )
         .await;

@@ -1,2 +1,2 @@
-DROP TABLE contract_amount_change;
+DROP TABLE contract_history;
 
