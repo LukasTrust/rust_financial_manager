@@ -23,7 +23,7 @@
         <input type="number" id="amount_column" name="amount_column" min="0" step="1">
     </div>
     <div class="form-group">
-        <label for="bank_balance_after_column">Bank balance after transaction column (Optional)</label>
+        <label for="bank_balance_after_column">Balance after transaction column (Optional)</label>
         <input type="number" id="bank_balance_after_column" name="bank_balance_after_column" min="0" step="1">
     </div>
     <div class="form-group">

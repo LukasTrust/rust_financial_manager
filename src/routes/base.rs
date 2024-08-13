@@ -60,7 +60,7 @@ pub async fn base(
             Some(banks_result.clone()),
             Some(transactions_map.clone()),
             Some(csv_converters_map),
-            Some(contract_map),
+            Some(contract_map.clone()),
             None,
         )
         .await;
@@ -117,12 +117,23 @@ pub async fn dashboard(
         generate_balance_graph_data(&banks, &transactions_map, performance_value.1, None, None)
             .await;
 
+    let contract_map = state.contracts.read().await;
+    let contracts_string = serde_json::to_string(
+        &contract_map
+            .values()
+            .flatten()
+            .cloned()
+            .collect::<Vec<Contract>>(),
+    )
+    .unwrap();
+
     Ok(Template::render(
         "dashboard",
         json!({
             "success": format!("Welcome, {} {}!", user_first_name, user_last_name),
             "graph_data": graph_data,
             "performance_value": performance_value.0,
+            "contracts": contracts_string
         }),
     ))
 }

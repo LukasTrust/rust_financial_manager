@@ -21,6 +21,7 @@ use crate::utils::get_utils::{
 };
 use crate::utils::structs::Transaction;
 
+use super::create_contract::create_contract_from_transactions;
 use super::error_page::show_error_page;
 
 #[post("/upload_csv", data = "<data>")]
@@ -227,6 +228,8 @@ async fn extract_and_process_records<R: std::io::Read>(
     }
 
     state.update_transactions(new_transactions).await;
+
+    create_contract_from_transactions(state, db).await?;
 
     Ok((succesful_inserts, failed_inserts))
 }

@@ -1,4 +1,4 @@
-use diesel::QueryDsl;
+use diesel::prelude::*;
 use rocket::form::{Form, FromForm};
 use rocket::serde::json::Json;
 use rocket::{http::CookieJar, response::Redirect};
@@ -7,6 +7,7 @@ use rocket_db_pools::diesel::AsyncPgConnection;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 use std::collections::HashMap;
 
+use super::error_page::show_error_page;
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewCSVConverter};
 use crate::schema::csv_converters;
@@ -14,31 +15,17 @@ use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_current_bank, get_user_id};
 use crate::utils::structs::ResponseData;
 
-use super::error_page::show_error_page;
-
 #[derive(FromForm)]
-pub struct DateForm {
-    date_column: i32,
+pub struct UpdateCSVForm {
+    counterparty_column: Option<i32>,
+    amount_column: Option<i32>,
+    bank_balance_after_column: Option<i32>,
+    date_column: Option<i32>,
 }
 
-#[derive(FromForm)]
-pub struct CounterpartyForm {
-    counterparty_column: i32,
-}
-
-#[derive(FromForm)]
-pub struct AmountForm {
-    amount_column: i32,
-}
-
-#[derive(FromForm)]
-pub struct BankBalanceAfterTransactionForm {
-    bank_balance_after_column: i32,
-}
-
-#[post("/update_bank_balance_after", data = "<form>")]
-pub async fn update_bank_balance_after(
-    form: Form<BankBalanceAfterTransactionForm>,
+#[post("/update_csv", data = "<form>")]
+pub async fn update_csv(
+    form: Form<UpdateCSVForm>,
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
@@ -46,52 +33,18 @@ pub async fn update_bank_balance_after(
     let cookie_user_id = get_user_id(cookies)?;
 
     find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
-        converter.bank_balance_after_column = Some(form.bank_balance_after_column.clone());
-    })
-    .await
-}
-
-#[post("/update_date", data = "<form>")]
-pub async fn update_date(
-    form: Form<DateForm>,
-    cookies: &CookieJar<'_>,
-    state: &State<AppState>,
-    mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Redirect> {
-    let cookie_user_id = get_user_id(cookies)?;
-
-    find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
-        converter.date_column = Some(form.date_column.clone());
-    })
-    .await
-}
-
-#[post("/update_counterparty", data = "<form>")]
-pub async fn update_counterparty(
-    form: Form<CounterpartyForm>,
-    cookies: &CookieJar<'_>,
-    state: &State<AppState>,
-    mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Redirect> {
-    let cookie_user_id = get_user_id(cookies)?;
-
-    find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
-        converter.counterparty_column = Some(form.counterparty_column.clone());
-    })
-    .await
-}
-
-#[post("/update_amount", data = "<form>")]
-pub async fn update_amount(
-    form: Form<AmountForm>,
-    cookies: &CookieJar<'_>,
-    state: &State<AppState>,
-    mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Redirect> {
-    let cookie_user_id = get_user_id(cookies)?;
-
-    find_bank_and_update(cookie_user_id, state, &mut *db, |converter| {
-        converter.amount_column = Some(form.amount_column.clone());
+        if let Some(amount_column) = form.amount_column {
+            converter.amount_column = Some(amount_column);
+        }
+        if let Some(counterparty_column) = form.counterparty_column {
+            converter.counterparty_column = Some(counterparty_column);
+        }
+        if let Some(bank_balance_after_column) = form.bank_balance_after_column {
+            converter.bank_balance_after_column = Some(bank_balance_after_column);
+        }
+        if let Some(date_column) = form.date_column {
+            converter.date_column = Some(date_column);
+        }
     })
     .await
 }
@@ -105,32 +58,28 @@ async fn find_bank_and_update<F>(
 where
     F: Fn(&mut CSVConverter),
 {
-    let current_bank = get_current_bank(cookie_user_id, state).await;
-
-    if let Err(error) = current_bank {
-        return Err(show_error_page(
+    match get_current_bank(cookie_user_id, state).await {
+        Ok(current_bank) => {
+            let current_bank_id = current_bank.id;
+            match save_update_csv(state, db, update_field, current_bank_id).await {
+                Ok(success) => Ok(Json(ResponseData {
+                    error: None,
+                    success: Some(success),
+                })),
+                Err(error) => Ok(Json(ResponseData {
+                    error: Some(error),
+                    success: None,
+                })),
+            }
+        }
+        Err(error) => Err(show_error_page(
             "Error updating CSV converter".to_string(),
             error,
-        ));
-    }
-
-    let current_bank_id = current_bank.unwrap().id;
-
-    let result = update_csv(state, db, update_field, current_bank_id).await;
-
-    match result {
-        Ok(success) => Ok(Json(ResponseData {
-            error: None,
-            success: Some(success),
-        })),
-        Err(error) => Ok(Json(ResponseData {
-            error: Some(error),
-            success: None,
-        })),
+        )),
     }
 }
 
-pub async fn update_csv<F>(
+pub async fn save_update_csv<F>(
     state: &State<AppState>,
     db: &mut AsyncPgConnection,
     update_field: F,
@@ -139,38 +88,31 @@ pub async fn update_csv<F>(
 where
     F: Fn(&mut CSVConverter),
 {
-    let mut success = None;
-    let mut error = None;
-
-    // Obtain a lock on the state (not used in this function, but kept for consistency with the code)
+    // Obtain a lock on the state
     let mut csv_converters_lock = state.csv_convert.write().await;
-    let mut current_csv_converter = csv_converters_lock.get_mut(&current_bank_id).cloned();
+    let current_csv_converter = csv_converters_lock.get_mut(&current_bank_id).cloned();
+    drop(csv_converters_lock); // Release the lock early
 
-    drop(csv_converters_lock);
-
-    if let Some(current_csv_converter) = current_csv_converter.as_mut() {
-        update_field(current_csv_converter);
-
-        let result = diesel::update(csv_converters::table.find(current_csv_converter.id))
-            .set(current_csv_converter.clone())
+    let result = if let Some(mut converter) = current_csv_converter {
+        // Update the fields and save the changes
+        update_field(&mut converter);
+        let update_result = diesel::update(csv_converters::table.find(converter.id))
+            .set(&converter)
             .execute(db)
             .await;
 
-        match result {
+        match update_result {
             Ok(_) => {
-                success = Some("CSV converter updated successfully".to_string());
+                // Update the state with the new data
                 state
-                    .update_csv_converters(HashMap::from([(
-                        current_bank_id,
-                        current_csv_converter.clone(),
-                    )]))
+                    .update_csv_converters(HashMap::from([(current_bank_id, converter)]))
                     .await;
+                Ok("CSV converter updated successfully".to_string())
             }
-            Err(err) => {
-                error = Some(format!("Internal server error: {}", err));
-            }
+            Err(err) => Err(format!("Internal server error: {}", err)),
         }
     } else {
+        // Create a new converter if it does not exist
         let mut new_converter = CSVConverter {
             id: 0,
             bank_id: current_bank_id,
@@ -182,36 +124,28 @@ where
 
         update_field(&mut new_converter);
 
-        let new_converter = NewCSVConverter {
-            bank_id: new_converter.bank_id,
-            date_column: new_converter.date_column,
-            counterparty_column: new_converter.counterparty_column,
-            amount_column: new_converter.amount_column,
-            bank_balance_after_column: new_converter.bank_balance_after_column,
-        };
-
-        let result = diesel::insert_into(csv_converters::table)
-            .values(&new_converter)
-            .get_result::<CSVConverter>(&mut *db)
+        let insert_result = diesel::insert_into(csv_converters::table)
+            .values(&NewCSVConverter {
+                bank_id: new_converter.bank_id,
+                date_column: new_converter.date_column,
+                counterparty_column: new_converter.counterparty_column,
+                amount_column: new_converter.amount_column,
+                bank_balance_after_column: new_converter.bank_balance_after_column,
+            })
+            .get_result::<CSVConverter>(db)
             .await;
 
-        match result {
+        match insert_result {
             Ok(converter) => {
-                success = Some("CSV converter updated successfully".to_string());
-
+                // Update the state with the new data
                 state
                     .update_csv_converters(HashMap::from([(current_bank_id, converter)]))
                     .await;
+                Ok("CSV converter created successfully".to_string())
             }
-            Err(err) => {
-                error = Some(format!("Internal server error: {}", err));
-            }
+            Err(err) => Err(format!("Internal server error: {}", err)),
         }
-    }
+    };
 
-    if let Some(success) = success {
-        Ok(success)
-    } else {
-        Err(error.unwrap_or_else(|| "Internal server error".to_string()))
-    }
+    result
 }

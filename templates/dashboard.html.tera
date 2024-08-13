@@ -1,6 +1,9 @@
 <script id="graph-data" type="application/json">
     {{ graph_data | safe }}
 </script>
+<script id="contracts-data" type="application/json">
+    {{ contracts | safe}}
+</script>
     <body>
         <div class="container-without-border">
             <div class="container-without-border-horizontally-header">
@@ -12,19 +15,20 @@
             </div>
             <div id="balance_graph" class="balance_graph"></div>
             <div class="container-without-border-horizontally">
+
                 <p class="box">Total number: <span
                         id="total_transactions">{{
                         performance_value.total_transactions }}</span></p>
-                <p class="box">Average amount: <span
-                        id="average_transaction_amount">{{
-                        performance_value.average_transaction_amount
-                        }}</span></p>
-                <p class="box">Net gain/loss: <span id="net_gain_loss">{{
-                        performance_value.net_gain_loss }}</span></p>
-                <p class="box">Performance: <span id="performance_percentage">{{
-                        performance_value.performance_percentage }}</span> </p>
-                <p class="box">Discrepancy: <span id="total_discrepancy">{{
-                        performance_value.total_discrepancy }}</span></p>
+
+                <p class="box">Average amount: <spanid="average_transaction_amount">{{performance_value.average_transaction_amount}}</span></p>
+
+                <p class="box">Net gain/loss: <span id="net_gain_loss">{{performance_value.net_gain_loss }}</span></p>
+
+                <p class="box">Performance: <span id="performance_percentage">{{performance_value.performance_percentage }}</span> </p>
+
+                <p class="box">Discrepancy: <span id="total_discrepancy">{{performance_value.total_discrepancy }}</span></p>
             </div>
+            <h2>Contracts:</h2>
+            <div id="contracts-container"><div>
         </div>
 </body>

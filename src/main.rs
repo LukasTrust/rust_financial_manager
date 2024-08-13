@@ -18,9 +18,7 @@ use routes::error_page::error_page;
 use routes::error_page::not_found;
 use routes::login::{login_form, login_from_register, login_user};
 use routes::register::{register_form, register_user};
-use routes::update_csv::{
-    update_amount, update_bank_balance_after, update_counterparty, update_date,
-};
+use routes::update_csv::update_csv;
 use routes::update_date_range::update_date_range;
 use routes::upload_csv::upload_csv;
 use rust_financial_manager::{database, routes};
@@ -62,10 +60,7 @@ fn rocket() -> _ {
                 // Bank
                 bank_view,
                 // Update CSV
-                update_amount,
-                update_bank_balance_after,
-                update_counterparty,
-                update_date,
+                update_csv,
                 // Upload CSV
                 upload_csv,
                 // Error page

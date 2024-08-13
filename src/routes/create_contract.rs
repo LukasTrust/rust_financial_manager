@@ -13,7 +13,7 @@ use crate::utils::appstate::AppState;
 use crate::utils::structs::Transaction;
 
 pub async fn create_contract_from_transactions(
-    state: State<AppState>,
+    state: &State<AppState>,
     mut db: &mut Connection<DbConn>,
 ) -> Result<String, String> {
     let mut new_contracts: HashMap<i32, Vec<NewContract>> = HashMap::new();

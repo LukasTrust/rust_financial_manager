@@ -3,6 +3,7 @@ use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::serde::json::{json, Json};
 use rocket::{get, post, State};
+use rocket_db_pools::diesel::AsyncPgConnection;
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::Template;
 use serde_json::Value;
@@ -14,12 +15,11 @@ use crate::utils::get_utils::get_user_id;
 use crate::utils::insert_utiles::insert_bank;
 use crate::utils::structs::FormBank;
 
-use super::update_csv::update_csv;
+use super::update_csv::save_update_csv;
 
 #[get("/add-bank")]
 pub async fn add_bank(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
-    let _ = get_user_id(cookies)?;
-
+    get_user_id(cookies)?; // Ensure user is authenticated
     Ok(Template::render("add_bank", json!({})))
 }
 
@@ -32,97 +32,58 @@ pub async fn add_bank_form(
 ) -> Result<Json<Value>, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
+    // Create a new bank instance
     let new_bank = NewBank {
         user_id: cookie_user_id,
         name: bank_form.name.to_string(),
         link: bank_form.link.clone(),
     };
 
-    let result = insert_bank(cookie_user_id, new_bank.clone(), state, &mut db).await;
-
-    let mut error = None;
-
-    match result {
-        Ok(bank_id) => {
-            if error.is_none() && bank_form.counterparty_column.is_some() {
-                let counterparty_result = update_csv(
-                    state,
-                    db.as_mut(),
-                    |converter| {
-                        converter.counterparty_column = bank_form.counterparty_column.clone();
-                    },
-                    bank_id,
-                )
-                .await;
-
-                if counterparty_result.is_err() {
-                    error = Some("Error updating counterparty".to_string());
-                }
-            }
-
-            if error.is_none() && bank_form.amount_column.is_some() {
-                let amount_result = update_csv(
-                    state,
-                    db.as_mut(),
-                    |converter| {
-                        converter.amount_column = bank_form.amount_column.clone();
-                    },
-                    bank_id,
-                )
-                .await;
-
-                if amount_result.is_err() {
-                    error = Some("Error updating amount".to_string());
-                }
-            }
-
-            if error.is_none() && bank_form.bank_balance_after_column.is_some() {
-                let bank_balance_after_result = update_csv(
-                    state,
-                    db.as_mut(),
-                    |converter| {
-                        converter.bank_balance_after_column =
-                            bank_form.bank_balance_after_column.clone();
-                    },
-                    bank_id,
-                )
-                .await;
-
-                if bank_balance_after_result.is_err() {
-                    error = Some("Error updating bank balance after".to_string());
-                }
-            }
-
-            if error.is_none() && bank_form.date_column.is_some() {
-                let date_result = update_csv(
-                    state,
-                    db.as_mut(),
-                    |converter| {
-                        converter.date_column = bank_form.date_column.clone();
-                    },
-                    bank_id,
-                )
-                .await;
-
-                if date_result.is_err() {
-                    error = Some("Error updating date".to_string());
-                }
-            }
-        }
-        Err(e) => error = Some(e),
+    // Insert the new bank into the database
+    let bank_id = match insert_bank(cookie_user_id, new_bank.clone(), state, &mut db).await {
+        Ok(bank_id) => bank_id,
+        Err(e) => return Ok(Json(json!({ "error": e }))),
     };
 
-    let mut success = None;
-    if error.is_none() {
-        success = Some(format!("Bank {} added", new_bank.name));
+    // Update CSV fields if provided in the form
+    if let Err(e) = update_csv_fields(bank_form, state, &mut db, bank_id).await {
+        return Ok(Json(json!({ "error": e })));
     }
 
+    // If successful, fetch the updated list of banks
     let banks_clone = state.banks.read().await;
     let banks = banks_clone.get(&cookie_user_id).unwrap();
 
     Ok(Json(json!({
         "banks": banks,
-        "success": success,
-        "error": error,
+        "success": format!("Bank {} added", new_bank.name),
     })))
+}
+
+async fn update_csv_fields(
+    bank_form: Form<FormBank>,
+    state: &State<AppState>,
+    db: &mut AsyncPgConnection,
+    bank_id: i32,
+) -> Result<String, String> {
+    save_update_csv(
+        state,
+        db,
+        |converter| {
+            if let Some(counterparty_column) = bank_form.counterparty_column {
+                converter.counterparty_column = Some(counterparty_column);
+            }
+            if let Some(amount_column) = bank_form.amount_column {
+                converter.amount_column = Some(amount_column);
+            }
+            if let Some(bank_balance_after_column) = bank_form.bank_balance_after_column {
+                converter.bank_balance_after_column = Some(bank_balance_after_column);
+            }
+            if let Some(date_column) = bank_form.date_column {
+                converter.date_column = Some(date_column);
+            }
+        },
+        bank_id,
+    )
+    .await
 }

@@ -72,7 +72,7 @@ pub struct NewContract {
     pub months_between_payment: i32,
 }
 
-#[derive(Queryable, Insertable, Debug, Clone)]
+#[derive(Queryable, Insertable, Debug, Clone, Serialize)]
 #[diesel(table_name = contracts)]
 pub struct Contract {
     pub id: i32,

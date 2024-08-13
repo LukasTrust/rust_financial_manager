@@ -18,6 +18,7 @@ function loadContent(url) {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
+
             return response.text();
         })
         .then(html => {
@@ -39,6 +40,43 @@ function loadContent(url) {
                     log('Graph data successfully parsed:', 'loadContent', window.plotData);
                 } catch (e) {
                     error('Error parsing graph data:', 'loadContent', e);
+                }
+            }
+
+            const contractDataElement = document.getElementById('contracts-data');
+            if (contractDataElement) {
+                try {
+                    const contracts = JSON.parse(contractDataElement.textContent);
+
+                    // Get the container element where contract names will be appended
+                    const contractsContainer = document.getElementById('contracts-container');
+                    if (contractsContainer) {
+                        // Loop through each contract and create a <p> element
+                        contracts.forEach(contract => {
+                            // Create a <p> element for the contract name
+                            const pElement = document.createElement('p');
+                            pElement.className = 'box';
+
+                            // Create a text node for the contract name
+                            const nameTextNode = document.createTextNode(contract.name);
+
+                            // Create a <span> element for the amount
+                            const spanElement = document.createElement('span');
+                            spanElement.textContent = contract.current_amount; // Assume each contract has an 'amount' property
+
+                            // Append the name text node and the <span> to the <p> element
+                            pElement.appendChild(nameTextNode);
+                            pElement.appendChild(spanElement);
+
+                            // Append the <p> element to the container
+                            contractsContainer.appendChild(pElement);
+                        });
+                    } else {
+                        console.error('Contracts container not found.');
+                    }
+
+                } catch (e) {
+                    error(e)
                 }
             }
 
@@ -67,6 +105,12 @@ function initializeChartAndDatePicker() {
     log('Initializing Plotly chart and Flatpickr date range picker with data:', 'initializeChartAndDatePicker', window.plotData);
 
     update_graph();
+
+    const contractsdata = document.getElementById('contrafts-data');
+
+    if (contractsdata) {
+        console.log('Contracts data available:', 'initializeChartAndDatePicker', contractsdata);
+    }
 
     setTimeout(() => {
         flatpickr("#dateRange", {
@@ -252,6 +296,18 @@ function formatAndColorNumbers() {
 
             element.classList.toggle("positive", value >= 0);
             element.classList.toggle("negative", value < 0);
+        }
+    });
+
+    // Format and color contract amounts
+    const contractElements = document.querySelectorAll('#contracts-container .box');
+    contractElements.forEach(element => {
+        const amountSpan = element.querySelector('span');
+        if (amountSpan) {
+            let value = parseFloat(amountSpan.textContent.replace(/[^0-9.-]/g, '')).toFixed(2); // Remove non-numeric characters
+            amountSpan.textContent = `${value} €`;
+            amountSpan.classList.toggle("positive", value >= 0);
+            amountSpan.classList.toggle("negative", value < 0);
         }
     });
 
