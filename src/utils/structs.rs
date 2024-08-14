@@ -52,6 +52,7 @@ pub struct FormTransactions {
 pub struct Transaction {
     pub id: i32,
     pub bank_id: i32,
+    pub contract_id: Option<i32>,
     pub date: NaiveDate,
     pub counterparty: String,
     pub amount: f64,

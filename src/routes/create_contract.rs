@@ -1,6 +1,6 @@
 use chrono::{Duration, NaiveDate};
 use diesel::{ExpressionMethods, QueryDsl};
-use log::{error, info};
+use log::info;
 use rocket::State;
 use rocket_db_pools::diesel::prelude::RunQueryDsl;
 use rocket_db_pools::Connection;
@@ -10,20 +10,27 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::{Contract, NewContract, NewContractHistory};
 use crate::schema::{contract_history, contracts};
 use crate::utils::appstate::AppState;
-use crate::utils::structs::Transaction;
+use crate::utils::structs::{Bank, Transaction};
+use crate::utils::update_utils::update_transaction_with_contract_id;
+
+type Result<T> = std::result::Result<T, String>;
 
 pub async fn create_contract_from_transactions(
+    banks: Vec<Bank>,
     state: &State<AppState>,
     mut db: &mut Connection<DbConn>,
-) -> Result<String, String> {
+) -> Result<String> {
     let mut new_contracts: HashMap<i32, Vec<NewContract>> = HashMap::new();
-    let transactions = state.transactions.read().await.clone();
-    let existing_contracts = state.contracts.read().await.clone();
+    let transactions = state.transactions.read().await;
+
+    let existing_contracts = state.contracts.read().await;
 
     info!("Starting to create contracts from transactions.");
 
-    for (bank_id, bank_transactions) in transactions {
-        info!("Processing bank ID: {}", bank_id);
+    for bank in banks.iter() {
+        let bank_transactions = transactions.get(&bank.id).unwrap();
+
+        info!("Processing bank ID: {}", bank.id);
         let transactions_grouped_by_counterparty =
             group_transactions_by_counterparty(bank_transactions);
 
@@ -31,29 +38,31 @@ pub async fn create_contract_from_transactions(
             info!("Processing counterparty: {}", counterparty);
             let transactions_grouped_by_amount = group_transactions_by_amount(transactions);
 
-            for (_, transactions) in transactions_grouped_by_amount {
+            for transactions in transactions_grouped_by_amount.values() {
                 if transactions.len() <= 2 {
                     info!(
-                        "Skipping transactions for counterparty {} with insufficient transactions.",
+                        "Skipping counterparty {} due to insufficient transactions.",
                         counterparty
                     );
                     continue;
                 }
 
-                if let Some(months_between) = check_time_frame(&transactions) {
+                if let Some(months_between) = check_time_frame(transactions) {
                     let new_contract = NewContract {
-                        bank_id,
+                        bank_id: bank.id,
                         name: counterparty.clone(),
                         current_amount: transactions[0].0,
                         months_between_payment: months_between,
                     };
 
                     if process_new_contract(&new_contract, &existing_contracts, &mut db).await? {
-                        let contract_list = new_contracts.entry(bank_id).or_insert_with(Vec::new);
-                        contract_list.push(new_contract);
+                        new_contracts
+                            .entry(bank.id)
+                            .or_insert_with(Vec::new)
+                            .push(new_contract);
                         info!(
                             "New contract created for counterparty {} with bank ID {}",
-                            counterparty, bank_id
+                            counterparty, bank.id
                         );
                     }
                 }
@@ -61,50 +70,90 @@ pub async fn create_contract_from_transactions(
         }
     }
 
-    // Insert new contracts into the database
     let inserted_contracts = insert_new_contracts(&new_contracts, &mut db).await?;
 
-    // Update the state with newly inserted contracts
+    drop(existing_contracts);
+
     state.update_contracts(inserted_contracts).await;
 
     let contract_count = new_contracts.values().flatten().count();
     info!("Found {} new contracts!", contract_count);
 
+    let existing_contracts = state.contracts.read().await;
+
+    update_transactions_with_contract_ids(&transactions, &existing_contracts, &mut db).await?;
+
     Ok(format!("Found {} new contracts!", contract_count))
+}
+
+async fn update_transactions_with_contract_ids(
+    transactions: &HashMap<i32, Vec<Transaction>>,
+    existing_contracts: &HashMap<i32, Vec<Contract>>,
+    db: &mut Connection<DbConn>,
+) -> Result<()> {
+    let transactions_without_contract: Vec<_> = transactions
+        .values()
+        .flat_map(|bank_transactions| bank_transactions.iter())
+        .filter(|transaction| transaction.contract_id.is_none())
+        .cloned()
+        .collect();
+
+    for transaction in transactions_without_contract {
+        if let Some(contracts) = existing_contracts.get(&transaction.bank_id) {
+            for contract in contracts {
+                if transaction.counterparty.contains(&contract.name) {
+                    // Round amounts to two decimal places
+                    let rounded_transaction_amount = (transaction.amount * 100.0).round() / 100.0;
+                    let rounded_contract_amount = (contract.current_amount * 100.0).round() / 100.0;
+
+                    if rounded_transaction_amount == rounded_contract_amount {
+                        update_transaction_with_contract_id(transaction.id, contract.id, db)
+                            .await?;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 async fn process_new_contract(
     new_contract: &NewContract,
     existing_contracts: &HashMap<i32, Vec<Contract>>,
     db: &mut Connection<DbConn>,
-) -> Result<bool, String> {
+) -> Result<bool> {
     if let Some(existing_contract_list) = existing_contracts.get(&new_contract.bank_id) {
         for existing_contract in existing_contract_list {
-            if existing_contract.bank_id == new_contract.bank_id
-                && existing_contract.name == new_contract.name
+            if existing_contract.name == new_contract.name
                 && existing_contract.months_between_payment == new_contract.months_between_payment
             {
                 if existing_contract.current_amount == new_contract.current_amount {
                     info!(
-                        "Duplicate contract found for {} at bank ID {}. Skipping insertion.",
+                        "Duplicate contract for {} at bank ID {}. Skipping.",
                         new_contract.name, new_contract.bank_id
                     );
                     return Ok(false);
                 } else if is_contract_with_reasonable_change(
                     existing_contract,
                     new_contract,
-                    10.0, // max percentage change allowed
-                    50.0, // max absolute change allowed
+                    10.0,
+                    50.0,
                 ) {
-                    info!("Reasonable update found for contract {} at bank ID {}. Updating existing contract.", new_contract.name, new_contract.bank_id);
+                    info!(
+                        "Updating contract {} at bank ID {}.",
+                        new_contract.name, new_contract.bank_id
+                    );
                     update_existing_contract(existing_contract, new_contract, db).await?;
                     return Ok(false);
                 }
             }
         }
     }
+
     info!(
-        "No duplicate found. Proceeding with insertion for contract {} at bank ID {}.",
+        "Inserting new contract for {} at bank ID {}.",
         new_contract.name, new_contract.bank_id
     );
     Ok(true)
@@ -114,18 +163,13 @@ async fn update_existing_contract(
     existing_contract: &Contract,
     new_contract: &NewContract,
     db: &mut Connection<DbConn>,
-) -> Result<(), String> {
-    // Update existing contract's current_amount
+) -> Result<()> {
     diesel::update(contracts::table.find(existing_contract.id))
         .set(contracts::current_amount.eq(new_contract.current_amount))
         .execute(db)
         .await
-        .map_err(|e| {
-            error!("Error updating contract: {}", e);
-            format!("Error updating contract: {}", e)
-        })?;
+        .map_err(|e| format!("Error updating the contract: {}", e))?;
 
-    // Create a new contract history entry
     let new_history = NewContractHistory {
         contract_id: existing_contract.id,
         old_amount: existing_contract.current_amount,
@@ -137,10 +181,7 @@ async fn update_existing_contract(
         .values(&new_history)
         .execute(db)
         .await
-        .map_err(|e| {
-            error!("Error creating contract history: {}", e);
-            format!("Error creating contract history: {}", e)
-        })?;
+        .map_err(|e| format!("Error inserting into contract history: {}", e))?;
 
     info!(
         "Updated contract ID {} with new amount {}.",
@@ -152,7 +193,7 @@ async fn update_existing_contract(
 async fn insert_new_contracts(
     new_contracts: &HashMap<i32, Vec<NewContract>>,
     db: &mut Connection<DbConn>,
-) -> Result<HashMap<i32, Vec<Contract>>, String> {
+) -> Result<HashMap<i32, Vec<Contract>>> {
     let mut inserted_contracts = HashMap::new();
 
     for (bank_id, contracts) in new_contracts.iter() {
@@ -165,10 +206,7 @@ async fn insert_new_contracts(
             .values(contracts)
             .get_results::<Contract>(db)
             .await
-            .map_err(|e| {
-                error!("Error creating contract: {}", e);
-                format!("Error creating contract: {}", e)
-            })?;
+            .map_err(|e| format!("Error inserting contract: {}", e))?;
 
         inserted_contracts.insert(*bank_id, result);
     }
@@ -177,17 +215,14 @@ async fn insert_new_contracts(
 }
 
 fn group_transactions_by_counterparty(
-    transactions: Vec<Transaction>,
+    transactions: &Vec<Transaction>,
 ) -> HashMap<String, Vec<(f64, NaiveDate)>> {
     transactions
-        .into_iter()
+        .iter()
         .fold(HashMap::new(), |mut acc, transaction| {
-            let counterparty = transaction.counterparty;
-            let amount = transaction.amount;
-            let date = transaction.date;
-            acc.entry(counterparty)
+            acc.entry(transaction.counterparty.clone())
                 .or_insert_with(Vec::new)
-                .push((amount, date));
+                .push((transaction.amount, transaction.date));
             acc
         })
 }
@@ -209,12 +244,8 @@ fn check_time_frame(transactions: &[(f64, NaiveDate)]) -> Option<i32> {
     sorted_transactions.sort_by_key(|&(_, date)| date);
 
     for window in sorted_transactions.windows(3) {
-        let (_, date1) = window[0];
-        let (_, date2) = window[1];
-        let (_, date3) = window[2];
-
-        let duration1 = date2.signed_duration_since(date1);
-        let duration2 = date3.signed_duration_since(date2);
+        let duration1 = window[1].1.signed_duration_since(window[0].1);
+        let duration2 = window[2].1.signed_duration_since(window[1].1);
 
         if is_within_time_frame(duration1, 30) && is_within_time_frame(duration2, 30) {
             return Some(1);
@@ -228,8 +259,9 @@ fn check_time_frame(transactions: &[(f64, NaiveDate)]) -> Option<i32> {
     None
 }
 
-fn is_within_time_frame(duration: Duration, target_days: i64) -> bool {
-    (duration.num_days() - target_days).abs() <= 5
+fn is_within_time_frame(duration: Duration, expected_days: i64) -> bool {
+    let margin = 5;
+    (duration.num_days() - expected_days).abs() <= margin
 }
 
 fn is_contract_with_reasonable_change(
@@ -238,25 +270,8 @@ fn is_contract_with_reasonable_change(
     max_percentage_change: f64,
     max_absolute_change: f64,
 ) -> bool {
-    if existing_contract.bank_id == new_contract.bank_id
-        && existing_contract.name == new_contract.name
-        && existing_contract.months_between_payment == new_contract.months_between_payment
-    {
-        let old_amount = existing_contract.current_amount as f64;
-        let new_amount = new_contract.current_amount as f64;
+    let amount_change = (new_contract.current_amount - existing_contract.current_amount).abs();
+    let percentage_change = (amount_change / existing_contract.current_amount) * 100.0;
 
-        // Calculate percentage change
-        let percentage_change = ((new_amount - old_amount) / old_amount).abs() * 100.0;
-
-        // Calculate absolute change
-        let absolute_change =
-            (new_contract.current_amount - existing_contract.current_amount).abs();
-
-        // Check if the change is within reasonable limits
-        if percentage_change <= max_percentage_change || absolute_change <= max_absolute_change {
-            return true;
-        }
-    }
-
-    false
+    percentage_change <= max_percentage_change || amount_change <= max_absolute_change
 }

@@ -19,7 +19,7 @@ use crate::utils::display_utils::{generate_balance_graph_data, generate_performa
 use crate::utils::get_utils::{
     get_csv_converter, get_current_bank, get_first_date_and_last_date_from_bank, get_user_id,
 };
-use crate::utils::structs::Transaction;
+use crate::utils::structs::{Bank, Transaction};
 
 use super::create_contract::create_contract_from_transactions;
 use super::error_page::show_error_page;
@@ -38,8 +38,6 @@ pub async fn upload_csv(
         return Err(show_error_page("Error uploading csv".to_string(), error));
     }
 
-    let current_bank_id = current_bank.clone().unwrap().id;
-
     // Read the CSV file
     let data_stream = match data.open(512.kibibytes()).into_bytes().await {
         Ok(bytes) => bytes,
@@ -51,13 +49,15 @@ pub async fn upload_csv(
         }
     };
 
+    let current_bank = current_bank.unwrap();
+
     let cursor = Cursor::new(data_stream.to_vec());
     let mut rdr = ReaderBuilder::new()
         .has_headers(true)
         .flexible(true)
         .from_reader(cursor);
 
-    let result = extract_and_process_records(&mut rdr, current_bank_id, state, &mut db).await;
+    let result = extract_and_process_records(&mut rdr, current_bank.clone(), state, &mut db).await;
 
     match result {
         Ok((succesful_inserts, failed_inserts)) => {
@@ -68,8 +68,8 @@ pub async fn upload_csv(
 
             let contract_map = state.contracts.read().await;
             let transactions_map = state.transactions.read().await;
-            let transactions = transactions_map.get(&current_bank_id);
-            let banks = vec![current_bank.unwrap()];
+            let transactions = transactions_map.get(&current_bank.id);
+            let banks = vec![current_bank];
 
             let (first_date, last_date) = get_first_date_and_last_date_from_bank(transactions);
 
@@ -108,7 +108,7 @@ pub async fn upload_csv(
 
 async fn extract_and_process_records<R: std::io::Read>(
     rdr: &mut csv::Reader<R>,
-    current_bank_id: i32,
+    current_bank: Bank,
     state: &State<AppState>,
     db: &mut Connection<DbConn>,
 ) -> Result<(i32, i32), String> {
@@ -117,7 +117,7 @@ async fn extract_and_process_records<R: std::io::Read>(
 
     let mut new_transactions: HashMap<i32, Vec<Transaction>> = HashMap::new();
 
-    let csv_converter = get_csv_converter(current_bank_id, state).await?;
+    let csv_converter = get_csv_converter(current_bank.id, state).await?;
 
     validate_csv_converters(csv_converter)?;
 
@@ -208,7 +208,7 @@ async fn extract_and_process_records<R: std::io::Read>(
         }
 
         let new_transaction = NewTransactions {
-            bank_id: current_bank_id,
+            bank_id: current_bank.id,
             date: date_from_csv,
             counterparty: counterparty_from_csv.to_string(),
             amount: amount_from_csv,
@@ -223,7 +223,7 @@ async fn extract_and_process_records<R: std::io::Read>(
         match result {
             Ok(transaction) => {
                 new_transactions
-                    .entry(current_bank_id)
+                    .entry(current_bank.id)
                     .or_insert_with(Vec::new)
                     .push(transaction);
 
@@ -235,7 +235,7 @@ async fn extract_and_process_records<R: std::io::Read>(
 
     state.update_transactions(new_transactions).await;
 
-    create_contract_from_transactions(state, db).await?;
+    create_contract_from_transactions(vec![current_bank], state, db).await?;
 
     Ok((succesful_inserts, failed_inserts))
 }

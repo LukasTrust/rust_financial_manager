@@ -47,6 +47,7 @@ diesel::table! {
     transactions (id) {
         id -> Int4,
         bank_id -> Int4,
+        contract_id -> Nullable<Int4>,
         date -> Date,
         #[max_length = 200]
         counterparty -> Varchar,
@@ -74,6 +75,7 @@ diesel::joinable!(contract_history -> contracts (contract_id));
 diesel::joinable!(contracts -> banks (bank_id));
 diesel::joinable!(csv_converters -> banks (bank_id));
 diesel::joinable!(transactions -> banks (bank_id));
+diesel::joinable!(transactions -> contracts (contract_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     banks,

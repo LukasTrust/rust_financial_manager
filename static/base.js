@@ -266,27 +266,27 @@ function update_performance(result) {
     const average_transaction_amount = document.getElementById("average_transaction_amount");
     const total_discrepancy = document.getElementById("total_discrepancy");
 
-    if (total_transactions && net_gain_loss && performance_percentage && average_transaction_amount && total_discrepancy) {
-        total_transactions.textContent = result.performance_value.total_transactions;
-        net_gain_loss.textContent = result.performance_value.net_gain_loss;
-        performance_percentage.textContent = result.performance_value.performance_percentage;
-        average_transaction_amount.textContent = result.performance_value.average_transaction_amount;
-        total_discrepancy.textContent = result.performance_value.total_discrepancy;
+    const total_contracts = document.getElementById("total_contracts");
+    const total_amount_per_year = document.getElementById("total_amount_per_year");
+    const one_month_contract_amount = document.getElementById("one_month_contract_amount");
+    const three_month_contract_amount = document.getElementById("three_month_contract_amount");
+    const six_month_contract_amount = document.getElementById("six_month_contract_amount");
 
-        formatAndColorNumbers();
+    total_transactions.textContent = result.performance_value.total_transactions;
+    net_gain_loss.textContent = result.performance_value.net_gain_loss;
+    performance_percentage.textContent = result.performance_value.performance_percentage;
+    average_transaction_amount.textContent = result.performance_value.average_transaction_amount;
+    total_discrepancy.textContent = result.performance_value.total_discrepancy;
 
-        log('Performance metrics updated and formatted successfully:', 'handleFormSubmission');
-    }
-    else {
-        // Log missing elements
-        error('One or more performance elements are missing.', 'handleFormSubmission', {
-            total_transactions,
-            net_gain_loss,
-            performance_percentage,
-            average_transaction_amount,
-            total_discrepancy
-        });
-    }
+    total_contracts.textContent = result.performance_value.total_contracts;
+    total_amount_per_year.textContent = result.performance_value.total_amount_per_year;
+    one_month_contract_amount.textContent = result.performance_value.one_month_contract_amount;
+    three_month_contract_amount.textContent = result.performance_value.three_month_contract_amount;
+    six_month_contract_amount.textContent = result.performance_value.six_month_contract_amount;
+
+    formatAndColorNumbers();
+
+    log('Performance metrics updated and formatted successfully:', 'handleFormSubmission');
 }
 
 function update_graph() {
