@@ -20,6 +20,7 @@ pub async fn bank_view(
 ) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
+    let contract_map = state.contracts.read().await;
     let transactions_map = state.transactions.read().await;
     let banks = get_banks_of_user(cookie_user_id, state).await;
 
@@ -42,8 +43,13 @@ pub async fn bank_view(
 
             let (first_date, last_date) = get_first_date_and_last_date_from_bank(transactions);
 
-            let performance_value =
-                generate_performance_value(&banks, &transactions_map, first_date, last_date);
+            let performance_value = generate_performance_value(
+                &banks,
+                &transactions_map,
+                &contract_map,
+                first_date,
+                last_date,
+            );
 
             let graph_data = generate_balance_graph_data(
                 &banks,

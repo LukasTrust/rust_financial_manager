@@ -3,6 +3,8 @@ use log::info;
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
+use crate::database::models::Contract;
+
 use super::structs::{Bank, Discrepancy, PerformanceData, Transaction};
 
 /// Generate balance graph data for plotting.
@@ -118,6 +120,7 @@ pub async fn generate_balance_graph_data(
 pub fn generate_performance_value(
     banks: &[Bank],
     transactions: &HashMap<i32, Vec<Transaction>>,
+    contracts: &HashMap<i32, Vec<Contract>>,
     start_date: NaiveDate,
     end_date: NaiveDate,
 ) -> (PerformanceData, Vec<Discrepancy>) {
@@ -127,10 +130,37 @@ pub fn generate_performance_value(
     let mut starting_balance = 0.0;
     let mut ending_balance = 0.0;
     let mut transactions_with_discrepancy = vec![];
+    let mut total_contracts = 0;
+    let mut one_month_contract_amount = 0.0;
+    let mut three_month_contract_amount = 0.0;
+    let mut six_month_contract_amount = 0.0;
+    let mut total_amount_per_year = 0.0;
 
     info!("Generating performance data for {} banks", banks.len());
 
     for bank in banks {
+        if let Some(contracts_of_bank) = contracts.get(&bank.id) {
+            total_contracts += contracts_of_bank.len();
+
+            for contract in contracts_of_bank {
+                match contract.months_between_payment {
+                    1 => {
+                        total_amount_per_year += contract.current_amount * 12.0;
+                        one_month_contract_amount += contract.current_amount
+                    }
+                    3 => {
+                        total_amount_per_year += contract.current_amount * 4.0;
+                        three_month_contract_amount += contract.current_amount
+                    }
+                    6 => {
+                        total_amount_per_year += contract.current_amount * 2.0;
+                        six_month_contract_amount += contract.current_amount
+                    }
+                    _ => {}
+                }
+            }
+        }
+
         if let Some(transaction_of_bank) = transactions.get(&bank.id) {
             let mut previous_balance = 0.0;
 
@@ -209,6 +239,11 @@ pub fn generate_performance_value(
         net_gain_loss,
         performance_percentage,
         total_discrepancy,
+        total_contracts,
+        one_month_contract_amount,
+        three_month_contract_amount,
+        six_month_contract_amount,
+        total_amount_per_year,
     };
 
     info!("Performance data: {:?}", performance_data);

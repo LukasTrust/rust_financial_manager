@@ -98,6 +98,14 @@ body {
     gap: 20px;
 }
 
+.centered-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: auto;
+}
 
 .error {
     color: #ff0000;

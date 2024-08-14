@@ -75,6 +75,11 @@ pub struct PerformanceData {
     pub net_gain_loss: f64,
     pub performance_percentage: f64,
     pub total_discrepancy: f64,
+    pub total_contracts: usize,
+    pub one_month_contract_amount: f64,
+    pub three_month_contract_amount: f64,
+    pub six_month_contract_amount: f64,
+    pub total_amount_per_year: f64,
 }
 
 impl Default for PerformanceData {
@@ -85,6 +90,11 @@ impl Default for PerformanceData {
             net_gain_loss: 0.0,
             performance_percentage: 0.0,
             total_discrepancy: 0.0,
+            total_contracts: 0,
+            one_month_contract_amount: 0.0,
+            three_month_contract_amount: 0.0,
+            six_month_contract_amount: 0.0,
+            total_amount_per_year: 0.0,
         }
     }
 }

@@ -100,6 +100,7 @@ pub async fn dashboard(
 
     state.update_current_bank(cookie_user_id, None).await;
 
+    let contract_map = state.contracts.read().await;
     let transactions_map = state.transactions.read().await;
     let transactions_vec: Vec<Transaction> =
         transactions_map.clone().into_values().flatten().collect();
@@ -110,22 +111,17 @@ pub async fn dashboard(
 
     let (first_date, last_date) = get_first_date_and_last_date_from_bank(transactions);
 
-    let performance_value =
-        generate_performance_value(&banks, &transactions_map, first_date, last_date);
+    let performance_value = generate_performance_value(
+        &banks,
+        &transactions_map,
+        &contract_map,
+        first_date,
+        last_date,
+    );
 
     let graph_data =
         generate_balance_graph_data(&banks, &transactions_map, performance_value.1, None, None)
             .await;
-
-    let contract_map = state.contracts.read().await;
-    let contracts_string = serde_json::to_string(
-        &contract_map
-            .values()
-            .flatten()
-            .cloned()
-            .collect::<Vec<Contract>>(),
-    )
-    .unwrap();
 
     Ok(Template::render(
         "dashboard",
@@ -133,7 +129,6 @@ pub async fn dashboard(
             "success": format!("Welcome, {} {}!", user_first_name, user_last_name),
             "graph_data": graph_data,
             "performance_value": performance_value.0,
-            "contracts": contracts_string
         }),
     ))
 }
