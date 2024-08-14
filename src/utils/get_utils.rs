@@ -6,7 +6,10 @@ use super::{
     appstate::AppState,
     structs::{Bank, Transaction},
 };
-use crate::routes::error_page::show_error_page;
+use crate::{
+    database::models::{CSVConverter, Contract},
+    routes::error_page::show_error_page,
+};
 
 /// Extract the user ID from the user ID cookie.
 /// If the user ID cookie is not found or cannot be parsed, an error page is displayed.
@@ -64,7 +67,7 @@ pub async fn get_banks_of_user(cookie_user_id: i32, state: &State<AppState>) -> 
 pub async fn get_csv_converter(
     current_bank_id: i32,
     state: &State<AppState>,
-) -> Result<crate::database::models::CSVConverter, String> {
+) -> Result<CSVConverter, String> {
     let csv_converters = state.csv_convert.read().await;
 
     let csv_converter = csv_converters.get(&current_bank_id);
@@ -77,6 +80,26 @@ pub async fn get_csv_converter(
         None => {
             error!("No CSV converter found.");
             Err("No CSV converter found.".to_string())
+        }
+    }
+}
+
+pub async fn get_contracts(
+    current_bank_id: i32,
+    state: &State<AppState>,
+) -> Result<Vec<Contract>, String> {
+    let contracts = state.contracts.read().await;
+
+    let contracts = contracts.get(&current_bank_id);
+
+    match contracts {
+        Some(contracts) => {
+            info!("Contracts found: {:?}", contracts.len());
+            Ok(contracts.clone())
+        }
+        None => {
+            error!("No contracts found.");
+            Err("No contracts found.".to_string())
         }
     }
 }

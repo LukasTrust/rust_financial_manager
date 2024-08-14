@@ -15,6 +15,7 @@
             <div class="sidebar-left">
                 <h2>Rust Financial Manager</h2>
                 <button onclick="loadContent('/dashboard')">Dashboard</button>
+                <button onclick="loadContent('/contract')">Contracts</button>
                 <button onclick="loadContent('/add-bank')">Add new bank</button>
                 <div id="banks">
                     {% for bank in banks %}

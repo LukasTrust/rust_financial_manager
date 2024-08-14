@@ -91,7 +91,7 @@ pub struct NewContractHistory {
     pub changed_at: Option<chrono::NaiveDateTime>,
 }
 
-#[derive(Queryable, Debug, Clone)]
+#[derive(Queryable, Debug, Clone, Serialize)]
 #[diesel(table_name = contract_history)]
 pub struct ContractHistory {
     pub id: i32,

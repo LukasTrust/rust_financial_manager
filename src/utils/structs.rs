@@ -3,6 +3,8 @@ use diesel::prelude::*;
 use rocket::{time::Date, FromForm};
 use serde::Serialize;
 
+use crate::database::models::{Contract, ContractHistory};
+
 #[derive(FromForm)]
 pub struct FormUser {
     pub email: String,
@@ -103,4 +105,10 @@ impl Default for PerformanceData {
 pub struct ResponseData {
     pub success: Option<String>,
     pub error: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ContractWithHistory {
+    pub contract: Contract,
+    pub contract_history: Vec<ContractHistory>,
 }
