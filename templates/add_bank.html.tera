@@ -1,3 +1,5 @@
+<body>
+
 <div class="container-without-border">
     <div class="container-without-border-horizontally">
 <h1>Add Bank</h1>
@@ -33,3 +35,4 @@
     <button type="submit">Submit</button>
 </form>
 </div>
+</body>

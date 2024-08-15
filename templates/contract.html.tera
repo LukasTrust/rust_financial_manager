@@ -1,13 +1,19 @@
-<div class="container-without-border-horizontally">
-    <div class="container-without-border">
-        <div class="container-without-border-horizontally">
-            <h1>{{ bank.name }}</h1>
-            <p id="success" class="success"></p>
-            <p id="error" class="error"></p>
-        </div> 
-        <h2>Transaction data:</h2>
-        <div class="container-without-border-horizontally">
-
-        </div>   
+<script id="contracts-data" type="application/json">
+    {{ contracts | safe }}
+</script>
+<body>
+    <div class="container-without-border-horizontally">
+        <div class="container-without-border">
+            <div class="container-without-border-horizontally">
+                <h1>Contracts</h1>
+                <p id="success" class="success"></p>
+                <p id="error" class="error"></p>
+            </div> 
+            <h2>Transaction Data:</h2>
+            <div id="contracts-container" class="container-without-border-horizontally">
+                <!-- Contracts will be dynamically inserted here -->
+            </div>
+        </div>
     </div>
-</div>
+</body>
+</html>

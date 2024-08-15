@@ -103,7 +103,6 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    height: 100vh;
     width: auto;
 }
 
@@ -232,4 +231,16 @@ label {
 
 .hidden {
     display: none;
+}
+
+.contract-info {
+    margin-bottom: 20px;
+}
+
+#contract-history {
+    margin-top: 10px;
+}
+
+.merge-contracts {
+    margin-top: 20px;
 }

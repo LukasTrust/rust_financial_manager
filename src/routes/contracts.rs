@@ -7,15 +7,15 @@ use rocket_dyn_templates::Template;
 
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
-use crate::utils::get_utils::{get_contracts, get_current_bank, get_user_id};
+use crate::utils::get_utils::{get_banks_of_user, get_contracts, get_current_bank, get_user_id};
 use crate::utils::loading_utils::load_contract_history;
-use crate::utils::structs::ContractWithHistory;
+use crate::utils::structs::{Bank, ContractWithHistory};
 
 #[get("/contract")]
 pub async fn contract(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-    mut db: Connection<DbConn>,
+    db: Connection<DbConn>,
 ) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
@@ -23,31 +23,82 @@ pub async fn contract(
 
     match current_bank {
         Ok(current_bank) => {
-            let contracts = get_contracts(current_bank.id, state).await;
+            let result = get_contracts_with_history(vec![current_bank], state, db).await;
 
-            let mut contracts_with_history: Vec<ContractWithHistory> = Vec::new();
+            let error = if result.is_err() {
+                Some(result.clone().err().unwrap())
+            } else {
+                None
+            };
 
-            match contracts {
-                Ok(contracts) => {
-                    for contract in contracts.iter() {
-                        let contract_history = load_contract_history(contract.id, &mut db).await?;
+            let contract_string = if result.is_ok() {
+                result.unwrap()
+            } else {
+                String::new()
+            };
 
-                        let contract_with_history = ContractWithHistory {
-                            contract: contract.clone(),
-                            contract_history,
-                        };
+            Ok(Template::render(
+                "contract",
+                json!({"contracts": contract_string,
+                       "error": error}),
+            ))
+        }
+        Err(_) => {
+            let banks = get_banks_of_user(cookie_user_id, state).await;
 
-                        contracts_with_history.push(contract_with_history);
+            let result = get_contracts_with_history(banks, state, db).await;
+
+            let error = if result.is_err() {
+                Some(result.clone().err().unwrap())
+            } else {
+                None
+            };
+
+            let contract_string = if result.is_ok() {
+                result.unwrap()
+            } else {
+                String::new()
+            };
+
+            Ok(Template::render(
+                "contract",
+                json!({"contracts": contract_string,
+                       "error": error}),
+            ))
+        }
+    }
+}
+
+async fn get_contracts_with_history(
+    banks: Vec<Bank>,
+    state: &State<AppState>,
+    mut db: Connection<DbConn>,
+) -> Result<String, String> {
+    let mut contracts_with_history: Vec<ContractWithHistory> = Vec::new();
+
+    for bank in banks {
+        let contracts = get_contracts(bank.id, state).await;
+
+        match contracts {
+            Ok(contracts) => {
+                for contract in contracts.iter() {
+                    let contract_history = load_contract_history(contract.id, &mut db).await;
+
+                    if contract_history.is_err() {
+                        return Err("Error loading contract history.".to_string());
                     }
 
-                    return Ok(Template::render(
-                        "contract",
-                        json!({"contracts": contracts_with_history}),
-                    ));
+                    let contract_with_history = ContractWithHistory {
+                        contract: contract.clone(),
+                        contract_history: contract_history.unwrap(),
+                    };
+
+                    contracts_with_history.push(contract_with_history);
                 }
-                Err(err) => return Ok(Template::render("contract", json!({ "error": err }))),
             }
+            Err(err) => return Err(err),
         }
-        Err(err) => return Ok(Template::render("contract", json!({ "error": err }))),
     }
+
+    Ok(serde_json::to_string(&contracts_with_history).unwrap())
 }

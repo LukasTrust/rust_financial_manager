@@ -1,6 +1,7 @@
 <script id="graph-data" type="application/json">
     {{ graph_data | safe }}
 </script>
+<body>
     <div class="container-without-border-horizontally">
         <div class="container-without-border">
             <div class="container-without-border-horizontally">
@@ -67,3 +68,4 @@
             </form>
         </div>
     </div>
+</body>
