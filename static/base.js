@@ -339,16 +339,14 @@ function loadContracts() {
 
             // Create a new div element for each contract
             const contractElement = document.createElement('div');
-            contractElement.className = 'contract contract-info'; // Add classes for styling
+            contractElement.className = 'contract'; // Apply the contract class
 
             // Create HTML content for the contract
             contractElement.innerHTML = `
                 <h3>Contract: ${contract.name}</h3>
-                <p>ID: ${contract.id}</p>
-                <p>Bank ID: ${contract.bank_id}</p>
                 <p>Current Amount: $${contract.current_amount.toFixed(2)}</p>
                 <p>Months Between Payment: ${contract.months_between_payment}</p>
-                <button class="toggle-history-btn">Show History</button>
+                <button class="toggle-history-btn" data-index="${index}">Show History</button>
                 <div id="contract-history-${index}" class="hidden contract-history">
                     <h4>Contract History:</h4>
                     <ul>
@@ -361,7 +359,6 @@ function loadContracts() {
                         `).join('') : '<li>No history available.</li>'}
                     </ul>
                 </div>
-                <input type="checkbox" class="merge-checkbox" data-contract-id="${contract.id}" /> Select for merge
             `;
 
             // Append the contract element to the container
@@ -376,34 +373,8 @@ function loadContracts() {
             });
         });
 
-        // Add the merge button
-        const mergeButton = document.createElement('button');
-        mergeButton.className = 'merge-contracts';
-        mergeButton.textContent = 'Merge Selected Contracts';
-        container.appendChild(mergeButton);
-
-        // Add event listener for the merge button
-        mergeButton.addEventListener('click', () => {
-            const selectedContracts = document.querySelectorAll('.merge-checkbox:checked');
-            if (selectedContracts.length !== 2) {
-                alert('Please select exactly two contracts to merge.');
-                return;
-            }
-
-            const selectedContractIds = Array.from(selectedContracts).map(checkbox => checkbox.dataset.contractId);
-            mergeContracts(selectedContractIds);
-        });
-
         log('Contracts loaded successfully.', 'loadContracts');
     } else {
         error('Unexpected data format:', 'loadContracts', contractsData);
     }
-}
-
-// Function to merge two selected contracts
-function mergeContracts(contractIds) {
-    log(`Merging contracts with IDs: ${contractIds.join(', ')}`, 'mergeContracts');
-    // Implement your merging logic here
-    // This could involve making an API call or processing the merge on the client-side
-    alert(`Contracts ${contractIds.join(' and ')} have been merged.`);
 }

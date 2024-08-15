@@ -7,13 +7,11 @@
             <div class="container-without-border-horizontally">
                 <h1>Contracts</h1>
                 <p id="success" class="success"></p>
-                <p id="error" class="error"></p>
+                <p id="error" class="error"></p> 
             </div> 
-            <h2>Transaction Data:</h2>
             <div id="contracts-container" class="container-without-border-horizontally">
                 <!-- Contracts will be dynamically inserted here -->
             </div>
         </div>
     </div>
 </body>
-</html>
