@@ -335,7 +335,7 @@ function loadContracts() {
         container.innerHTML = ''; // Clear the container before adding new contracts
 
         contractsData.forEach((contractWithHistory, index) => {
-            const { contract, contract_history } = contractWithHistory;
+            const { contract, contract_history, total_amount_paid } = contractWithHistory;
 
             // Create a new div element for each contract
             const contractElement = document.createElement('div');
@@ -343,9 +343,10 @@ function loadContracts() {
 
             // Create HTML content for the contract
             contractElement.innerHTML = `
-                <h3>Contract: ${contract.name}</h3>
-                <p>Current Amount: $${contract.current_amount.toFixed(2)}</p>
-                <p>Months Between Payment: ${contract.months_between_payment}</p>
+                <h3>${contract.name}</h3>
+                <p>Current amount: $${contract.current_amount.toFixed(2)}</p>
+                <p>Months between Payment: ${contract.months_between_payment}</p>
+                <p>Total amount over time: $${total_amount_paid.toFixed(2)}</p>
                 <button class="toggle-history-btn" data-index="${index}">Show History</button>
                 <div id="contract-history-${index}" class="hidden contract-history">
                     <h4>Contract History:</h4>

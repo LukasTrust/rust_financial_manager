@@ -7,7 +7,10 @@ use rocket_dyn_templates::Template;
 
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
-use crate::utils::get_utils::{get_banks_of_user, get_contracts, get_current_bank, get_user_id};
+use crate::utils::get_utils::{
+    get_banks_of_user, get_contracts, get_current_bank, get_total_amount_paid_of_contract,
+    get_user_id,
+};
 use crate::utils::loading_utils::load_contract_history;
 use crate::utils::structs::{Bank, ContractWithHistory};
 
@@ -88,9 +91,13 @@ async fn get_contracts_with_history(
                         return Err("Error loading contract history.".to_string());
                     }
 
+                    let total_amount_paid =
+                        get_total_amount_paid_of_contract(bank.id, contract.id, state).await?;
+
                     let contract_with_history = ContractWithHistory {
                         contract: contract.clone(),
                         contract_history: contract_history.unwrap(),
+                        total_amount_paid,
                     };
 
                     contracts_with_history.push(contract_with_history);

@@ -112,4 +112,5 @@ pub struct ResponseData {
 pub struct ContractWithHistory {
     pub contract: Contract,
     pub contract_history: Vec<ContractHistory>,
+    pub total_amount_paid: f64,
 }

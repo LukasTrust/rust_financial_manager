@@ -128,3 +128,42 @@ pub fn get_first_date_and_last_date_from_bank(
 
     (first_date, last_date)
 }
+
+async fn get_transactions_of_contract(
+    bank_id: i32,
+    contract_id: i32,
+    state: &State<AppState>,
+) -> Result<Vec<Transaction>, String> {
+    let transactions = state.transactions.read().await;
+
+    let transactions = transactions.get(&bank_id);
+
+    match transactions {
+        Some(transactions) => {
+            let transactions = transactions
+                .iter()
+                .filter(|t| t.contract_id.is_some())
+                .filter(|t| t.contract_id.unwrap() == contract_id)
+                .cloned()
+                .collect::<Vec<Transaction>>();
+
+            info!("Transactions found: {:?}", transactions.len());
+
+            Ok(transactions.clone())
+        }
+        None => {
+            error!("No transactions found.");
+            Err("No transactions found.".to_string())
+        }
+    }
+}
+
+pub async fn get_total_amount_paid_of_contract(
+    bank_id: i32,
+    contract_id: i32,
+    state: &State<AppState>,
+) -> Result<f64, String> {
+    let transactions = get_transactions_of_contract(bank_id, contract_id, state).await?;
+
+    Ok(transactions.iter().map(|t| t.amount).sum())
+}
