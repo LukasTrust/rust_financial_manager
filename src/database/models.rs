@@ -80,6 +80,7 @@ pub struct Contract {
     pub name: String,
     pub current_amount: f64,
     pub months_between_payment: i32,
+    pub end_date: Option<chrono::NaiveDate>,
 }
 
 #[derive(Insertable, Debug)]

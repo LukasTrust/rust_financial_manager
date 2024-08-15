@@ -1,6 +1,9 @@
 use log::info;
 use rocket::tokio::sync::RwLock;
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use crate::database::models::{CSVConverter, Contract};
 
@@ -80,11 +83,25 @@ impl AppState {
         for (bank_id, bank_transactions) in new_transactions.iter() {
             let existing_transactions = transactions_state.entry(*bank_id).or_insert_with(Vec::new);
 
-            for transaction in bank_transactions.iter() {
-                if !existing_transactions.iter().any(|t| t.id == transaction.id) {
+            // Use a HashSet to store existing transaction IDs for quick lookup
+            let mut existing_ids: HashSet<i32> =
+                existing_transactions.iter().map(|t| t.id).collect();
+
+            bank_transactions.iter().for_each(|transaction| {
+                // Update existing transactions with new data
+                if let Some(existing_transaction) = existing_transactions
+                    .iter_mut()
+                    .find(|t| t.id == transaction.id)
+                {
+                    // Update the transaction fields if needed
+                    existing_transaction.contract_id = transaction.contract_id;
+                    existing_transaction.amount = transaction.amount;
+                    existing_transaction.date = transaction.date;
+                } else if !existing_ids.contains(&transaction.id) {
                     existing_transactions.push(transaction.clone());
+                    existing_ids.insert(transaction.id);
                 }
-            }
+            });
         }
 
         info!(
@@ -101,12 +118,32 @@ impl AppState {
             contracts_state.values().flatten().count()
         );
 
-        for (bank_id, bank_contract) in new_contracts.iter() {
-            let existing_contract = contracts_state.entry(*bank_id).or_insert_with(Vec::new);
+        for (bank_id, bank_contracts) in new_contracts.iter() {
+            let existing_contracts = contracts_state.entry(*bank_id).or_insert_with(Vec::new);
 
-            for contract in bank_contract.iter() {
-                if !existing_contract.into_iter().any(|c| c.id == contract.id) {
-                    existing_contract.push(contract.clone());
+            for new_contract in bank_contracts.iter() {
+                // Try to find an existing contract with the same ID
+                if let Some(existing_contract) = existing_contracts
+                    .iter_mut()
+                    .find(|c| c.id == new_contract.id)
+                {
+                    // Update the existing contract fields
+                    existing_contract.name = new_contract.name.clone();
+                    existing_contract.current_amount = new_contract.current_amount;
+                    existing_contract.months_between_payment = new_contract.months_between_payment;
+                    existing_contract.end_date = new_contract.end_date;
+
+                    info!(
+                        "Updated contract ID {} for bank ID {}.",
+                        existing_contract.id, bank_id
+                    );
+                } else {
+                    // If the contract doesn't exist, add it as new
+                    existing_contracts.push(new_contract.clone());
+                    info!(
+                        "Added new contract ID {} for bank ID {}.",
+                        new_contract.id, bank_id
+                    );
                 }
             }
         }

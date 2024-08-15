@@ -328,11 +328,23 @@ function loadContracts() {
     log('Loading contracts...', 'loadContracts');
 
     const contractsDataScript = document.getElementById('contracts-data');
+
     const contractsData = JSON.parse(contractsDataScript.textContent);
 
     if (Array.isArray(contractsData)) {
         const container = document.getElementById('contracts-container');
         container.innerHTML = ''; // Clear the container before adding new contracts
+
+        if (contractsData.length === 0) {
+            const message = document.createElement('h3');
+
+            message.textContent = 'Info: No contracts available.';
+
+            container.appendChild(message);
+
+            log('No contracts available.', 'loadContracts');
+            return;
+        }
 
         contractsData.forEach((contractWithHistory, index) => {
             const { contract, contract_history, total_amount_paid } = contractWithHistory;
@@ -347,6 +359,7 @@ function loadContracts() {
                 <p>Current amount: $${contract.current_amount.toFixed(2)}</p>
                 <p>Months between Payment: ${contract.months_between_payment}</p>
                 <p>Total amount over time: $${total_amount_paid.toFixed(2)}</p>
+                ${contract.end_date ? `<p>End Date: ${contract.end_date}</p>` : ''}
                 <button class="toggle-history-btn" data-index="${index}">Show History</button>
                 <div id="contract-history-${index}" class="hidden contract-history">
                     <h4>Contract History:</h4>

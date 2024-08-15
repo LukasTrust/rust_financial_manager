@@ -22,7 +22,6 @@ pub async fn create_contract_from_transactions(
 ) -> Result<String> {
     let mut new_contracts: HashMap<i32, Vec<NewContract>> = HashMap::new();
     let transactions = state.transactions.read().await;
-
     let existing_contracts = state.contracts.read().await;
 
     info!("Starting to create contracts from transactions.");
@@ -55,7 +54,14 @@ pub async fn create_contract_from_transactions(
                         months_between_payment: months_between,
                     };
 
-                    if process_new_contract(&new_contract, &existing_contracts, &mut db).await? {
+                    if process_new_contract(
+                        &new_contract,
+                        &existing_contracts,
+                        &mut db,
+                        &transactions,
+                    )
+                    .await?
+                    {
                         new_contracts
                             .entry(bank.id)
                             .or_insert_with(Vec::new)
@@ -76,12 +82,21 @@ pub async fn create_contract_from_transactions(
 
     state.update_contracts(inserted_contracts).await;
 
+    let contracts_write_guard = state.contracts.write().await;
+
+    update_transactions_with_contract_ids(&transactions, &contracts_write_guard, &mut db).await?;
+
+    let updated_transactions = transactions.clone();
+
+    drop(transactions);
+
+    // After updating contract IDs, integrate the update_transactions function to update the state
+    state
+        .update_transactions(updated_transactions) // Clone transactions to avoid borrow issues
+        .await;
+
     let contract_count = new_contracts.values().flatten().count();
     info!("Found {} new contracts!", contract_count);
-
-    let existing_contracts = state.contracts.read().await;
-
-    update_transactions_with_contract_ids(&transactions, &existing_contracts, &mut db).await?;
 
     Ok(format!("Found {} new contracts!", contract_count))
 }
@@ -123,6 +138,7 @@ async fn process_new_contract(
     new_contract: &NewContract,
     existing_contracts: &HashMap<i32, Vec<Contract>>,
     db: &mut Connection<DbConn>,
+    transactions: &[(f64, NaiveDate)],
 ) -> Result<bool> {
     if let Some(existing_contract_list) = existing_contracts.get(&new_contract.bank_id) {
         for existing_contract in existing_contract_list {
@@ -130,6 +146,18 @@ async fn process_new_contract(
                 && existing_contract.months_between_payment == new_contract.months_between_payment
             {
                 if existing_contract.current_amount == new_contract.current_amount {
+                    if let Some(end_date) = calculate_end_date(transactions) {
+                        if existing_contract.end_date.is_none()
+                            || existing_contract.end_date.unwrap() != end_date
+                        {
+                            info!(
+                                "Updating end date for contract {} at bank ID {}.",
+                                new_contract.name, new_contract.bank_id
+                            );
+                            update_contract_end_date(existing_contract, end_date, db).await?;
+                        }
+                    }
+
                     info!(
                         "Duplicate contract for {} at bank ID {}. Skipping.",
                         new_contract.name, new_contract.bank_id
@@ -145,7 +173,8 @@ async fn process_new_contract(
                         "Updating contract {} at bank ID {}.",
                         new_contract.name, new_contract.bank_id
                     );
-                    update_existing_contract(existing_contract, new_contract, db).await?;
+                    update_existing_contract(existing_contract, new_contract, db, transactions)
+                        .await?;
                     return Ok(false);
                 }
             }
@@ -163,6 +192,7 @@ async fn update_existing_contract(
     existing_contract: &Contract,
     new_contract: &NewContract,
     db: &mut Connection<DbConn>,
+    transactions: &[(f64, NaiveDate)],
 ) -> Result<()> {
     diesel::update(contracts::table.find(existing_contract.id))
         .set(contracts::current_amount.eq(new_contract.current_amount))
@@ -182,6 +212,10 @@ async fn update_existing_contract(
         .execute(db)
         .await
         .map_err(|e| format!("Error inserting into contract history: {}", e))?;
+
+    if let Some(end_date) = calculate_end_date(transactions) {
+        update_contract_end_date(existing_contract, end_date, db).await?;
+    }
 
     info!(
         "Updated contract ID {} with new amount {}.",
@@ -274,4 +308,26 @@ fn is_contract_with_reasonable_change(
     let percentage_change = (amount_change / existing_contract.current_amount) * 100.0;
 
     percentage_change <= max_percentage_change || amount_change <= max_absolute_change
+}
+
+async fn update_contract_end_date(
+    existing_contract: &Contract,
+    end_date: NaiveDate,
+    db: &mut Connection<DbConn>,
+) -> Result<()> {
+    diesel::update(contracts::table.find(existing_contract.id))
+        .set(contracts::end_date.eq(Some(end_date)))
+        .execute(db)
+        .await
+        .map_err(|e| format!("Error updating the contract end date: {}", e))?;
+
+    info!(
+        "Set end date {} for contract ID {}.",
+        end_date, existing_contract.id
+    );
+    Ok(())
+}
+
+fn calculate_end_date(transactions: &[(f64, NaiveDate)]) -> Option<NaiveDate> {
+    transactions.last().map(|&(_, date)| date)
 }

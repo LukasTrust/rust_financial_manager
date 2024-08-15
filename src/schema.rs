@@ -29,6 +29,7 @@ diesel::table! {
         name -> Varchar,
         current_amount -> Float8,
         months_between_payment -> Int4,
+        end_date -> Nullable<Date>,
     }
 }
 
