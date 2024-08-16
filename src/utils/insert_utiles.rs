@@ -1,42 +1,66 @@
-use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use log::{error, info};
-use rocket::State;
+use log::info;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
+use crate::database::models::{
+    CSVConverter, Contract, ContractHistory, NewCSVConverter, NewContract, NewContractHistory,
+};
 use crate::database::{db_connector::DbConn, models::NewBank};
-use crate::schema::banks as banks_without_dsl;
 
-use super::appstate::AppState;
 use super::structs::Bank;
 
-pub async fn insert_bank(
-    cookie_user_id: i32,
-    new_bank: NewBank,
-    state: &State<AppState>,
-    db: &mut Connection<DbConn>,
-) -> Result<i32, String> {
-    match diesel::insert_into(banks_without_dsl::table)
+pub async fn insert_bank(new_bank: NewBank, db: &mut Connection<DbConn>) -> Result<Bank, String> {
+    use crate::schema::banks;
+
+    diesel::insert_into(banks::table)
         .values(&new_bank)
         .get_result::<Bank>(db)
         .await
-    {
-        Ok(bank) => {
-            info!("Bank inserted: {:?}", bank);
+        .map_err(|e| format!("Error inserting bank: {:?}", e))
+}
 
-            state.update_banks(cookie_user_id, vec![bank.clone()]).await;
+pub async fn insert_csv_converter(
+    new_csv_converter: NewCSVConverter,
+    db: &mut Connection<DbConn>,
+) -> Result<CSVConverter, String> {
+    use crate::schema::csv_converters;
 
-            Ok(bank.id)
-        }
-        Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
-            error!("Bank with the name {} already exists", new_bank.name);
-            Err(format!(
-                "A bank with the name {} already exists. Please use a different name.",
-                new_bank.name
-            ))
-        }
-        Err(err) => {
-            error!("Internal server error: {}", err);
-            Err(format!("Internal server error: {}", err))
-        }
-    }
+    diesel::insert_into(csv_converters::table)
+        .values(&new_csv_converter)
+        .get_result::<CSVConverter>(db)
+        .await
+        .map_err(|e| format!("Error inserting csv converter: {:?}", e))
+}
+
+pub async fn insert_contract(
+    new_contract: NewContract,
+    db: &mut Connection<DbConn>,
+) -> Result<Contract, String> {
+    use crate::schema::contracts;
+
+    let new_contract = diesel::insert_into(contracts::table)
+        .values(&new_contract)
+        .get_result::<Contract>(db)
+        .await
+        .map_err(|e| format!("Error inserting contract: {:?}", e))?;
+
+    info!("Contract inserted: {:?}", new_contract);
+
+    Ok(new_contract)
+}
+
+pub async fn insert_contract_history(
+    new_contract_history: NewContractHistory,
+    db: &mut Connection<DbConn>,
+) -> Result<ContractHistory, String> {
+    use crate::schema::contract_history;
+
+    let new_contract_history = diesel::insert_into(contract_history::table)
+        .values(&new_contract_history)
+        .get_result::<ContractHistory>(db)
+        .await
+        .map_err(|e| format!("Error inserting contract history: {:?}", e))?;
+
+    info!("Contract history inserted: {:?}", new_contract_history);
+
+    Ok(new_contract_history)
 }

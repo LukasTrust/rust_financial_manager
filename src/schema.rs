@@ -17,7 +17,7 @@ diesel::table! {
         contract_id -> Int4,
         old_amount -> Float8,
         new_amount -> Float8,
-        changed_at -> Nullable<Timestamp>,
+        changed_at -> Date,
     }
 }
 

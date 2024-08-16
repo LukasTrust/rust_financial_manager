@@ -7,26 +7,23 @@ use rocket_dyn_templates::Template;
 
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
-use crate::utils::get_utils::{
-    get_banks_of_user, get_contracts, get_current_bank, get_total_amount_paid_of_contract,
-    get_user_id,
-};
-use crate::utils::loading_utils::load_contract_history;
+use crate::utils::get_utils::{get_total_amount_paid_of_contract, get_user_id};
+use crate::utils::loading_utils::{load_banks, load_contract_history, load_contracts_of_bank};
 use crate::utils::structs::{Bank, ContractWithHistory};
 
 #[get("/contract")]
 pub async fn contract(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-    db: Connection<DbConn>,
+    mut db: Connection<DbConn>,
 ) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
-    let current_bank = get_current_bank(cookie_user_id, state).await;
+    let current_bank = state.get_current_bank(cookie_user_id).await;
 
     match current_bank {
-        Ok(current_bank) => {
-            let result = get_contracts_with_history(vec![current_bank], state, db).await;
+        Some(current_bank) => {
+            let result = get_contracts_with_history(vec![current_bank], db).await;
 
             let error = if result.is_err() {
                 Some(result.clone().err().unwrap())
@@ -46,10 +43,16 @@ pub async fn contract(
                        "error": error}),
             ))
         }
-        Err(_) => {
-            let banks = get_banks_of_user(cookie_user_id, state).await;
+        None => {
+            let banks = load_banks(cookie_user_id, &mut db).await;
 
-            let result = get_contracts_with_history(banks, state, db).await;
+            if let Err(e) = banks {
+                return Ok(Template::render("contract", json!({ "error": e })));
+            }
+
+            let banks = banks.unwrap();
+
+            let result = get_contracts_with_history(banks, db).await;
 
             let error = if result.is_err() {
                 Some(result.clone().err().unwrap())
@@ -74,13 +77,12 @@ pub async fn contract(
 
 async fn get_contracts_with_history(
     banks: Vec<Bank>,
-    state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Result<String, String> {
     let mut contracts_with_history: Vec<ContractWithHistory> = Vec::new();
 
     for bank in banks {
-        let contracts = get_contracts(bank.id, state).await;
+        let contracts = load_contracts_of_bank(bank.id, &mut db).await;
 
         match contracts {
             Ok(contracts) => {
@@ -92,7 +94,7 @@ async fn get_contracts_with_history(
                     }
 
                     let total_amount_paid =
-                        get_total_amount_paid_of_contract(bank.id, contract.id, state).await?;
+                        get_total_amount_paid_of_contract(contract.id, &mut db).await?;
 
                     let contract_with_history = ContractWithHistory {
                         contract: contract.clone(),

@@ -1,14 +1,16 @@
 use chrono::NaiveDate;
 use log::{error, info};
-use rocket::{http::CookieJar, response::Redirect, State};
+use rocket::{http::CookieJar, response::Redirect};
+use rocket_db_pools::Connection;
+
+use crate::{database::db_connector::DbConn, routes::error_page::show_error_page};
 
 use super::{
-    appstate::AppState,
-    structs::{Bank, Transaction},
-};
-use crate::{
-    database::models::{CSVConverter, Contract},
-    routes::error_page::show_error_page,
+    display_utils::{generate_graph_data, generate_performance_value},
+    loading_utils::{
+        load_contracts_of_bank, load_transactions_of_bank, load_transactions_of_contract,
+    },
+    structs::{Bank, PerformanceData, Transaction},
 };
 
 /// Extract the user ID from the user ID cookie.
@@ -31,76 +33,6 @@ pub fn get_user_id(cookies: &CookieJar<'_>) -> Result<i32, Redirect> {
             "Error validating the login!".to_string(),
             "Please login again.".to_string(),
         ))
-    }
-}
-
-pub async fn get_current_bank(
-    cookie_user_id: i32,
-    state: &State<AppState>,
-) -> Result<Bank, String> {
-    let current_bank = state.current_bank.read().await;
-
-    let current_bank = current_bank.get(&cookie_user_id);
-
-    match current_bank {
-        Some(current_bank) => {
-            info!("Current bank found: {:?}", current_bank.id);
-            Ok(current_bank.clone())
-        }
-        None => {
-            error!("No current bank found.");
-            Err("No current bank found.".to_string())
-        }
-    }
-}
-
-pub async fn get_banks_of_user(cookie_user_id: i32, state: &State<AppState>) -> Vec<Bank> {
-    state
-        .banks
-        .read()
-        .await
-        .get(&cookie_user_id)
-        .cloned()
-        .unwrap_or_default()
-}
-
-pub async fn get_csv_converter(
-    current_bank_id: i32,
-    state: &State<AppState>,
-) -> Result<CSVConverter, String> {
-    let csv_converters = state.csv_convert.read().await;
-
-    let csv_converter = csv_converters.get(&current_bank_id);
-
-    match csv_converter {
-        Some(csv_converter) => {
-            info!("CSV converter found: {:?}", csv_converter.id);
-            Ok(csv_converter.clone())
-        }
-        None => {
-            error!("No CSV converter found.");
-            Err("No CSV converter found.".to_string())
-        }
-    }
-}
-
-pub async fn get_contracts(
-    current_bank_id: i32,
-    state: &State<AppState>,
-) -> Result<Vec<Contract>, String> {
-    let contracts = state.contracts.read().await;
-
-    let contracts = contracts.get(&current_bank_id);
-
-    match contracts {
-        Some(contracts) => {
-            info!("Contracts found: {:?}", contracts.len());
-            Ok(contracts.clone())
-        }
-        None => {
-            error!("No contracts found.");
-            Err("No contracts found.".to_string())
-        }
     }
 }
 
@@ -129,41 +61,71 @@ pub fn get_first_date_and_last_date_from_bank(
     (first_date, last_date)
 }
 
-async fn get_transactions_of_contract(
-    bank_id: i32,
-    contract_id: i32,
-    state: &State<AppState>,
-) -> Result<Vec<Transaction>, String> {
-    let transactions = state.transactions.read().await;
+pub async fn get_performance_value_and_graph_data(
+    banks: &Vec<Bank>,
+    input_first_date: Option<NaiveDate>,
+    input_last_date: Option<NaiveDate>,
+    mut db: Connection<DbConn>,
+) -> Result<(PerformanceData, String), String> {
+    let mut all_transactions = Vec::new();
+    let mut all_contracts = Vec::new();
 
-    let transactions = transactions.get(&bank_id);
+    for bank in banks {
+        let transactions = load_transactions_of_bank(bank.id, &mut db).await;
 
-    match transactions {
-        Some(transactions) => {
-            let transactions = transactions
-                .iter()
-                .filter(|t| t.contract_id.is_some())
-                .filter(|t| t.contract_id.unwrap() == contract_id)
-                .cloned()
-                .collect::<Vec<Transaction>>();
-
-            info!("Transactions found: {:?}", transactions.len());
-
-            Ok(transactions.clone())
+        if let Err(e) = transactions {
+            return Err(e);
         }
-        None => {
-            error!("No transactions found.");
-            Err("No transactions found.".to_string())
+
+        let transactions = transactions.unwrap();
+
+        all_transactions.extend(transactions);
+
+        let contracts = load_contracts_of_bank(bank.id, &mut db).await;
+
+        if let Err(e) = contracts {
+            return Err(e);
         }
+
+        let contracts = contracts.unwrap();
+
+        all_contracts.extend(contracts);
     }
+
+    let (first_date, last_date);
+
+    if input_first_date.is_none() || input_last_date.is_none() {
+        (first_date, last_date) = get_first_date_and_last_date_from_bank(Some(&all_transactions));
+    } else {
+        first_date = input_first_date.unwrap();
+        last_date = input_last_date.unwrap();
+    }
+
+    let performance_value = generate_performance_value(
+        banks,
+        &all_transactions,
+        &all_contracts,
+        &first_date,
+        &last_date,
+    );
+
+    let graph_data = generate_graph_data(
+        banks,
+        &all_transactions,
+        &performance_value.1,
+        &first_date,
+        &last_date,
+    )
+    .await;
+
+    Ok((performance_value.0, graph_data))
 }
 
 pub async fn get_total_amount_paid_of_contract(
-    bank_id: i32,
     contract_id: i32,
-    state: &State<AppState>,
+    db: &mut Connection<DbConn>,
 ) -> Result<f64, String> {
-    let transactions = get_transactions_of_contract(bank_id, contract_id, state).await?;
+    let transactions = load_transactions_of_contract(contract_id, db).await?;
 
     Ok(transactions.iter().map(|t| t.amount).sum())
 }

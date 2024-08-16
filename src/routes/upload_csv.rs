@@ -15,14 +15,11 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewTransactions};
 use crate::schema::transactions;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::{generate_balance_graph_data, generate_performance_value};
-use crate::utils::get_utils::{
-    get_csv_converter, get_current_bank, get_first_date_and_last_date_from_bank, get_user_id,
-};
+use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
+use crate::utils::loading_utils::load_csv_converter_of_bank;
 use crate::utils::structs::{Bank, Transaction};
 
 use super::create_contract::create_contract_from_transactions;
-use super::error_page::show_error_page;
 
 #[post("/upload_csv", data = "<data>")]
 pub async fn upload_csv(
@@ -32,11 +29,15 @@ pub async fn upload_csv(
     mut db: Connection<DbConn>,
 ) -> Result<Json<Value>, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
-    let current_bank = get_current_bank(cookie_user_id, state).await;
+    let current_bank = state.get_current_bank(cookie_user_id).await;
 
-    if let Err(error) = current_bank {
-        return Err(show_error_page("Error uploading csv".to_string(), error));
+    if current_bank.is_none() {
+        return Ok(Json(json!({
+            "error": "No bank selected",
+        })));
     }
+
+    let current_bank = current_bank.unwrap();
 
     // Read the CSV file
     let data_stream = match data.open(512.kibibytes()).into_bytes().await {
@@ -49,15 +50,13 @@ pub async fn upload_csv(
         }
     };
 
-    let current_bank = current_bank.unwrap();
-
     let cursor = Cursor::new(data_stream.to_vec());
     let mut rdr = ReaderBuilder::new()
         .has_headers(true)
         .flexible(true)
         .from_reader(cursor);
 
-    let result = extract_and_process_records(&mut rdr, current_bank.clone(), state, &mut db).await;
+    let result = extract_and_process_records(&mut rdr, current_bank.clone(), &mut db).await;
 
     match result {
         Ok((succesful_inserts, failed_inserts)) => {
@@ -66,34 +65,21 @@ pub async fn upload_csv(
                 succesful_inserts, failed_inserts
             );
 
-            let contract_map = state.contracts.read().await;
-            let transactions_map = state.transactions.read().await;
-            let transactions = transactions_map.get(&current_bank.id);
-            let banks = vec![current_bank];
+            let result =
+                get_performance_value_and_graph_data(&vec![current_bank], None, None, db).await;
 
-            let (first_date, last_date) = get_first_date_and_last_date_from_bank(transactions);
+            if let Err(e) = result {
+                return Ok(Json(json!({
+                    "error": e,
+                })));
+            }
 
-            let performance_value = generate_performance_value(
-                &banks,
-                &transactions_map,
-                &contract_map,
-                first_date,
-                last_date,
-            );
-
-            let graph_data = generate_balance_graph_data(
-                &banks,
-                &transactions_map,
-                performance_value.1,
-                None,
-                None,
-            )
-            .await;
+            let (performance_value, graph_data) = result.unwrap();
 
             Ok(Json(json!({
                 "success": format!("Succesfully insertet {} and {} were duplicates", succesful_inserts, failed_inserts),
                 "graph_data": graph_data,
-                "performance_value": performance_value.0,
+                "performance_value": performance_value,
             })))
         }
         Err(e) => {
@@ -109,7 +95,6 @@ pub async fn upload_csv(
 async fn extract_and_process_records<R: std::io::Read>(
     rdr: &mut csv::Reader<R>,
     current_bank: Bank,
-    state: &State<AppState>,
     db: &mut Connection<DbConn>,
 ) -> Result<(i32, i32), String> {
     let mut succesful_inserts = 0;
@@ -117,7 +102,14 @@ async fn extract_and_process_records<R: std::io::Read>(
 
     let mut new_transactions: HashMap<i32, Vec<Transaction>> = HashMap::new();
 
-    let csv_converter = get_csv_converter(current_bank.id, state).await?;
+    let csv_converter = load_csv_converter_of_bank(current_bank.id, db).await?;
+
+    if csv_converter.is_none() {
+        error!("No CSV converter found");
+        return Err("No CSV converter found".to_string());
+    }
+
+    let csv_converter = csv_converter.unwrap();
 
     validate_csv_converters(csv_converter)?;
 
@@ -233,9 +225,7 @@ async fn extract_and_process_records<R: std::io::Read>(
         }
     }
 
-    state.update_transactions(new_transactions).await;
-
-    create_contract_from_transactions(vec![current_bank], state, db).await?;
+    create_contract_from_transactions(current_bank.id, db).await?;
 
     Ok((succesful_inserts, failed_inserts))
 }

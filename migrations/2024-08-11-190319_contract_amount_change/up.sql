@@ -3,5 +3,5 @@ CREATE TABLE contract_history (
     contract_Id INT REFERENCES contracts(Id) ON DELETE CASCADE NOT NULL,
     old_amount FLOAT NOT NULL,
     new_amount FLOAT NOT NULL,
-    changed_At TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    changed_At DATE NOT NULL
 );

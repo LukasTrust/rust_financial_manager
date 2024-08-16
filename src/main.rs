@@ -29,10 +29,6 @@ fn rocket() -> _ {
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
     let app_state = AppState {
-        banks: Arc::new(RwLock::new(HashMap::new())),
-        transactions: Arc::new(RwLock::new(HashMap::new())),
-        csv_convert: Arc::new(RwLock::new(HashMap::new())),
-        contracts: Arc::new(RwLock::new(HashMap::new())),
         current_bank: Arc::new(RwLock::new(HashMap::new())),
     };
 

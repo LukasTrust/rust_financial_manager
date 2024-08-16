@@ -11,15 +11,15 @@ use super::structs::{Bank, Discrepancy, PerformanceData, Transaction};
 /// The balance graph data is generated from the bank accounts and transactions.
 /// The balance graph data is used to plot the bank account balances over time.
 /// The balance graph data is returned as a JSON value.
-pub async fn generate_balance_graph_data(
+pub async fn generate_graph_data(
     banks: &[Bank],
-    transactions: &HashMap<i32, Vec<Transaction>>,
-    transactions_with_discrepancy: Vec<Discrepancy>,
-    start_date: Option<NaiveDate>,
-    end_date: Option<NaiveDate>,
+    transactions: &Vec<Transaction>,
+    discrepancies: &Vec<Discrepancy>,
+    start_date: &NaiveDate,
+    end_date: &NaiveDate,
 ) -> String {
     // Convert the transactions_with_discrepancy into a HashMap for quick lookup
-    let discrepancy_map: HashMap<i32, f64> = transactions_with_discrepancy
+    let discrepancy_map: HashMap<i32, f64> = discrepancies
         .into_iter()
         .map(|d| (d.transaction_id, d.discrepancy_amount))
         .collect();
@@ -30,50 +30,46 @@ pub async fn generate_balance_graph_data(
 
     for bank in banks {
         let bank = bank.clone();
-        let bank_transactions = transactions.get(&bank.id);
+        let bank_transactions = transactions
+            .iter()
+            .filter(|t| t.bank_id == bank.id)
+            .cloned()
+            .collect::<Vec<Transaction>>();
 
-        if let Some(bank_transactions) = bank_transactions {
-            // Use a BTreeMap to maintain order and store multiple transactions per day
-            let mut data: BTreeMap<NaiveDate, Vec<(f64, String, f64, Option<f64>)>> =
-                BTreeMap::new();
+        // Use a BTreeMap to maintain order and store multiple transactions per day
+        let mut data: BTreeMap<NaiveDate, Vec<(f64, String, f64, Option<f64>)>> = BTreeMap::new();
 
-            // Filter transactions within the date range
-            let filtered_transactions: Vec<&Transaction> = bank_transactions
-                .iter()
-                .filter(|t| {
-                    if let (Some(start_date), Some(end_date)) = (start_date, end_date) {
-                        t.date >= start_date && t.date <= end_date
-                    } else {
-                        true
-                    }
-                })
-                .collect();
+        // Filter transactions within the date range
+        let filtered_transactions: Vec<&Transaction> = bank_transactions
+            .iter()
+            .filter(|t| t.date >= *start_date && t.date <= *end_date)
+            .collect();
 
-            for transaction in filtered_transactions.iter().rev() {
-                // Check if the transaction is in the discrepancy map
-                let discrepancy_amount = discrepancy_map.get(&transaction.id).cloned();
+        for transaction in filtered_transactions.iter().rev() {
+            // Check if the transaction is in the discrepancy map
+            let discrepancy_amount = discrepancy_map.get(&transaction.id).cloned();
 
-                data.entry(transaction.date).or_insert_with(Vec::new).push((
-                    transaction.bank_balance_after,
-                    transaction.counterparty.clone(),
-                    transaction.amount,
-                    discrepancy_amount,
-                ));
-            }
+            data.entry(transaction.date).or_insert_with(Vec::new).push((
+                transaction.bank_balance_after,
+                transaction.counterparty.clone(),
+                transaction.amount,
+                discrepancy_amount,
+            ));
+        }
 
-            // Prepare series data for plotting
-            let mut series_data = vec![];
-            for (date, transactions) in data {
-                for (balance, counterparty, amount, discrepancy_amount) in transactions {
-                    let color = if discrepancy_amount.is_some() {
-                        "red"
-                    } else {
-                        "blue"
-                    };
+        // Prepare series data for plotting
+        let mut series_data = vec![];
+        for (date, transactions) in data {
+            for (balance, counterparty, amount, discrepancy_amount) in transactions {
+                let color = if discrepancy_amount.is_some() {
+                    "red"
+                } else {
+                    "blue"
+                };
 
-                    // Adjust hover text based on discrepancy
-                    let hover_text = if let Some(discrepancy_amount) = discrepancy_amount {
-                        format!(
+                // Adjust hover text based on discrepancy
+                let hover_text = if let Some(discrepancy_amount) = discrepancy_amount {
+                    format!(
                             "{}<br>Date:{}<br>Amount: {} €<br>New balance: {} €<br>Discrepancy Amount: {} €",
                             counterparty,
                             date.format("%d.%m.%Y").to_string(),
@@ -81,34 +77,33 @@ pub async fn generate_balance_graph_data(
                             balance,
                             discrepancy_amount
                         )
-                    } else {
-                        format!(
-                            "{}<br>Date:{}<br>Amount: {} €<br>New balance: {} €",
-                            counterparty,
-                            date.format("%d.%m.%Y").to_string(),
-                            amount,
-                            balance
-                        )
-                    };
+                } else {
+                    format!(
+                        "{}<br>Date:{}<br>Amount: {} €<br>New balance: {} €",
+                        counterparty,
+                        date.format("%d.%m.%Y").to_string(),
+                        amount,
+                        balance
+                    )
+                };
 
-                    series_data.push((date.to_string(), balance, hover_text, color.to_string()));
-                }
+                series_data.push((date.to_string(), balance, hover_text, color.to_string()));
             }
-
-            // Add plot data for the bank
-            plot_data.push(json!({
-                "name": bank.name,
-                "x": series_data.iter().map(|(date, _, _, _)| date.clone()).collect::<Vec<String>>(),
-                "y": series_data.iter().map(|(_, balance, _, _)| *balance).collect::<Vec<f64>>(),
-                "text": series_data.iter().map(|(_, _, text, _)| text.clone()).collect::<Vec<String>>(),
-                "marker": {
-                    "color": series_data.iter().map(|(_, _, _, color)| color.clone()).collect::<Vec<String>>(),
-                },
-                "type": "scatter",
-                "mode": "lines+markers",
-                "hoverinfo": "text"
-            }));
         }
+
+        // Add plot data for the bank
+        plot_data.push(json!({
+            "name": bank.name,
+            "x": series_data.iter().map(|(date, _, _, _)| date.clone()).collect::<Vec<String>>(),
+            "y": series_data.iter().map(|(_, balance, _, _)| *balance).collect::<Vec<f64>>(),
+            "text": series_data.iter().map(|(_, _, text, _)| text.clone()).collect::<Vec<String>>(),
+            "marker": {
+                "color": series_data.iter().map(|(_, _, _, color)| color.clone()).collect::<Vec<String>>(),
+            },
+            "type": "scatter",
+            "mode": "lines+markers",
+            "hoverinfo": "text"
+        }));
     }
 
     // Return the plot data as JSON
@@ -119,10 +114,10 @@ pub async fn generate_balance_graph_data(
 
 pub fn generate_performance_value(
     banks: &[Bank],
-    transactions: &HashMap<i32, Vec<Transaction>>,
-    contracts: &HashMap<i32, Vec<Contract>>,
-    start_date: NaiveDate,
-    end_date: NaiveDate,
+    transactions: &Vec<Transaction>,
+    contracts: &Vec<Contract>,
+    start_date: &NaiveDate,
+    end_date: &NaiveDate,
 ) -> (PerformanceData, Vec<Discrepancy>) {
     let mut total_sum = 0.0;
     let mut total_transactions = 0;
@@ -139,83 +134,86 @@ pub fn generate_performance_value(
     info!("Generating performance data for {} banks", banks.len());
 
     for bank in banks {
-        if let Some(contracts_of_bank) = contracts.get(&bank.id) {
-            total_contracts += contracts_of_bank.len();
+        let contracts_of_bank = contracts
+            .iter()
+            .filter(|c| c.bank_id == bank.id)
+            .collect::<Vec<&Contract>>();
 
-            for contract in contracts_of_bank {
-                match contract.months_between_payment {
-                    1 => {
-                        total_amount_per_year += contract.current_amount * 12.0;
-                        one_month_contract_amount += contract.current_amount
-                    }
-                    3 => {
-                        total_amount_per_year += contract.current_amount * 4.0;
-                        three_month_contract_amount += contract.current_amount
-                    }
-                    6 => {
-                        total_amount_per_year += contract.current_amount * 2.0;
-                        six_month_contract_amount += contract.current_amount
-                    }
-                    _ => {}
+        total_contracts += contracts_of_bank.len();
+
+        for contract in contracts_of_bank {
+            match contract.months_between_payment {
+                1 => {
+                    total_amount_per_year += contract.current_amount * 12.0;
+                    one_month_contract_amount += contract.current_amount
                 }
+                3 => {
+                    total_amount_per_year += contract.current_amount * 4.0;
+                    three_month_contract_amount += contract.current_amount
+                }
+                6 => {
+                    total_amount_per_year += contract.current_amount * 2.0;
+                    six_month_contract_amount += contract.current_amount
+                }
+                _ => {}
             }
         }
 
-        if let Some(transaction_of_bank) = transactions.get(&bank.id) {
-            let mut previous_balance = 0.0;
+        let transaction_of_bank = transactions
+            .iter()
+            .filter(|t| t.bank_id == bank.id)
+            .collect::<Vec<&Transaction>>();
 
-            if transaction_of_bank.is_empty() {
-                continue;
+        let mut previous_balance = 0.0;
+
+        info!("Processing transactions for bank: {}", bank.name);
+
+        // Filter transactions within the date range
+        let mut transactions_for_start_end: Vec<&Transaction> = transaction_of_bank
+            .iter()
+            .filter(|&t| t.date >= *start_date && t.date <= *end_date)
+            .cloned()
+            .collect::<Vec<&Transaction>>();
+
+        // Sort filtered transactions by date
+        transactions_for_start_end.sort_by(|a, b| {
+            match a.date.cmp(&b.date) {
+                std::cmp::Ordering::Equal => b.id.cmp(&a.id), // If dates are equal, sort by id in descending order
+                other => other,                               // Otherwise, sort by date
             }
+        });
 
-            info!("Processing transactions for bank: {}", bank.name);
+        if let Some(first_transaction) = transactions_for_start_end.first() {
+            info!("First transaction: {:?}", first_transaction);
+            starting_balance += first_transaction.bank_balance_after;
+        }
 
-            // Filter transactions within the date range
-            let mut transactions_for_start_end: Vec<&Transaction> = transaction_of_bank
-                .iter()
-                .filter(|&t| t.date >= start_date && t.date <= end_date)
-                .collect();
+        if let Some(last_transaction) = transactions_for_start_end.last() {
+            info!("Last transaction: {:?}", last_transaction);
+            ending_balance += last_transaction.bank_balance_after + last_transaction.amount;
+        }
 
-            // Sort filtered transactions by date
-            transactions_for_start_end.sort_by(|a, b| {
-                match a.date.cmp(&b.date) {
-                    std::cmp::Ordering::Equal => b.id.cmp(&a.id), // If dates are equal, sort by id in descending order
-                    other => other,                               // Otherwise, sort by date
+        for (index, transaction) in transactions_for_start_end.iter().enumerate() {
+            total_sum += transaction.amount;
+            total_transactions += 1;
+
+            if index > 0 && index < transactions_for_start_end.len() - 1 {
+                let discrepancy =
+                    previous_balance - (transaction.bank_balance_after - transaction.amount);
+                if discrepancy > 0.01 || discrepancy < -0.01 {
+                    info!(
+                        "Discrepancy found in transaction: {} with amount: {}",
+                        transaction.id, discrepancy
+                    );
+                    total_discrepancy += discrepancy;
+                    transactions_with_discrepancy.push(Discrepancy {
+                        transaction_id: transaction.id,
+                        discrepancy_amount: discrepancy,
+                    });
                 }
-            });
-
-            if let Some(first_transaction) = transactions_for_start_end.first() {
-                info!("First transaction: {:?}", first_transaction);
-                starting_balance += first_transaction.bank_balance_after;
             }
 
-            if let Some(last_transaction) = transactions_for_start_end.last() {
-                info!("Last transaction: {:?}", last_transaction);
-                ending_balance += last_transaction.bank_balance_after + last_transaction.amount;
-            }
-
-            for (index, transaction) in transactions_for_start_end.iter().enumerate() {
-                total_sum += transaction.amount;
-                total_transactions += 1;
-
-                if index > 0 && index < transactions_for_start_end.len() - 1 {
-                    let discrepancy =
-                        previous_balance - (transaction.bank_balance_after - transaction.amount);
-                    if discrepancy > 0.01 || discrepancy < -0.01 {
-                        info!(
-                            "Discrepancy found in transaction: {} with amount: {}",
-                            transaction.id, discrepancy
-                        );
-                        total_discrepancy += discrepancy;
-                        transactions_with_discrepancy.push(Discrepancy {
-                            transaction_id: transaction.id,
-                            discrepancy_amount: discrepancy,
-                        });
-                    }
-                }
-
-                previous_balance = transaction.bank_balance_after;
-            }
+            previous_balance = transaction.bank_balance_after;
         }
     }
 

@@ -6,21 +6,13 @@ use rocket::serde::json::json;
 use rocket::{get, post, State};
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 use rocket_dyn_templates::Template;
-use std::collections::HashMap;
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{CSVConverter, Contract};
 use crate::routes::error_page::show_error_page;
 use crate::schema::users::{self, first_name, last_name};
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::{generate_balance_graph_data, generate_performance_value};
-use crate::utils::get_utils::{
-    get_banks_of_user, get_first_date_and_last_date_from_bank, get_user_id,
-};
-use crate::utils::loading_utils::{
-    load_banks, load_contracts_of_bank, load_csv_converters_of_bank, load_transactions_of_bank,
-};
-use crate::utils::structs::Transaction;
+use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
+use crate::utils::loading_utils::load_banks;
 
 /// Display the base page.
 /// The base page is the dashboard that displays the user's bank accounts and transactions.
@@ -36,39 +28,20 @@ pub async fn base(
 
     info!("User is logged in: {}", cookie_user_id);
 
-    let banks_result = load_banks(cookie_user_id, &mut db).await?;
+    let banks = load_banks(cookie_user_id, &mut db).await;
 
-    let mut transactions_map: HashMap<i32, Vec<Transaction>> = HashMap::new();
-    let mut csv_converters_map: HashMap<i32, CSVConverter> = HashMap::new();
-    let mut contract_map: HashMap<i32, Vec<Contract>> = HashMap::new();
-
-    for bank in banks_result.iter() {
-        let transactions_result = load_transactions_of_bank(bank.id, &mut db).await?;
-        transactions_map.insert(bank.clone().id, transactions_result);
-
-        if let Some(csv_converter) = load_csv_converters_of_bank(bank.id, &mut db).await? {
-            csv_converters_map.insert(bank.id, csv_converter);
-        }
-
-        let contracts_result = load_contracts_of_bank(bank.id, &mut db).await?;
-        contract_map.insert(bank.id, contracts_result);
+    if let Err(e) = banks {
+        return Ok(Template::render("base", json!({ "error": e })));
     }
 
-    state
-        .set_app_state(
-            cookie_user_id,
-            Some(banks_result.clone()),
-            Some(transactions_map.clone()),
-            Some(csv_converters_map),
-            Some(contract_map.clone()),
-            None,
-        )
-        .await;
+    let banks = banks.unwrap();
+
+    state.set_current_bank(cookie_user_id, None).await;
 
     Ok(Template::render(
         "base",
         json!({
-            "banks": banks_result,
+            "banks": banks,
             "view_name": "dashboard",
         }),
     ))
@@ -98,37 +71,30 @@ pub async fn dashboard(
             )
         })?;
 
-    state.update_current_bank(cookie_user_id, None).await;
+    state.set_current_bank(cookie_user_id, None).await;
 
-    let contract_map = state.contracts.read().await;
-    let transactions_map = state.transactions.read().await;
-    let transactions_vec: Vec<Transaction> =
-        transactions_map.clone().into_values().flatten().collect();
+    let banks = load_banks(cookie_user_id, &mut db).await;
 
-    let transactions: Option<&Vec<Transaction>> = Some(&transactions_vec);
+    if let Err(e) = banks {
+        return Ok(Template::render("dashboard", json!({ "error": e })));
+    }
 
-    let banks = get_banks_of_user(cookie_user_id, state).await;
+    let banks = banks.unwrap();
 
-    let (first_date, last_date) = get_first_date_and_last_date_from_bank(transactions);
+    let result = get_performance_value_and_graph_data(&banks, None, None, db).await;
 
-    let performance_value = generate_performance_value(
-        &banks,
-        &transactions_map,
-        &contract_map,
-        first_date,
-        last_date,
-    );
+    if let Err(e) = result {
+        return Ok(Template::render("bank", json!({ "error": e })));
+    }
 
-    let graph_data =
-        generate_balance_graph_data(&banks, &transactions_map, performance_value.1, None, None)
-            .await;
+    let (performance_value, graph_data) = result.unwrap();
 
     Ok(Template::render(
         "dashboard",
         json!({
             "success": format!("Welcome, {} {}!", user_first_name, user_last_name),
             "graph_data": graph_data,
-            "performance_value": performance_value.0,
+            "performance_value": performance_value,
         }),
     ))
 }
@@ -143,7 +109,7 @@ pub async fn settings(
 ) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
-    state.update_current_bank(cookie_user_id, None).await;
+    state.set_current_bank(cookie_user_id, None).await;
 
     Ok(Template::render("settings", json!({})))
 }

@@ -80,7 +80,7 @@ pub struct Contract {
     pub name: String,
     pub current_amount: f64,
     pub months_between_payment: i32,
-    pub end_date: Option<chrono::NaiveDate>,
+    pub end_date: Option<NaiveDate>,
 }
 
 #[derive(Insertable, Debug)]
@@ -89,7 +89,7 @@ pub struct NewContractHistory {
     pub contract_id: i32,
     pub old_amount: f64,
     pub new_amount: f64,
-    pub changed_at: Option<chrono::NaiveDateTime>,
+    pub changed_at: NaiveDate,
 }
 
 #[derive(Queryable, Debug, Clone, Serialize)]
@@ -99,5 +99,5 @@ pub struct ContractHistory {
     pub contract_id: i32,
     pub old_amount: f64,
     pub new_amount: f64,
-    pub changed_at: Option<chrono::NaiveDateTime>,
+    pub changed_at: NaiveDate,
 }

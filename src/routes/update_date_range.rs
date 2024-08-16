@@ -4,11 +4,13 @@ use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::serde::json::Json;
 use rocket::{get, State};
+use rocket_db_pools::Connection;
 use serde_json::{json, Value};
 
+use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
-use crate::utils::display_utils::{generate_balance_graph_data, generate_performance_value};
-use crate::utils::get_utils::{get_banks_of_user, get_current_bank, get_user_id};
+use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
+use crate::utils::loading_utils::load_banks;
 
 #[get("/update_date_range/<start_date>/<end_date>")]
 pub async fn update_date_range(
@@ -16,66 +18,69 @@ pub async fn update_date_range(
     start_date: &str,
     end_date: &str,
     state: &State<AppState>,
+    mut db: Connection<DbConn>,
 ) -> Result<Json<Value>, Redirect> {
     info!("Updating date range to {} - {}", start_date, end_date);
 
     let cookie_user_id = get_user_id(cookies)?;
 
-    let current_bank = get_current_bank(cookie_user_id, state).await;
-
     let first_date = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d").unwrap();
     let last_date = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d").unwrap();
 
-    let performance_value;
-    let graph_data;
+    let current_bank = state.get_current_bank(cookie_user_id).await;
 
-    let contract_map = state.contracts.read().await;
-    let transactions_map = state.transactions.read().await;
+    info!("Current bank: {:?}", current_bank);
+
     match current_bank {
-        Ok(bank) => {
-            let banks = vec![bank];
-
-            performance_value = generate_performance_value(
-                &banks,
-                &transactions_map,
-                &contract_map,
-                first_date,
-                last_date,
-            );
-
-            graph_data = generate_balance_graph_data(
-                &banks,
-                &transactions_map,
-                performance_value.1,
+        Some(current_bank) => {
+            let result = get_performance_value_and_graph_data(
+                &vec![current_bank],
                 Some(first_date),
                 Some(last_date),
+                db,
             )
             .await;
+
+            if let Err(e) = result {
+                return Ok(Json(json!({
+                    "error": e,
+                })));
+            }
+
+            let (performance_value, graph_data) = result.unwrap();
+
+            Ok(Json(json!({
+                "graph_data": graph_data,
+                "performance_value": performance_value,
+            })))
         }
-        Err(_) => {
-            let banks = get_banks_of_user(cookie_user_id, state).await;
+        None => {
+            let banks = load_banks(cookie_user_id, &mut db).await;
 
-            performance_value = generate_performance_value(
-                &banks,
-                &transactions_map,
-                &contract_map,
-                first_date,
-                last_date,
-            );
+            if let Err(e) = banks {
+                return Ok(Json(json!({
+                    "error": e,
+                })));
+            }
 
-            graph_data = generate_balance_graph_data(
-                &banks,
-                &transactions_map,
-                performance_value.1,
-                Some(first_date),
-                Some(last_date),
-            )
-            .await;
+            let banks = banks.unwrap();
+
+            let result =
+                get_performance_value_and_graph_data(&banks, Some(first_date), Some(last_date), db)
+                    .await;
+
+            if let Err(e) = result {
+                return Ok(Json(json!({
+                    "error": e,
+                })));
+            }
+
+            let (performance_value, graph_data) = result.unwrap();
+
+            Ok(Json(json!({
+                "graph_data": graph_data,
+                "performance_value": performance_value,
+            })))
         }
     }
-
-    Ok(Json(json!({
-        "graph_data": graph_data,
-        "performance_value": performance_value.0,
-    })))
 }
