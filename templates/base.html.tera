@@ -5,7 +5,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Rust Financial Manager</title>
         <link rel="stylesheet" href="/static/styles.css">
-        <script src="/static/base.js" defer></script>
         <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -35,5 +34,7 @@
                 </form>
             </div>
         </div>
+        <!-- Include JavaScript modules -->
+        <script type="module" src="/static/main/main.js"></script>
     </body>
 </html>

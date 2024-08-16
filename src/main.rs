@@ -68,6 +68,6 @@ fn rocket() -> _ {
                 contract
             ],
         )
-        .mount("/static", FileServer::from(relative!("static")))
+        .mount("/static", FileServer::from(relative!("static")).rank(11))
         .register("/", catchers![not_found])
 }
