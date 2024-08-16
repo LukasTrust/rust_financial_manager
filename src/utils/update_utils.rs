@@ -46,6 +46,22 @@ pub async fn update_contract_with_new_amount(
     Ok(())
 }
 
+pub async fn update_contract_with_end_date(
+    contract_id: i32,
+    end_date_for_update: chrono::NaiveDate,
+    db: &mut Connection<DbConn>,
+) -> Result<(), String> {
+    use crate::schema::contracts::*;
+
+    diesel::update(contracts::table.find(contract_id))
+        .set(end_date.eq(end_date_for_update))
+        .execute(db)
+        .await
+        .map_err(|e| format!("Error updating contract: {}", e))?;
+
+    Ok(())
+}
+
 pub async fn update_csv_converter(
     csv_converter: CSVConverter,
     db: &mut Connection<DbConn>,
