@@ -162,7 +162,6 @@ pub async fn get_contracts_with_history(
                     let last_payment_date = last_payment_date.unwrap().date;
 
                     let contract_with_history = ContractWithHistory {
-                        bank: bank.name.clone(),
                         contract: contract.clone(),
                         contract_history: contract_history.unwrap(),
                         total_amount_paid,

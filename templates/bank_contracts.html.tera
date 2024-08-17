@@ -4,10 +4,15 @@
 <body>
     <div class="scroll-container">
         <div class="container-without-border">
-            <div class="container-without-border-horizontally">
+            <div class="container-without-border-horizontally-header">
                 <h1>Contracts</h1>
                 <p id="success" class="success"></p>
                 <p id="error" class="error"></p> 
+            </div> 
+            <div class="container-without-border-horizontally-header">
+                <button style="width: auto">Merge selected contracts</button>
+                <button style="width: auto">Delete selected contracts</button>
+                <button style="width: auto">Scan for new contracts / contract changes</button>
             </div> 
             <div id="contracts-container">
                 <!-- Contracts will be dynamically inserted here -->

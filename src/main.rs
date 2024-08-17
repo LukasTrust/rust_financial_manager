@@ -13,8 +13,8 @@ use std::sync::Arc;
 use database::db_connector::DbConn;
 use routes::add_bank::{add_bank, add_bank_form};
 use routes::bank::bank_view;
+use routes::bank_contract::bank_contract;
 use routes::base::{base, dashboard, logout, settings};
-use routes::contracts::contract;
 use routes::error_page::error_page;
 use routes::error_page::not_found;
 use routes::login::{login_form, login_from_register, login_user};
@@ -64,8 +64,8 @@ fn rocket() -> _ {
                 error_page,
                 // Update date range
                 update_date_range,
-                // Contracts
-                contract
+                // Bank Contract
+                bank_contract
             ],
         )
         .mount("/static", FileServer::from(relative!("static")).rank(11))

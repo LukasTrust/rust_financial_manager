@@ -1,7 +1,7 @@
 pub mod add_bank;
 pub mod bank;
+pub mod bank_contract;
 pub mod base;
-pub mod contracts;
 pub mod delete_user;
 pub mod error_page;
 pub mod login;

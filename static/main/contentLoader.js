@@ -97,7 +97,7 @@ function reinitializeFeatures(url) {
 function handleSpecialPages(url) {
     if (url === '/dashboard' || /^\/bank\/\d+$/.test(url)) {
         reinitializeFeatures(url);
-    } else if (url === '/contract') {
+    } else if (url === '/bank/contract') {
         loadContracts();
     } else if (url === '/add-bank') {
         log('Reinitializing form handling for add bank page:', 'loadContent');
@@ -118,7 +118,11 @@ export async function loadContent(url) {
         if (/^\/bank\/\d+$/.test(url)) {
             handleBankPage(url);
         } else {
-            hideAllSubButtons(url);
+
+            if (url != '/bank/contract' && url != '/bank/transaction') {
+                hideAllSubButtons(url);
+            }
+
             handleSpecialPages(url);
         }
 

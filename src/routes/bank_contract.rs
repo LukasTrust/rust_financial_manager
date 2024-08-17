@@ -1,30 +1,34 @@
-use rocket::get;
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::serde::json::json;
+use rocket::{get, State};
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::Template;
 
 use crate::database::db_connector::DbConn;
+use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_contracts_with_history, get_user_id};
-use crate::utils::loading_utils::load_banks;
 
-#[get("/contract")]
-pub async fn contract(
+#[get("/bank/contract")]
+pub async fn bank_contract(
     cookies: &CookieJar<'_>,
-    mut db: Connection<DbConn>,
+    state: &State<AppState>,
+    db: Connection<DbConn>,
 ) -> Result<Template, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
-    let banks = load_banks(cookie_user_id, &mut db).await;
+    let current_bank = state.get_current_bank(cookie_user_id).await;
 
-    if let Err(e) = banks {
-        return Ok(Template::render("contract", json!({ "error": e })));
+    if current_bank.is_none() {
+        return Ok(Template::render(
+            "contract",
+            json!({ "error": "No bank selected" }),
+        ));
     }
 
-    let banks = banks.unwrap();
+    let current_bank = current_bank.unwrap();
 
-    let result = get_contracts_with_history(banks, db).await;
+    let result = get_contracts_with_history(vec![current_bank], db).await;
 
     let error = if result.is_err() {
         Some(result.clone().err().unwrap())
@@ -39,7 +43,7 @@ pub async fn contract(
     };
 
     Ok(Template::render(
-        "contract",
+        "bank_contracts",
         json!({"contracts": contract_string,
                        "error": error}),
     ))

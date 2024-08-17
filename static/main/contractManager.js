@@ -53,18 +53,6 @@ function generateContractHTML(contractWithHistory, index) {
     `;
 }
 
-// Group contracts by bank
-function groupContractsByBank(contracts) {
-    return contracts.reduce((groups, contract) => {
-        const bank = contract.bank;
-        if (!groups[bank]) {
-            groups[bank] = [];
-        }
-        groups[bank].push(contract);
-        return groups;
-    }, {});
-}
-
 // Main function to load contracts
 export function loadContracts() {
     try {
@@ -87,51 +75,32 @@ export function loadContracts() {
             return;
         }
 
-        const groupedContracts = groupContractsByBank(contractsData);
+        const openContractsWrapper = document.createElement('div');
+        openContractsWrapper.classList.add('contracts-container');
+        const closedContractsWrapper = document.createElement('div');
+        closedContractsWrapper.classList.add('contracts-container');
 
-        let index = 0;
+        contractsData.forEach((contractWithHistory, index) => {
+            const contractHTML = generateContractHTML(contractWithHistory, index);
 
-        Object.keys(groupedContracts).forEach(bank => {
-            const bankContracts = groupedContracts[bank];
-
-            const bankSection = document.createElement('div');
-            bankSection.classList.add('container-without-border');
-
-            const bankTitle = document.createElement('h2');
-            bankTitle.textContent = `Bank: ${bank}`;
-            bankSection.appendChild(bankTitle);
-
-            const openContractsWrapper = document.createElement('div');
-            openContractsWrapper.classList.add('contracts-container');
-            const closedContractsWrapper = document.createElement('div');
-            closedContractsWrapper.classList.add('contracts-container');
-
-            bankContracts.forEach(contractWithHistory => {
-                const contractHTML = generateContractHTML(contractWithHistory, index);
-
-                if (contractWithHistory.contract.end_date) {
-                    closedContractsWrapper.insertAdjacentHTML('beforeend', contractHTML);
-                } else {
-                    openContractsWrapper.insertAdjacentHTML('beforeend', contractHTML);
-                }
-                index++;
-            });
-
-            const openContractsTitle = document.createElement('h3');
-            openContractsTitle.textContent = 'Open Contracts';
-            bankSection.appendChild(openContractsTitle);
-
-            bankSection.appendChild(openContractsWrapper);
-
-
-            const closedContractsTitle = document.createElement('h3');
-            closedContractsTitle.textContent = 'Closed Contracts';
-            bankSection.appendChild(closedContractsTitle);
-
-            bankSection.appendChild(closedContractsWrapper);
-
-            container.appendChild(bankSection);
+            if (contractWithHistory.contract.end_date) {
+                closedContractsWrapper.insertAdjacentHTML('beforeend', contractHTML);
+            } else {
+                openContractsWrapper.insertAdjacentHTML('beforeend', contractHTML);
+            }
         });
+
+        const openContractsTitle = document.createElement('h3');
+        openContractsTitle.textContent = 'Open Contracts';
+        container.appendChild(openContractsTitle);
+
+        container.appendChild(openContractsWrapper);
+
+        const closedContractsTitle = document.createElement('h3');
+        closedContractsTitle.textContent = 'Closed Contracts';
+        container.appendChild(closedContractsTitle);
+
+        container.appendChild(closedContractsWrapper);
 
         // Delegate the event listener to the container
         container.addEventListener('click', (event) => {

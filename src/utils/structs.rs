@@ -110,7 +110,6 @@ pub struct ResponseData {
 
 #[derive(Debug, Serialize)]
 pub struct ContractWithHistory {
-    pub bank: String,
     pub contract: Contract,
     pub contract_history: Vec<ContractHistory>,
     pub total_amount_paid: f64,

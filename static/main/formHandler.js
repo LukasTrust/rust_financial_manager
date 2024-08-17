@@ -117,8 +117,8 @@ function createSubButtonsContainer(bankId) {
     subButtonsContainer.classList.add('bank-sub-buttons');
     subButtonsContainer.style.display = 'none';
 
-    const contractButton = createSubButton('Contract', `/bank/${bankId}/contract`);
-    const transactionButton = createSubButton('Transaction', `/bank/${bankId}/transaction`);
+    const contractButton = createSubButton('Contract', `/bank/contract`);
+    const transactionButton = createSubButton('Transaction', `/bank/transaction`);
 
     subButtonsContainer.appendChild(contractButton);
     subButtonsContainer.appendChild(transactionButton);
