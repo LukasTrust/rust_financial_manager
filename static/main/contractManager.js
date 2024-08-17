@@ -18,11 +18,11 @@ function generateHistoryHTML(contractHistory) {
         return '<li>No history available.</li>';
     }
 
-    return contractHistory.map(history => `
+    return contractHistory.map(({ old_amount, new_amount, changed_at }) => `
         <li>
-            <p>Old Amount: <span class="${history.old_amount < 0 ? 'negative' : 'positive'}">$${history.old_amount.toFixed(2)}</span></p>
-            <p>New Amount: <span class="${history.new_amount < 0 ? 'negative' : 'positive'}">$${history.new_amount.toFixed(2)}</span></p>
-            <p>Changed At: ${formatDate(history.changed_at) || 'N/A'}</p>
+            <p>Old Amount: <span class="${old_amount < 0 ? 'negative' : 'positive'}">$${old_amount.toFixed(2)}</span></p>
+            <p>New Amount: <span class="${new_amount < 0 ? 'negative' : 'positive'}">$${new_amount.toFixed(2)}</span></p>
+            <p>Changed At: ${formatDate(changed_at)}</p>
         </li>
     `).join('');
 }
@@ -39,7 +39,10 @@ function generateContractHTML(contractWithHistory, index) {
 
     return `
         <div class="contract">
-            <h3>${contract.name}</h3>
+            <input type="checkbox" class="contract-checkbox hidden" id="contract-checkbox-${index}">
+            <label for="contract-checkbox-${index}">
+                <h3>${contract.name}</h3>
+            </label>
             <p>Current amount: <span class="${currentAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
             <p>Total amount over time: <span class="${totalAmountClass}">$${total_amount_paid.toFixed(2)}</span></p>
             <p>Months between Payment: ${contract.months_between_payment}</p>
@@ -82,35 +85,43 @@ export function loadContracts() {
 
         contractsData.forEach((contractWithHistory, index) => {
             const contractHTML = generateContractHTML(contractWithHistory, index);
-
-            if (contractWithHistory.contract.end_date) {
-                closedContractsWrapper.insertAdjacentHTML('beforeend', contractHTML);
-            } else {
-                openContractsWrapper.insertAdjacentHTML('beforeend', contractHTML);
-            }
+            const wrapper = contractWithHistory.contract.end_date ? closedContractsWrapper : openContractsWrapper;
+            wrapper.insertAdjacentHTML('beforeend', contractHTML);
         });
 
         const openContractsTitle = document.createElement('h3');
         openContractsTitle.textContent = 'Open Contracts';
         container.appendChild(openContractsTitle);
-
         container.appendChild(openContractsWrapper);
 
         const closedContractsTitle = document.createElement('h3');
         closedContractsTitle.textContent = 'Closed Contracts';
         container.appendChild(closedContractsTitle);
-
         container.appendChild(closedContractsWrapper);
 
-        // Delegate the event listener to the container
+        // Event listener to handle contract selection and history toggling
         container.addEventListener('click', (event) => {
-            const toggleHistoryBtn = event.target.closest('.toggle-history-btn');
-            if (toggleHistoryBtn) {
-                const index = toggleHistoryBtn.getAttribute('data-index');
+            const target = event.target;
+
+            // Handle button clicks for toggling history
+            if (target.classList.contains('toggle-history-btn')) {
+                event.stopPropagation(); // Prevent the event from bubbling up
+                const index = target.getAttribute('data-index');
                 const historyElement = document.getElementById(`contract-history-${index}`);
                 const isHidden = historyElement.classList.toggle('hidden');
-                toggleHistoryBtn.textContent = isHidden ? 'Show History' : 'Hide History';
-                toggleHistoryBtn.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
+                target.textContent = isHidden ? 'Show History' : 'Hide History';
+                target.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
+                return; // Exit to prevent further handling
+            }
+
+            // Handle contract box clicks
+            const contractElement = target.closest('.contract');
+            if (contractElement) {
+                const checkbox = contractElement.querySelector('.contract-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    contractElement.classList.toggle('selected', checkbox.checked);
+                }
             }
         });
 

@@ -86,7 +86,7 @@ function createBankButtonContainer(bank) {
     const bankButton = createBankButton(bank);
     bankButtonContainer.appendChild(bankButton);
 
-    const subButtonsContainer = createSubButtonsContainer(bank.id);
+    const subButtonsContainer = createSubButtonsContainer();
     bankButtonContainer.appendChild(subButtonsContainer);
 
     return bankButtonContainer;
@@ -112,7 +112,7 @@ function createBankButton(bank) {
 }
 
 // Function to create sub-buttons for a bank
-function createSubButtonsContainer(bankId) {
+function createSubButtonsContainer() {
     const subButtonsContainer = document.createElement('div');
     subButtonsContainer.classList.add('bank-sub-buttons');
     subButtonsContainer.style.display = 'none';
