@@ -2,7 +2,7 @@
     {{ contracts | safe }}
 </script>
 <body>
-    <div class="container-without-border-horizontally">
+    <div class="scroll-container">
         <div class="container-without-border">
             <div class="container-without-border-horizontally">
                 <h1>Contracts</h1>

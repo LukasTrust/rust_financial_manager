@@ -1,6 +1,6 @@
 use ::diesel::ExpressionMethods;
-use diesel::query_dsl::methods::FilterDsl;
 use diesel::BoolExpressionMethods;
+use diesel::QueryDsl;
 use log::{error, info};
 use rocket::response::Redirect;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
@@ -97,6 +97,31 @@ pub async fn load_transactions_of_bank(
     Ok(transactions_result)
 }
 
+pub async fn load_last_transaction_data_of_bank(
+    bank_id_for_loading: i32,
+    db: &mut Connection<DbConn>,
+) -> Result<Option<Transaction>, String> {
+    use crate::schema::transactions as transactions_without_dsl;
+    use crate::schema::transactions::dsl::*;
+
+    let transaction_result = transactions_without_dsl::table
+        .filter(bank_id.eq(bank_id_for_loading))
+        .order_by(date.desc())
+        .first::<Transaction>(db)
+        .await;
+
+    match transaction_result {
+        Ok(transaction) => {
+            info!("Last transaction loaded: {:?}", transaction);
+            Ok(Some(transaction))
+        }
+        Err(_) => {
+            info!("No transaction found for bank {}", bank_id_for_loading);
+            Ok(None)
+        }
+    }
+}
+
 pub async fn load_transactions_of_bank_without_contract(
     bank_id_for_loading: i32,
     db: &mut Connection<DbConn>,
@@ -138,6 +163,34 @@ pub async fn load_transactions_of_contract(
     );
 
     Ok(transactions_result)
+}
+
+pub async fn load_last_transaction_data_of_contract(
+    contract_id_for_loading: i32,
+    db: &mut Connection<DbConn>,
+) -> Result<Option<Transaction>, String> {
+    use crate::schema::transactions as transactions_without_dsl;
+    use crate::schema::transactions::dsl::*;
+
+    let transaction_result = transactions_without_dsl::table
+        .filter(contract_id.eq(contract_id_for_loading))
+        .order_by(date.desc())
+        .first::<Transaction>(db)
+        .await;
+
+    match transaction_result {
+        Ok(transaction) => {
+            info!("Last transaction loaded: {:?}", transaction);
+            Ok(Some(transaction))
+        }
+        Err(_) => {
+            info!(
+                "No transaction found for contract {}",
+                contract_id_for_loading
+            );
+            Ok(None)
+        }
+    }
 }
 
 pub async fn load_contracts_of_bank(

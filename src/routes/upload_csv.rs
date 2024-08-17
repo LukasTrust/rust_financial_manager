@@ -15,11 +15,10 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewTransactions};
 use crate::schema::transactions;
 use crate::utils::appstate::AppState;
+use crate::utils::create_contract::create_contract_from_transactions;
 use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
 use crate::utils::loading_utils::load_csv_converter_of_bank;
 use crate::utils::structs::{Bank, Transaction};
-
-use super::create_contract::create_contract_from_transactions;
 
 #[post("/upload_csv", data = "<data>")]
 pub async fn upload_csv(
@@ -59,12 +58,7 @@ pub async fn upload_csv(
     let result = extract_and_process_records(&mut rdr, current_bank.clone(), &mut db).await;
 
     match result {
-        Ok((succesful_inserts, failed_inserts)) => {
-            info!(
-                "Succesfully insertet {} and {} were duplicates",
-                succesful_inserts, failed_inserts
-            );
-
+        Ok(result_string) => {
             let result =
                 get_performance_value_and_graph_data(&vec![current_bank], None, None, db).await;
 
@@ -77,7 +71,7 @@ pub async fn upload_csv(
             let (performance_value, graph_data) = result.unwrap();
 
             Ok(Json(json!({
-                "success": format!("Succesfully insertet {} and {} were duplicates", succesful_inserts, failed_inserts),
+                "success": result_string,
                 "graph_data": graph_data,
                 "performance_value": performance_value,
             })))
@@ -96,7 +90,7 @@ async fn extract_and_process_records<R: std::io::Read>(
     rdr: &mut csv::Reader<R>,
     current_bank: Bank,
     db: &mut Connection<DbConn>,
-) -> Result<(i32, i32), String> {
+) -> Result<String, String> {
     let mut succesful_inserts = 0;
     let mut failed_inserts = 0;
 
@@ -225,9 +219,19 @@ async fn extract_and_process_records<R: std::io::Read>(
         }
     }
 
-    create_contract_from_transactions(current_bank.id, db).await?;
+    info!(
+        "Succesfully insertet {} and {} were duplicates",
+        succesful_inserts, failed_inserts
+    );
 
-    Ok((succesful_inserts, failed_inserts))
+    let contract_result = create_contract_from_transactions(current_bank.id, db).await?;
+
+    let result = format!(
+        "Succesfully insertet {} and {} were duplicates. {}",
+        succesful_inserts, failed_inserts, contract_result
+    );
+
+    Ok(result)
 }
 
 fn validate_csv_converters(csv_converter: CSVConverter) -> Result<(), String> {

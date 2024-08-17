@@ -1,6 +1,7 @@
 import { log, error } from './logger.js';
 import { initializeChartAndDatePicker } from './chartManager.js';
 import { update_performance } from './performanceUpdater.js';
+import { loadContent } from './contentLoader.js';
 
 export async function handleFormSubmission(form) {
     form.addEventListener('submit', async function (event) {

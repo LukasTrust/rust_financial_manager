@@ -39,7 +39,12 @@ button:hover {
 
 .main-content {
     flex-grow: 1;
+    /* Allows the main content to grow and fill available space */
     padding: 20px;
+    overflow-y: auto;
+    /* Adds scrollbar only when needed */
+    max-height: calc(100vh - 80px);
+    /* Adjust the height considering header and footer */
 }
 
 form {
@@ -237,9 +242,19 @@ label {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    /* Adds space between contracts */
+}
+
+.scroll-container {
+    width: 100%;
+    /* Adjust the height as needed */
     overflow-y: auto;
-    /* Allows vertical scrolling if needed */
+    /* Adds a vertical scrollbar when content overflows */
+    border: 1px solid #ccc;
+    /* Optional: adds a border to visually define the container */
+    padding: 10px;
+    /* Optional: adds padding inside the container */
+    box-sizing: border-box;
+    /* Includes padding and border in the element’s total width and height */
 }
 
 .contract {
@@ -253,7 +268,7 @@ label {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    min-height: 200px;
+    min-height: 222px;
     /* Ensures consistent height */
 }
 

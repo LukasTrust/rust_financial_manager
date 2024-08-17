@@ -1,4 +1,5 @@
 pub mod appstate;
+pub mod create_contract;
 pub mod display_utils;
 pub mod get_utils;
 pub mod insert_utiles;
