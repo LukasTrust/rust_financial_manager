@@ -308,3 +308,44 @@ label {
         /* One item per row on very small screens */
     }
 }
+
+.bank-button-container {
+    position: relative;
+}
+
+.bank-button {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+}
+
+.bank-sub-buttons {
+    position: relative;
+    padding-left: 30px;
+    /* Space for the vertical line */
+}
+
+.bank-sub-buttons::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    /* Align with the center of the main button */
+    width: 2px;
+    height: calc(100% + 10px);
+    /* Extends the line to cover the entire sub-buttons area */
+    background-color: #ccc;
+    /* Line color */
+}
+
+.sub-buttons-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.sub-buttons-container button {
+    width: 100%;
+    /* Full width */
+    margin: 0;
+    /* Remove margin */
+}

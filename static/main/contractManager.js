@@ -106,8 +106,6 @@ export function loadContracts() {
             const closedContractsWrapper = document.createElement('div');
             closedContractsWrapper.classList.add('contracts-container');
 
-
-
             bankContracts.forEach(contractWithHistory => {
                 const contractHTML = generateContractHTML(contractWithHistory, index);
 

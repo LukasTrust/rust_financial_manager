@@ -18,9 +18,15 @@
                 <button onclick="loadContent('/add-bank')">Add new bank</button>
                 <div id="banks">
                     {% for bank in banks %}
-                        <button onclick="loadContent('/bank/{{ bank.id }}')" style="width: 100%">
-                            {{ bank.name }}
-                        </button>
+                        <div class="bank-button-container" data-bank-id="{{ bank.id }}">
+                            <button class="bank-button" onclick="loadContent('/bank/{{ bank.id }}')" style="width: 100%">
+                                {{ bank.name }}
+                            </button>
+                        <div class="bank-sub-buttons" style="display: none;">
+                            <button style="width: 100%" onclick="loadContent('/bank/{{ bank.id }}/contract')">Contracts</button>
+                            <button style="width: 100%" onclick="loadContent('/bank/{{ bank.id }}/transaction')">Transactions</button>
+                        </div>
+                        </div>
                     {% endfor %}
                 </div>
             </div>
