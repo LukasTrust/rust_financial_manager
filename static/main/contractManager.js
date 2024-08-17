@@ -34,10 +34,9 @@ function generateContractHTML(contractWithHistory, index) {
     const currentAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
     const totalAmountClass = total_amount_paid < 0 ? 'negative' : 'positive';
 
-    // Check if the end_date exists, otherwise use the last_payment_date
     const dateLabel = contract.end_date ? 'End date' : 'Last payment date';
     const dateValue = contract.end_date ? formatDate(contract.end_date) : formatDate(last_payment_date);
-    const dateClass = contract.end_date ? 'negative' : '';  // Only use 'negative' for end_date
+    const dateClass = contract.end_date ? 'negative' : '';
 
     return `
         <div class="contract">
@@ -53,6 +52,18 @@ function generateContractHTML(contractWithHistory, index) {
             </div>
         </div>
     `;
+}
+
+// Group contracts by bank
+function groupContractsByBank(contracts) {
+    return contracts.reduce((groups, contract) => {
+        const bank = contract.bank;
+        if (!groups[bank]) {
+            groups[bank] = [];
+        }
+        groups[bank].push(contract);
+        return groups;
+    }, {});
 }
 
 // Main function to load contracts
@@ -77,19 +88,44 @@ export function loadContracts() {
             return;
         }
 
-        contractsData.forEach((contractWithHistory, index) => {
-            const contractHTML = generateContractHTML(contractWithHistory, index);
-            container.insertAdjacentHTML('beforeend', contractHTML);
+        const groupedContracts = groupContractsByBank(contractsData);
 
-            const toggleHistoryBtn = container.querySelector(`.toggle-history-btn[data-index="${index}"]`);
-            const historyElement = document.getElementById(`contract-history-${index}`);
+        let index = 0;
 
-            toggleHistoryBtn.setAttribute('aria-expanded', 'false');
-            toggleHistoryBtn.addEventListener('click', () => {
+        Object.keys(groupedContracts).forEach(bank => {
+            const bankContracts = groupedContracts[bank];
+
+            const bankSection = document.createElement('div');
+            bankSection.classList.add('container-without-border');
+
+            const bankTitle = document.createElement('h2');
+            bankTitle.textContent = `Bank: ${bank}`;
+            bankSection.appendChild(bankTitle);
+
+            const contract_wrapper = document.createElement('div');
+            contract_wrapper.classList.add('contracts-container');
+            bankSection.appendChild(contract_wrapper);
+
+
+            bankContracts.forEach(contractWithHistory => {
+                const contractHTML = generateContractHTML(contractWithHistory, index);
+                contract_wrapper.insertAdjacentHTML('beforeend', contractHTML);
+                index++;
+            });
+
+            container.appendChild(bankSection);
+        });
+
+        // Delegate the event listener to the container
+        container.addEventListener('click', (event) => {
+            const toggleHistoryBtn = event.target.closest('.toggle-history-btn');
+            if (toggleHistoryBtn) {
+                const index = toggleHistoryBtn.getAttribute('data-index');
+                const historyElement = document.getElementById(`contract-history-${index}`);
                 const isHidden = historyElement.classList.toggle('hidden');
                 toggleHistoryBtn.textContent = isHidden ? 'Show History' : 'Hide History';
                 toggleHistoryBtn.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
-            });
+            }
         });
 
         log('Contracts loaded successfully.', 'loadContracts');

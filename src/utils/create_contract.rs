@@ -144,7 +144,7 @@ fn filter_transactions_matching_changed_contract(
     for transaction in transactions.into_iter() {
         if let Some(contract) = existing_contracts.iter().find(|contract| {
             if transaction.counterparty == contract.name {
-                let threshold_percentage = 0.1;
+                let threshold_percentage = 0.15;
                 let diff = (transaction.amount as f64 - contract.current_amount as f64).abs();
                 let allowed_change = contract.current_amount as f64 * threshold_percentage;
                 diff <= allowed_change
@@ -260,7 +260,7 @@ async fn create_contracts_from_transactions(
 ) -> Result<Vec<Contract>> {
     let mut new_contracts = Vec::new();
     let mut created_contracts = HashSet::new();
-    let allowable_gap = 3;
+    let allowable_gap = 6; // Increase the allowable gap to 6 months
 
     for (counterparty, amount_groups) in grouped_transactions {
         for (amount_key, transactions) in amount_groups {
@@ -279,7 +279,7 @@ async fn create_contracts_from_transactions(
                     let date_j = sorted_transactions[j].1;
 
                     if let Some(months) = months_between(date_i, date_j) {
-                        if [1, 2, 3, 6].contains(&months)
+                        if [1, 2, 3, 6, 12].contains(&months)
                             || (months != 0 && months <= allowable_gap)
                         {
                             if months_pattern.is_none() {
@@ -345,13 +345,13 @@ fn months_between(date1: NaiveDate, date2: NaiveDate) -> Option<i32> {
     // Set a tolerance for days, e.g., 5 days
     let day_tolerance = 5;
 
-    // Determine if the months difference is acceptable
-    if total_months > 0 && date2.day() >= date1.day() {
-        Some(total_months)
-    } else if total_months > 0 && (date2.day() < date1.day() && day_diff <= day_tolerance) {
+    // Adjusted logic
+    if total_months > 0 {
         Some(total_months)
     } else if total_months == 0 && day_diff <= day_tolerance {
         Some(0) // In the same month, within tolerance
+    } else if total_months == 1 && date2.day() < date1.day() && day_diff <= day_tolerance {
+        Some(1) // Within the next month and within day tolerance
     } else {
         None // Too far apart to be considered the same or sequential month(s)
     }

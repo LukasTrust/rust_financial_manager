@@ -73,7 +73,6 @@ body {
     max-width: 400px;
     min-width: 400px;
     box-sizing: border-box;
-
 }
 
 .container-without-border {
@@ -238,7 +237,7 @@ label {
     display: none;
 }
 
-#contracts-container {
+.contracts-container {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
@@ -261,15 +260,14 @@ label {
     border: 1px solid #ddd;
     border-radius: 8px;
     padding: 15px;
-    width: calc(33.333% - 20px);
-    /* Three items per row with space in between */
+    flex-basis: calc(33.333% - 20px);
+    /* Adjusts to three items per row */
     box-sizing: border-box;
     background-color: #f9f9f9;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     min-height: 222px;
-    /* Ensures consistent height */
 }
 
 .contract h3,
@@ -288,6 +286,12 @@ label {
     margin-top: 10px;
     border-top: 1px solid #ddd;
     padding-top: 10px;
+}
+
+.bank-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
 }
 
 /* Responsive design */

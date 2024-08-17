@@ -9,7 +9,7 @@
                 <p id="success" class="success"></p>
                 <p id="error" class="error"></p> 
             </div> 
-            <div id="contracts-container" class="container-without-border-horizontally">
+            <div id="contracts-container">
                 <!-- Contracts will be dynamically inserted here -->
             </div>
         </div>
