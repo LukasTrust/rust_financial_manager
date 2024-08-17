@@ -136,7 +136,7 @@ pub fn generate_performance_value(
     for bank in banks {
         let contracts_of_bank = contracts
             .iter()
-            .filter(|c| c.bank_id == bank.id)
+            .filter(|c| c.bank_id == bank.id && c.end_date.is_none())
             .collect::<Vec<&Contract>>();
 
         total_contracts += contracts_of_bank.len();

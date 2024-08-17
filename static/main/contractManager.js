@@ -36,7 +36,6 @@ function generateContractHTML(contractWithHistory, index) {
 
     const dateLabel = contract.end_date ? 'End date' : 'Last payment date';
     const dateValue = contract.end_date ? formatDate(contract.end_date) : formatDate(last_payment_date);
-    const dateClass = contract.end_date ? 'negative' : '';
 
     return `
         <div class="contract">
@@ -44,7 +43,7 @@ function generateContractHTML(contractWithHistory, index) {
             <p>Current amount: <span class="${currentAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
             <p>Total amount over time: <span class="${totalAmountClass}">$${total_amount_paid.toFixed(2)}</span></p>
             <p>Months between Payment: ${contract.months_between_payment}</p>
-            <p>${dateLabel}: <span class="${dateClass}">${dateValue}</span></p>
+            <p>${dateLabel}: <span>${dateValue}</span></p>
             <button class="toggle-history-btn" data-index="${index}">Show History</button>
             <div id="contract-history-${index}" class="hidden contract-history">
                 <h4>Contract History:</h4>
@@ -102,16 +101,36 @@ export function loadContracts() {
             bankTitle.textContent = `Bank: ${bank}`;
             bankSection.appendChild(bankTitle);
 
-            const contract_wrapper = document.createElement('div');
-            contract_wrapper.classList.add('contracts-container');
-            bankSection.appendChild(contract_wrapper);
+            const openContractsWrapper = document.createElement('div');
+            openContractsWrapper.classList.add('contracts-container');
+            const closedContractsWrapper = document.createElement('div');
+            closedContractsWrapper.classList.add('contracts-container');
+
 
 
             bankContracts.forEach(contractWithHistory => {
                 const contractHTML = generateContractHTML(contractWithHistory, index);
-                contract_wrapper.insertAdjacentHTML('beforeend', contractHTML);
+
+                if (contractWithHistory.contract.end_date) {
+                    closedContractsWrapper.insertAdjacentHTML('beforeend', contractHTML);
+                } else {
+                    openContractsWrapper.insertAdjacentHTML('beforeend', contractHTML);
+                }
                 index++;
             });
+
+            const openContractsTitle = document.createElement('h3');
+            openContractsTitle.textContent = 'Open Contracts';
+            bankSection.appendChild(openContractsTitle);
+
+            bankSection.appendChild(openContractsWrapper);
+
+
+            const closedContractsTitle = document.createElement('h3');
+            closedContractsTitle.textContent = 'Closed Contracts';
+            bankSection.appendChild(closedContractsTitle);
+
+            bankSection.appendChild(closedContractsWrapper);
 
             container.appendChild(bankSection);
         });
