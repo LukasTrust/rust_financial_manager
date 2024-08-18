@@ -329,6 +329,7 @@ const handleButtonClick = (action) => {
                             filteredData[transactionIndex].transaction.is_hidden = true;
                             row.style.display = 'none';
 
+
                             // Hide the associated contract row if it exists
                             const contractRow = row.nextElementSibling;
                             if (contractRow && contractRow.classList.contains('contract-row')) {
