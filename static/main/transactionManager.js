@@ -3,10 +3,11 @@ import { log, error } from './logger.js';
 let lastSelectedRowIndex = null;
 let virtualizedStartIndex = 0;
 const PAGE_SIZE = 30;
-const INITIAL_ROWS = 30; // Number of rows to display initially
+const INITIAL_ROWS = 30;
 let isLoading = false;
 let filteredData = [];
 let transactionsData = [];
+let sortConfig = { key: null, ascending: true };
 
 const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -50,10 +51,13 @@ const generateTransactionHTML = ({ transaction, contract }, index, rowNumber) =>
     `;
 };
 
-const setupEventListeners = (transactionsData) => {
-    document.getElementById('transaction-search').addEventListener('input', () => filterTransactions(transactionsData));
-    document.getElementById('contract-filter').addEventListener('change', () => filterTransactions(transactionsData));
-    document.getElementById('no-contract-filter').addEventListener('change', () => filterTransactions(transactionsData));
+const setupEventListeners = () => {
+    document.getElementById('transaction-search').addEventListener('input', filterTransactions);
+    document.getElementById('contract-filter').addEventListener('change', filterTransactions);
+    document.getElementById('no-contract-filter').addEventListener('change', filterTransactions);
+    document.querySelectorAll('.sortable').forEach(header => {
+        header.addEventListener('click', () => sortColumn(header.dataset.key));
+    });
 };
 
 export const loadTransactions = () => {
@@ -65,7 +69,6 @@ export const loadTransactions = () => {
         transactionsData = JSON.parse(transactionsDataScript.textContent);
         if (!Array.isArray(transactionsData)) throw new Error('Unexpected data format.');
 
-        // Initialize filteredData with all transactions initially
         filteredData = transactionsData;
 
         const container = document.getElementById('display-container');
@@ -98,7 +101,7 @@ export const loadTransactions = () => {
         flatpickr("#date-range", {
             mode: "range",
             dateFormat: "Y-m-d",
-            onChange: () => filterByDateRange(),
+            onChange: filterByDateRange,
         });
 
         container.insertAdjacentHTML('beforeend', `
@@ -106,10 +109,10 @@ export const loadTransactions = () => {
                 <thead>
                     <tr>
                         <th>Row</th>
-                        <th>Counterparty</th>
-                        <th>Amount</th>
-                        <th>Bank Balance After</th>
-                        <th>Date</th>
+                        <th data-key="counterparty" class="sortable">Counterparty <span>↑</span></th>
+                        <th data-key="amount" class="sortable">Amount <span>↑</span></th>
+                        <th data-key="bank_balance_after" class="sortable">Bank Balance After <span>↑</span></th>
+                        <th data-key="date" class="sortable">Date <span>↑</span></th>
                     </tr>
                 </thead>
                 <tbody id="transaction-table-body">
@@ -171,7 +174,7 @@ const loadMoreRows = (transactions) => {
 
     if (newRowsHTML.trim() === '') {
         isLoading = false;
-        return; // No more data to load
+        return;
     }
 
     tableBody.insertAdjacentHTML('beforeend', newRowsHTML);
@@ -234,9 +237,49 @@ const filterTransactions = () => {
         return matchesSearch && matchesContract && matchesNoContract;
     });
 
-    virtualizedStartIndex = 0; // Reset start index for filtered data
+    sortData();
+    virtualizedStartIndex = 0;
     document.getElementById('transaction-table-body').innerHTML = '';
     loadMoreRows(filteredData);
+};
+
+const sortColumn = (key) => {
+    if (key === 'rowNumber') return; // Exclude sorting for the "Row" column
+
+    sortConfig.ascending = (sortConfig.key === key) ? !sortConfig.ascending : true;
+    sortConfig.key = key;
+
+    sortData();
+    virtualizedStartIndex = 0;
+    document.getElementById('transaction-table-body').innerHTML = '';
+    loadMoreRows(filteredData);
+
+    updateSortIcons();
+};
+
+const sortData = () => {
+    if (!sortConfig.key) return;
+
+    filteredData.sort((a, b) => {
+        const aValue = sortConfig.key === 'rowNumber' ? filteredData.indexOf(a) : a.transaction[sortConfig.key];
+        const bValue = sortConfig.key === 'rowNumber' ? filteredData.indexOf(b) : b.transaction[sortConfig.key];
+
+        if (aValue < bValue) return sortConfig.ascending ? -1 : 1;
+        if (aValue > bValue) return sortConfig.ascending ? 1 : -1;
+        return 0;
+    });
+};
+
+const updateSortIcons = () => {
+    document.querySelectorAll('.sortable').forEach(header => {
+        const icon = header.querySelector('span');
+
+        if (header.dataset.key === sortConfig.key) {
+            icon.textContent = sortConfig.ascending ? '↑' : '↓';
+        } else {
+            icon.textContent = '↑'; // Default icon for unsorted columns
+        }
+    });
 };
 
 const filterByDateRange = () => {
@@ -245,7 +288,6 @@ const filterByDateRange = () => {
     const endDate = new Date(dateRange[1]);
 
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate > endDate) {
-        // Handle invalid date range
         return;
     }
 
@@ -254,8 +296,8 @@ const filterByDateRange = () => {
         return transactionDate >= startDate && transactionDate <= endDate;
     });
 
-    virtualizedStartIndex = 0; // Reset start index for filtered data
+    sortData();
+    virtualizedStartIndex = 0;
     document.getElementById('transaction-table-body').innerHTML = '';
     loadMoreRows(filteredData);
 };
-

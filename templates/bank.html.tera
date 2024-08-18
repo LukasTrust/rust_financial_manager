@@ -39,8 +39,8 @@
         <div class="centered-container">
             <!-- Date Range Picker -->
             <div class="form-group">
-                <label for="dateRange" class="date-label">Select Date Range:</label>
-                <input type="text" id="dateRange" class="date-input" placeholder="Select Date Range">
+                <label for="dateRange" class="date-label">Select date range:</label>
+                <input type="text" id="dateRange" class="date-input" placeholder="Select date range">
             </div>
 
             <form action="/upload_csv" method="post"
