@@ -1,6 +1,5 @@
 import { log, error } from './logger.js';
 
-let lastSelectedRowIndex = null;
 let virtualizedStartIndex = 0;
 const PAGE_SIZE = 30;
 const INITIAL_ROWS = 30;
@@ -40,7 +39,7 @@ const generateTransactionHTML = ({ transaction, contract }, index, rowNumber) =>
     }
 
     return `
-        <tr class="transaction-row" data-index="${index}">
+        <tr class="transaction-row" data-index="${index}" data-id="${transaction.id}">
             <td>${rowNumber}</td>
             <td>${transaction.counterparty}</td>
             <td class="${amountClass}">$${transaction.amount.toFixed(2)}</td>
@@ -63,6 +62,7 @@ const setupEventListeners = () => {
 export const loadTransactions = () => {
     try {
         log('Loading transactions...', 'loadTransactions');
+
         const transactionsDataScript = document.getElementById('transactions-data');
         if (!transactionsDataScript) throw new Error('Transactions data script element not found.');
 
@@ -154,6 +154,14 @@ export const loadTransactions = () => {
             }
         }, 100));
 
+        document.getElementById('remove-transaction').addEventListener('click', () => {
+            handleButtonClick('remove');
+        });
+
+        document.getElementById('hide-transaction').addEventListener('click', () => {
+            handleButtonClick('hide');
+        });
+
         log('Transactions loaded successfully.', 'loadTransactions');
     } catch (err) {
         error(err.message, 'loadTransactions');
@@ -198,19 +206,7 @@ const refreshInitialRows = (transactions) => {
 };
 
 const handleRowSelection = (event, row) => {
-    const index = parseInt(row.dataset.index, 10);
-    if (event.shiftKey && lastSelectedRowIndex !== null) {
-        const start = Math.min(index, lastSelectedRowIndex);
-        const end = Math.max(index, lastSelectedRowIndex);
-        document.querySelectorAll('.transaction-row').forEach((r, i) => {
-            if (i >= start && i <= end) {
-                r.classList.add('selected');
-            }
-        });
-    } else {
-        row.classList.toggle('selected');
-        lastSelectedRowIndex = index;
-    }
+    row.classList.toggle('selected');
 };
 
 const filterTransactions = () => {
@@ -300,4 +296,26 @@ const filterByDateRange = () => {
     virtualizedStartIndex = 0;
     document.getElementById('transaction-table-body').innerHTML = '';
     loadMoreRows(filteredData);
+};
+
+const handleButtonClick = (action) => {
+    const selectedRows = document.querySelectorAll('.transaction-row.selected');
+    const selectedIds = Array.from(selectedRows).map(row => row.dataset.id);
+
+    fetch(`bank/transaction/${action}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids: selectedIds }),
+    })
+        .then(response => {
+            if (response.ok) {
+                alert(`${action.replace('-', ' ')} action was successful`);
+                // Optionally, refresh or update the UI based on the action
+            } else {
+                alert(`Failed to ${action.replace('-', ' ')}`);
+            }
+        })
+        .catch(error => console.error('Error:', error));
 };

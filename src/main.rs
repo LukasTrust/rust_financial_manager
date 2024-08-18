@@ -14,7 +14,7 @@ use database::db_connector::DbConn;
 use routes::add_bank::{add_bank, add_bank_form};
 use routes::bank::bank_view;
 use routes::bank_contract::bank_contract;
-use routes::bank_transaction::bank_trasaction;
+use routes::bank_transaction::{bank_transaction, transaction_hide, transaction_remove};
 use routes::base::{base, dashboard, logout, settings};
 use routes::error_page::error_page;
 use routes::error_page::not_found;
@@ -68,7 +68,9 @@ fn rocket() -> _ {
                 // Bank Contract
                 bank_contract,
                 // Bank Transaction
-                bank_trasaction
+                bank_transaction,
+                transaction_remove,
+                transaction_hide,
             ],
         )
         .mount("/static", FileServer::from(relative!("static")).rank(11))

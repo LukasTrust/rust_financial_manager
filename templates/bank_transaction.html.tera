@@ -10,10 +10,10 @@
                 <p id="error" class="error"></p> 
             </div> 
             <div class="container-without-border-horizontally-header">
-                <button style="width: auto">Remove transaction from contract</button>
-                <button style="width: auto">Hide transaction</button>
+                <button id="remove-transaction" style="width: auto">Remove transaction from contract</button>
+                <button id="hide-transaction" style="width: auto">Hide transaction</button>
                 <button style="width: auto">Show hidden transactions</button>
-            </div> 
+            </div>
             <div id="display-container">
                 <!-- Transactions will be dynamically inserted here -->
             </div>

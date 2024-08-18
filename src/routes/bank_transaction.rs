@@ -1,16 +1,24 @@
+use log::info;
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::serde::json::json;
-use rocket::{get, State};
+use rocket::serde::json::Json;
+use rocket::{get, post, State};
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::Template;
+use serde::Deserialize;
 
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_transactions_with_contract, get_user_id};
 
+#[derive(Deserialize)]
+pub struct TransactionIds {
+    ids: Vec<usize>,
+}
+
 #[get("/bank/transaction")]
-pub async fn bank_trasaction(
+pub async fn bank_transaction(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     db: Connection<DbConn>,
@@ -46,4 +54,22 @@ pub async fn bank_trasaction(
         "bank_transaction",
         json!({"transactions": transaction_string, "error": error}),
     ))
+}
+
+#[post(
+    "/bank/transaction/remove",
+    format = "json",
+    data = "<transaction_ids>"
+)]
+pub fn transaction_remove(transaction_ids: Json<TransactionIds>) {
+    let ids = &transaction_ids.ids;
+
+    info!("Received IDs to remove: {:?}", ids);
+}
+
+#[post("/bank/transaction/hide", format = "json", data = "<transaction_ids>")]
+pub fn transaction_hide(transaction_ids: Json<TransactionIds>) {
+    let ids = &transaction_ids.ids;
+
+    info!("Received IDs to remove: {:?}", ids);
 }
