@@ -11,7 +11,7 @@ use super::{
         load_contract_history, load_contracts_of_bank, load_last_transaction_data_of_contract,
         load_transactions_of_bank, load_transactions_of_contract,
     },
-    structs::{Bank, ContractWithHistory, PerformanceData, Transaction},
+    structs::{Bank, ContractWithHistory, PerformanceData, Transaction, TransactionWithContract},
 };
 
 /// Extract the user ID from the user ID cookie.
@@ -132,48 +132,77 @@ pub async fn get_total_amount_paid_of_contract(
 }
 
 pub async fn get_contracts_with_history(
-    banks: Vec<Bank>,
+    bank_id: i32,
     mut db: Connection<DbConn>,
 ) -> Result<String, String> {
     let mut contracts_with_history: Vec<ContractWithHistory> = Vec::new();
 
-    for bank in banks {
-        let contracts = load_contracts_of_bank(bank.id, &mut db).await;
+    let contracts = load_contracts_of_bank(bank_id, &mut db).await;
 
-        match contracts {
-            Ok(contracts) => {
-                for contract in contracts.iter() {
-                    let contract_history = load_contract_history(contract.id, &mut db).await;
+    match contracts {
+        Ok(contracts) => {
+            for contract in contracts.iter() {
+                let contract_history = load_contract_history(contract.id, &mut db).await;
 
-                    if contract_history.is_err() {
-                        return Err("Error loading contract history.".to_string());
-                    }
-
-                    let total_amount_paid =
-                        get_total_amount_paid_of_contract(contract.id, &mut db).await?;
-
-                    let last_payment_date =
-                        load_last_transaction_data_of_contract(contract.id, &mut db).await?;
-
-                    if last_payment_date.is_none() {
-                        return Err("Error loading last payment date.".to_string());
-                    }
-
-                    let last_payment_date = last_payment_date.unwrap().date;
-
-                    let contract_with_history = ContractWithHistory {
-                        contract: contract.clone(),
-                        contract_history: contract_history.unwrap(),
-                        total_amount_paid,
-                        last_payment_date,
-                    };
-
-                    contracts_with_history.push(contract_with_history);
+                if contract_history.is_err() {
+                    return Err("Error loading contract history.".to_string());
                 }
+
+                let total_amount_paid =
+                    get_total_amount_paid_of_contract(contract.id, &mut db).await?;
+
+                let last_payment_date =
+                    load_last_transaction_data_of_contract(contract.id, &mut db).await?;
+
+                if last_payment_date.is_none() {
+                    return Err("Error loading last payment date.".to_string());
+                }
+
+                let last_payment_date = last_payment_date.unwrap().date;
+
+                let contract_with_history = ContractWithHistory {
+                    contract: contract.clone(),
+                    contract_history: contract_history.unwrap(),
+                    total_amount_paid,
+                    last_payment_date,
+                };
+
+                contracts_with_history.push(contract_with_history);
             }
-            Err(err) => return Err(err),
         }
+        Err(err) => return Err(err),
     }
 
     Ok(serde_json::to_string(&contracts_with_history).unwrap())
+}
+
+pub async fn get_transactions_with_contract(
+    bank_id: i32,
+    mut db: Connection<DbConn>,
+) -> Result<String, String> {
+    let transactions = load_transactions_of_bank(bank_id, &mut db).await?;
+
+    let mut transactions_with_contract = Vec::new();
+    let contracts = load_contracts_of_bank(bank_id, &mut db).await?;
+
+    for transaction in transactions.iter() {
+        let contract;
+
+        if transaction.contract_id.is_some() {
+            contract = contracts
+                .iter()
+                .find(|c| c.id == transaction.contract_id.unwrap());
+        } else {
+            contract = None;
+        }
+
+        let transaction_with_contract = TransactionWithContract {
+            transaction: transaction.clone(),
+            contract: contract.cloned(),
+        };
+
+        transactions_with_contract.push(transaction_with_contract);
+    }
+
+    Ok(serde_json::to_string(&transactions_with_contract).unwrap())
 }

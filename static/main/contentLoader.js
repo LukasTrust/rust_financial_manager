@@ -99,7 +99,10 @@ function handleSpecialPages(url) {
         reinitializeFeatures(url);
     } else if (url === '/bank/contract') {
         loadContracts();
-    } else if (url === '/add-bank') {
+    } else if (url === '/bank/transaction') {
+
+    }
+    else if (url === '/add-bank') {
         log('Reinitializing form handling for add bank page:', 'loadContent');
         initializeFormHandling();
     }

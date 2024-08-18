@@ -7,10 +7,10 @@ use rocket_dyn_templates::Template;
 
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
-use crate::utils::get_utils::{get_contracts_with_history, get_user_id};
+use crate::utils::get_utils::{get_transactions_with_contract, get_user_id};
 
-#[get("/bank/contract")]
-pub async fn bank_contract(
+#[get("/bank/trasaction")]
+pub async fn bank_trasaction(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     db: Connection<DbConn>,
@@ -21,30 +21,23 @@ pub async fn bank_contract(
 
     if current_bank.is_none() {
         return Ok(Template::render(
-            "bank_contract",
+            "bank_trasaction",
             json!({ "error": "No bank selected" }),
         ));
     }
 
     let current_bank = current_bank.unwrap();
 
-    let result = get_contracts_with_history(current_bank.id, db).await;
+    let trasactions_string = get_transactions_with_contract(current_bank.id, db).await;
 
-    let error = if result.is_err() {
-        Some(result.clone().err().unwrap())
-    } else {
-        None
-    };
+    if let Err(err) = trasactions_string {
+        return Ok(Template::render("bank_trasaction", json!({ "error": err })));
+    }
 
-    let contract_string = if result.is_ok() {
-        result.unwrap()
-    } else {
-        String::new()
-    };
+    let trasactions_string = trasactions_string.unwrap();
 
     Ok(Template::render(
-        "bank_contract",
-        json!({"contracts": contract_string,
-                       "error": error}),
+        "bank_trasaction",
+        json!({"trasactions": trasactions_string}),
     ))
 }

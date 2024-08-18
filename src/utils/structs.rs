@@ -115,3 +115,9 @@ pub struct ContractWithHistory {
     pub total_amount_paid: f64,
     pub last_payment_date: NaiveDate,
 }
+
+#[derive(Debug, Serialize)]
+pub struct TransactionWithContract {
+    pub transaction: Transaction,
+    pub contract: Option<Contract>,
+}

@@ -1,0 +1,22 @@
+<script id="transaction-data" type="application/json">
+    {{ transactions | safe }}
+</script>
+<body>
+    <div class="scroll-container">
+        <div class="container-without-border">
+            <div class="container-without-border-horizontally-header">
+                <h1>Transactions</h1>
+                <p id="success" class="success"></p>
+                <p id="error" class="error"></p> 
+            </div> 
+            <div class="container-without-border-horizontally-header">
+                <button style="width: auto">Remove transaction from contract</button>
+                <button style="width: auto">Hide transaction</button>
+                <button style="width: auto">Show hidden transactions</button>
+            </div> 
+            <div id="transaction-container">
+                <!-- Transactions will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+</body>
