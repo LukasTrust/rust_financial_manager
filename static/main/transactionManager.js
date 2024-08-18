@@ -2,35 +2,31 @@ import { log, error } from './logger.js';
 
 let lastSelectedRowIndex = null;
 let virtualizedStartIndex = 0;
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 30;
+const INITIAL_ROWS = 30; // Number of rows to display initially
+let isLoading = false;
+let filteredData = [];
+let transactionsData = [];
 
-function formatDate(dateString) {
+const formatDate = (dateString) => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'N/A';
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}.${month}.${year}`;
-}
+};
 
-function generateTransactionHTML(transactionWithContract, index) {
-    const { transaction, contract } = transactionWithContract;
+const generateTransactionHTML = ({ transaction, contract }, index, rowNumber) => {
     const amountClass = transaction.amount < 0 ? 'negative' : 'positive';
     const balanceClass = transaction.bank_balance_after < 0 ? 'negative' : 'positive';
-    const transactionRow = `
-        <tr class="transaction-row" data-index="${index}">
-            <td>${transaction.counterparty}</td>
-            <td class="${amountClass}">$${transaction.amount.toFixed(2)}</td>
-            <td class="${balanceClass}">$${transaction.bank_balance_after.toFixed(2)}</td>
-            <td>${formatDate(transaction.date)}</td>
-        </tr>
-    `;
     let contractRow = '';
+
     if (contract) {
         const contractAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
         contractRow = `
             <tr class="contract-row">
-                <td colspan="4">
+                <td colspan="5">
                     <div class="contract-details">
                         <p>Contract Name: ${contract.name}</p>
                         <p>Contract Current Amount: <span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
@@ -41,22 +37,37 @@ function generateTransactionHTML(transactionWithContract, index) {
             </tr>
         `;
     }
-    return transactionRow + contractRow;
-}
 
-function setupEventListeners(transactionsData) {
+    return `
+        <tr class="transaction-row" data-index="${index}">
+            <td>${rowNumber}</td>
+            <td>${transaction.counterparty}</td>
+            <td class="${amountClass}">$${transaction.amount.toFixed(2)}</td>
+            <td class="${balanceClass}">$${transaction.bank_balance_after.toFixed(2)}</td>
+            <td>${formatDate(transaction.date)}</td>
+        </tr>
+        ${contractRow}
+    `;
+};
+
+const setupEventListeners = (transactionsData) => {
     document.getElementById('transaction-search').addEventListener('input', () => filterTransactions(transactionsData));
     document.getElementById('contract-filter').addEventListener('change', () => filterTransactions(transactionsData));
     document.getElementById('no-contract-filter').addEventListener('change', () => filterTransactions(transactionsData));
-}
+};
 
-export function loadTransactions() {
+export const loadTransactions = () => {
     try {
         log('Loading transactions...', 'loadTransactions');
         const transactionsDataScript = document.getElementById('transactions-data');
         if (!transactionsDataScript) throw new Error('Transactions data script element not found.');
-        let transactionsData = JSON.parse(transactionsDataScript.textContent);
+
+        transactionsData = JSON.parse(transactionsDataScript.textContent);
         if (!Array.isArray(transactionsData)) throw new Error('Unexpected data format.');
+
+        // Initialize filteredData with all transactions initially
+        filteredData = transactionsData;
+
         const container = document.getElementById('display-container');
         container.innerHTML = '';
 
@@ -70,43 +81,31 @@ export function loadTransactions() {
         headerContainer.classList.add('container-without-border-horizontally');
         container.appendChild(headerContainer);
 
-        const dateRangeSelector = `
+        headerContainer.innerHTML = `
             <label for="date-range">Select date range:</label>
             <input type="text" id="date-range" class="flatpickr">
-        `;
-        headerContainer.insertAdjacentHTML('beforeend', dateRangeSelector);
-        flatpickr("#date-range", {
-            mode: "range",
-            dateFormat: "Y-m-d",
-            onChange: () => filterByDateRange(transactionsData),
-        });
-
-        const contractNames = [...new Set(transactionsData.map(t => t.contract?.name).filter(Boolean))];
-        const contractFilter = `
             <label for="contract-filter">Filter by Contract:</label>
             <select style="max-width: 300px" id="contract-filter">
                 <option value="">All Contracts</option>
-                ${contractNames.map(name => `<option value="${name}">${name}</option>`).join('')}
+                ${[...new Set(transactionsData.map(t => t.contract?.name).filter(Boolean))].map(name => `<option value="${name}">${name}</option>`).join('')}
             </select>
-        `;
-        headerContainer.insertAdjacentHTML('beforeend', contractFilter);
-
-        const noContractFilter = `
             <label>
                 <input type="checkbox" id="no-contract-filter"> Show only transactions without contracts
             </label>
-        `;
-        headerContainer.insertAdjacentHTML('beforeend', noContractFilter);
-
-        const searchInput = `
             <input style="width: auto; height: 15px" type="text" id="transaction-search" placeholder="Search transactions...">
         `;
-        headerContainer.insertAdjacentHTML('beforeend', searchInput);
 
-        const table = `
+        flatpickr("#date-range", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            onChange: () => filterByDateRange(),
+        });
+
+        container.insertAdjacentHTML('beforeend', `
             <table class="transaction-table">
                 <thead>
                     <tr>
+                        <th>Row</th>
                         <th>Counterparty</th>
                         <th>Amount</th>
                         <th>Bank Balance After</th>
@@ -114,53 +113,88 @@ export function loadTransactions() {
                     </tr>
                 </thead>
                 <tbody id="transaction-table-body">
-                    ${renderVirtualizedRows(transactionsData, virtualizedStartIndex, PAGE_SIZE)}
+                    ${renderVirtualizedRows(filteredData, 0, INITIAL_ROWS)}
                 </tbody>
             </table>
-        `;
-        container.insertAdjacentHTML('beforeend', table);
+        `);
 
-        setupEventListeners(transactionsData);
+        setupEventListeners();
 
         document.querySelectorAll('.transaction-row').forEach(row => {
             row.addEventListener('click', (event) => handleRowSelection(event, row));
         });
 
-        let debounceTimeout;
-        container.addEventListener('scroll', () => {
-            if (debounceTimeout) clearTimeout(debounceTimeout);
-            debounceTimeout = setTimeout(() => {
-                const scrollHeight = container.scrollHeight;
-                const scrollTop = container.scrollTop;
-                const clientHeight = container.clientHeight;
-                if (scrollTop + clientHeight >= scrollHeight - 10) {
+        const scrollContainer = document.querySelector('.scroll-container');
+        const debounce = (func, delay) => {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), delay);
+            };
+        };
+
+        scrollContainer.addEventListener('scroll', debounce(() => {
+            const { scrollHeight, scrollTop, clientHeight } = scrollContainer;
+
+            if (scrollTop + clientHeight >= scrollHeight - 10 && !isLoading) {
+                if (filteredData.length > virtualizedStartIndex + PAGE_SIZE) {
+                    isLoading = true;
                     virtualizedStartIndex += PAGE_SIZE;
-                    renderTransactions(transactionsData);
+                    loadMoreRows(filteredData);
                 }
-            }, 100);
-        });
+            } else if (scrollTop === 0 && !isLoading) {
+                if (virtualizedStartIndex > INITIAL_ROWS) {
+                    isLoading = true;
+                    virtualizedStartIndex = INITIAL_ROWS;
+                    refreshInitialRows(filteredData);
+                }
+            }
+        }, 100));
 
         log('Transactions loaded successfully.', 'loadTransactions');
     } catch (err) {
         error(err.message, 'loadTransactions');
     }
-}
+};
 
-function renderVirtualizedRows(transactions, startIndex, pageSize) {
-    return transactions.slice(startIndex, startIndex + pageSize)
-        .map(generateTransactionHTML)
+const renderVirtualizedRows = (transactions, startIndex, pageSize) => {
+    const rowsHTML = transactions.slice(startIndex, startIndex + pageSize)
+        .map((item, index) => generateTransactionHTML(item, startIndex + index, startIndex + index + 1))
         .join('');
-}
+    log(`Rendered rows from ${startIndex + 1} to ${startIndex + rowsHTML.split('</tr>').length - 1}`, 'renderVirtualizedRows');
+    return rowsHTML;
+};
 
-function renderTransactions(transactions) {
+const loadMoreRows = (transactions) => {
     const tableBody = document.getElementById('transaction-table-body');
-    tableBody.innerHTML += renderVirtualizedRows(transactions, virtualizedStartIndex, PAGE_SIZE);
+    const newRowsHTML = renderVirtualizedRows(transactions, virtualizedStartIndex, PAGE_SIZE);
+
+    if (newRowsHTML.trim() === '') {
+        isLoading = false;
+        return; // No more data to load
+    }
+
+    tableBody.insertAdjacentHTML('beforeend', newRowsHTML);
     document.querySelectorAll('.transaction-row').forEach(row => {
         row.addEventListener('click', (event) => handleRowSelection(event, row));
     });
-}
+    isLoading = false;
+    log(`Loaded ${PAGE_SIZE} rows, total rows now: ${tableBody.children.length}`, 'loadMoreRows');
+};
 
-function handleRowSelection(event, row) {
+const refreshInitialRows = (transactions) => {
+    const tableBody = document.getElementById('transaction-table-body');
+    const initialRowsHTML = renderVirtualizedRows(transactions, 0, INITIAL_ROWS);
+
+    tableBody.innerHTML = initialRowsHTML;
+    document.querySelectorAll('.transaction-row').forEach(row => {
+        row.addEventListener('click', (event) => handleRowSelection(event, row));
+    });
+    isLoading = false;
+    log(`Refreshed to initial ${INITIAL_ROWS} rows, total rows now: ${tableBody.children.length}`, 'refreshInitialRows');
+};
+
+const handleRowSelection = (event, row) => {
     const index = parseInt(row.dataset.index, 10);
     if (event.shiftKey && lastSelectedRowIndex !== null) {
         const start = Math.min(index, lastSelectedRowIndex);
@@ -174,14 +208,14 @@ function handleRowSelection(event, row) {
         row.classList.toggle('selected');
         lastSelectedRowIndex = index;
     }
-}
+};
 
-function filterTransactions(transactions) {
+const filterTransactions = () => {
     const searchQuery = document.getElementById('transaction-search').value.toLowerCase();
     const selectedContract = document.getElementById('contract-filter').value;
     const showNoContract = document.getElementById('no-contract-filter').checked;
 
-    const filteredTransactions = transactions.filter(({ transaction, contract }) => {
+    filteredData = transactionsData.filter(({ transaction, contract }) => {
         const { counterparty, date, amount } = transaction;
         const contractName = contract?.name || '';
         const formattedDate = formatDate(date);
@@ -200,12 +234,12 @@ function filterTransactions(transactions) {
         return matchesSearch && matchesContract && matchesNoContract;
     });
 
-    virtualizedStartIndex = 0;
+    virtualizedStartIndex = 0; // Reset start index for filtered data
     document.getElementById('transaction-table-body').innerHTML = '';
-    renderTransactions(filteredTransactions);
-}
+    loadMoreRows(filteredData);
+};
 
-function filterByDateRange(transactions) {
+const filterByDateRange = () => {
     const dateRange = document.getElementById('date-range').value.split(' to ');
     const startDate = new Date(dateRange[0]);
     const endDate = new Date(dateRange[1]);
@@ -215,12 +249,13 @@ function filterByDateRange(transactions) {
         return;
     }
 
-    const filteredTransactions = transactions.filter(({ transaction }) => {
+    filteredData = transactionsData.filter(({ transaction }) => {
         const transactionDate = new Date(transaction.date);
         return transactionDate >= startDate && transactionDate <= endDate;
     });
 
-    virtualizedStartIndex = 0;
+    virtualizedStartIndex = 0; // Reset start index for filtered data
     document.getElementById('transaction-table-body').innerHTML = '';
-    renderTransactions(filteredTransactions);
-}
+    loadMoreRows(filteredData);
+};
+
