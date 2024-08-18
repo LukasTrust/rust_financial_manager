@@ -25,6 +25,47 @@ pub async fn update_transaction_with_contract_id(
     Ok(())
 }
 
+pub async fn update_transaction_remove_contract_id(
+    transaction_ids: Vec<i32>,
+    db: &mut Connection<DbConn>,
+) -> Result<(), String> {
+    use crate::schema::transactions::dsl::*;
+
+    diesel::update(transactions.filter(id.eq_any(transaction_ids.clone())))
+        .set(contract_id.eq(None::<i32>))
+        .execute(db)
+        .await
+        .map_err(|e| format!("Error updating transactions: {}", e))?;
+
+    info!(
+        "Transaction IDs {:?} updated with contract ID None.",
+        transaction_ids
+    );
+
+    Ok(())
+}
+
+pub async fn update_transaction_with_hidden(
+    transactions_ids: Vec<i32>,
+    is_hidden_for_updating: bool,
+    db: &mut Connection<DbConn>,
+) -> Result<(), String> {
+    use crate::schema::transactions::dsl::*;
+
+    diesel::update(transactions.filter(id.eq_any(transactions_ids.clone())))
+        .set(is_hidden.eq(is_hidden_for_updating))
+        .execute(db)
+        .await
+        .map_err(|e| format!("Error updating transactions: {}", e))?;
+
+    info!(
+        "Transaction IDs {:?} updated with hidden {}.",
+        transactions_ids, is_hidden_for_updating
+    );
+
+    Ok(())
+}
+
 pub async fn update_contract_with_new_amount(
     contract_id: i32,
     new_amount: f64,

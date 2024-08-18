@@ -300,7 +300,9 @@ const filterByDateRange = () => {
 
 const handleButtonClick = (action) => {
     const selectedRows = document.querySelectorAll('.transaction-row.selected');
-    const selectedIds = Array.from(selectedRows).map(row => row.dataset.id);
+
+    // Convert the dataset IDs to integers
+    const selectedIds = Array.from(selectedRows).map(row => parseInt(row.dataset.id));
 
     fetch(`bank/transaction/${action}`, {
         method: 'POST',
@@ -309,12 +311,47 @@ const handleButtonClick = (action) => {
         },
         body: JSON.stringify({ ids: selectedIds }),
     })
-        .then(response => {
-            if (response.ok) {
-                alert(`${action.replace('-', ' ')} action was successful`);
-                // Optionally, refresh or update the UI based on the action
-            } else {
-                alert(`Failed to ${action.replace('-', ' ')}`);
+        .then(result => {
+            if (result.ok) {
+
+                selectedRows.forEach(row => {
+                    const transactionIndex = filteredData.findIndex(item => item.transaction.id === parseInt(row.dataset.id));
+                    if (transactionIndex !== -1) {
+                        document.getElementById('success').style.display = 'block';
+                        document.getElementById('error').style.display = 'none';
+
+                        row.classList.remove('selected');
+
+                        if (action === 'hide') {
+                            document.getElementById('success').innerHTML = `Transactions have been hidden action was successful`;
+
+                            // Mark the transaction as hidden and hide the row
+                            filteredData[transactionIndex].transaction.is_hidden = true;
+                            row.style.display = 'none';
+
+                            // Hide the associated contract row if it exists
+                            const contractRow = row.nextElementSibling;
+                            if (contractRow && contractRow.classList.contains('contract-row')) {
+                                contractRow.style.display = 'none';
+                            }
+                        } else if (action === 'remove') {
+                            document.getElementById('success').innerHTML = `Contracts of the selected transactions have been removed`;
+
+                            // Remove the transaction and its contract row from data and DOM
+                            filteredData.splice(transactionIndex, 1);
+
+                            const contractRow = row.nextElementSibling;
+                            if (contractRow && contractRow.classList.contains('contract-row')) {
+                                contractRow.remove();
+                            }
+                        }
+                    }
+                });
+
+            } else if (result.Err) {
+                document.getElementById('error').innerHTML = `Failed to ${action.replace('-', ' ')}: ${result.Err}`;
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('success').style.display = 'none';
             }
         })
         .catch(error => console.error('Error:', error));

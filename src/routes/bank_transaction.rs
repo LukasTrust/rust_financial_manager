@@ -1,4 +1,3 @@
-use log::info;
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::serde::json::json;
@@ -11,10 +10,12 @@ use serde::Deserialize;
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_transactions_with_contract, get_user_id};
+use crate::utils::update_utils::update_transaction_remove_contract_id;
+use crate::utils::update_utils::update_transaction_with_hidden;
 
 #[derive(Deserialize)]
 pub struct TransactionIds {
-    ids: Vec<usize>,
+    ids: Vec<i32>,
 }
 
 #[get("/bank/transaction")]
@@ -61,15 +62,37 @@ pub async fn bank_transaction(
     format = "json",
     data = "<transaction_ids>"
 )]
-pub fn transaction_remove(transaction_ids: Json<TransactionIds>) {
+pub async fn transaction_remove(
+    transaction_ids: Json<TransactionIds>,
+    mut db: Connection<DbConn>,
+) -> Result<(), String> {
     let ids = &transaction_ids.ids;
 
-    info!("Received IDs to remove: {:?}", ids);
+    update_transaction_remove_contract_id(ids.clone(), &mut db).await?;
+
+    Ok(())
 }
 
 #[post("/bank/transaction/hide", format = "json", data = "<transaction_ids>")]
-pub fn transaction_hide(transaction_ids: Json<TransactionIds>) {
+pub async fn transaction_hide(
+    transaction_ids: Json<TransactionIds>,
+    mut db: Connection<DbConn>,
+) -> Result<(), String> {
     let ids = &transaction_ids.ids;
 
-    info!("Received IDs to remove: {:?}", ids);
+    update_transaction_with_hidden(ids.clone(), true, &mut db).await?;
+
+    Ok(())
+}
+
+#[post("/bank/transaction/show", format = "json", data = "<transaction_ids>")]
+pub async fn transaction_show(
+    transaction_ids: Json<TransactionIds>,
+    mut db: Connection<DbConn>,
+) -> Result<(), String> {
+    let ids = &transaction_ids.ids;
+
+    update_transaction_with_hidden(ids.clone(), false, &mut db).await?;
+
+    Ok(())
 }

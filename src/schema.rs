@@ -54,6 +54,7 @@ diesel::table! {
         counterparty -> Varchar,
         amount -> Float8,
         bank_balance_after -> Float8,
+        is_hidden -> Bool,
     }
 }
 

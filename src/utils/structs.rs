@@ -57,6 +57,7 @@ pub struct Transaction {
     pub counterparty: String,
     pub amount: f64,
     pub bank_balance_after: f64,
+    pub is_hidden: bool,
 }
 
 #[derive(Debug)]
