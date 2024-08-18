@@ -1,4 +1,4 @@
-<script id="transaction-data" type="application/json">
+<script id="transactions-data" type="application/json">
     {{ transactions | safe }}
 </script>
 <body>
@@ -14,7 +14,7 @@
                 <button style="width: auto">Hide transaction</button>
                 <button style="width: auto">Show hidden transactions</button>
             </div> 
-            <div id="transaction-container">
+            <div id="display-container">
                 <!-- Transactions will be dynamically inserted here -->
             </div>
         </div>

@@ -9,7 +9,7 @@ use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_transactions_with_contract, get_user_id};
 
-#[get("/bank/trasaction")]
+#[get("/bank/transaction")]
 pub async fn bank_trasaction(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
@@ -28,16 +28,22 @@ pub async fn bank_trasaction(
 
     let current_bank = current_bank.unwrap();
 
-    let trasactions_string = get_transactions_with_contract(current_bank.id, db).await;
+    let result = get_transactions_with_contract(current_bank.id, db).await;
 
-    if let Err(err) = trasactions_string {
-        return Ok(Template::render("bank_trasaction", json!({ "error": err })));
-    }
+    let error = if result.is_err() {
+        Some(result.clone().err().unwrap())
+    } else {
+        None
+    };
 
-    let trasactions_string = trasactions_string.unwrap();
+    let transaction_string = if result.is_ok() {
+        result.unwrap()
+    } else {
+        String::new()
+    };
 
     Ok(Template::render(
-        "bank_trasaction",
-        json!({"trasactions": trasactions_string}),
+        "bank_transaction",
+        json!({"transactions": transaction_string, "error": error}),
     ))
 }

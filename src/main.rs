@@ -14,6 +14,7 @@ use database::db_connector::DbConn;
 use routes::add_bank::{add_bank, add_bank_form};
 use routes::bank::bank_view;
 use routes::bank_contract::bank_contract;
+use routes::bank_transaction::bank_trasaction;
 use routes::base::{base, dashboard, logout, settings};
 use routes::error_page::error_page;
 use routes::error_page::not_found;
@@ -65,7 +66,9 @@ fn rocket() -> _ {
                 // Update date range
                 update_date_range,
                 // Bank Contract
-                bank_contract
+                bank_contract,
+                // Bank Transaction
+                bank_trasaction
             ],
         )
         .mount("/static", FileServer::from(relative!("static")).rank(11))

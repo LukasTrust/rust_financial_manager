@@ -3,6 +3,7 @@ import { initializeFormHandling } from './formHandler.js';
 import { initializeChartAndDatePicker } from './chartManager.js';
 import { formatAndColorNumbers } from './performanceUpdater.js';
 import { loadContracts } from './contractManager.js';
+import { loadTransactions } from './transactionManager.js';
 
 // Function to fetch content from a URL
 async function fetchContent(url) {
@@ -100,7 +101,7 @@ function handleSpecialPages(url) {
     } else if (url === '/bank/contract') {
         loadContracts();
     } else if (url === '/bank/transaction') {
-
+        loadTransactions();
     }
     else if (url === '/add-bank') {
         log('Reinitializing form handling for add bank page:', 'loadContent');

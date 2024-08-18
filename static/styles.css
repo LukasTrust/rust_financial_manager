@@ -208,8 +208,8 @@ label {
 
 /* Style for the input field */
 .date-input {
-    width: 250px;
-    padding: 10px;
+    width: auto;
+    padding: 5px;
     font-size: 16px;
     color: #555;
     border: 2px solid #ccc;
@@ -266,7 +266,6 @@ label {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    min-height: 222px;
     transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease;
 }
 
@@ -372,7 +371,72 @@ label {
 .display-checkbox:checked {
     background-color: #007BFF;
     border-color: #007BFF;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M20.285 4.711a1 1 0 00-1.41 0l-10.182 10.18-4.178-4.178a1 1 0 00-1.414 1.414l4.888 4.889a.996.996 0 001.414 0l10.888-10.89a1 1 0 000-1.415z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: center;
+}
+
+.transaction-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    padding-right: 20px;
+}
+
+.sort-icon {
+    right: 5px;
+    cursor: pointer;
+}
+
+.sort-icon.asc::after {
+    content: "↑";
+}
+
+.sort-icon:not(.asc)::after {
+    content: "↓";
+}
+
+.transaction-table th,
+.transaction-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.transaction-table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+}
+
+#transaction-search,
+#group-by,
+#start-date,
+#end-date {
+    margin-bottom: 10px;
+    padding: 5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.transaction-checkbox {
+    margin-right: 10px;
+}
+
+#transaction-search,
+#group-by,
+#start-date,
+#end-date {
+    margin-bottom: 10px;
+    padding: 5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.transaction-checkbox {
+    margin-right: 10px;
+}
+
+.transaction-row.selected {
+    background-color: #52a5ff;
+    border-color: #007BFF;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
