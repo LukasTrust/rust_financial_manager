@@ -38,9 +38,9 @@ function generateContractHTML(contractWithHistory, index) {
     const dateValue = contract.end_date ? formatDate(contract.end_date) : formatDate(last_payment_date);
 
     return `
-        <div class="contract">
-            <input type="checkbox" class="contract-checkbox hidden" id="contract-checkbox-${index}">
-            <label for="contract-checkbox-${index}">
+        <div class="display">
+            <input type="checkbox" class="display-checkbox hidden" id="display-checkbox-${index}">
+            <label for="display-checkbox-${index}">
                 <h3>${contract.name}</h3>
             </label>
             <p>Current amount: <span class="${currentAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
@@ -67,7 +67,7 @@ export function loadContracts() {
         const contractsData = JSON.parse(contractsDataScript.textContent);
         if (!Array.isArray(contractsData)) throw new Error('Unexpected data format.');
 
-        const container = document.getElementById('contracts-container');
+        const container = document.getElementById('display-container');
         container.innerHTML = '';
 
         if (contractsData.length === 0) {
@@ -79,9 +79,9 @@ export function loadContracts() {
         }
 
         const openContractsWrapper = document.createElement('div');
-        openContractsWrapper.classList.add('contracts-container');
+        openContractsWrapper.classList.add('display-container');
         const closedContractsWrapper = document.createElement('div');
-        closedContractsWrapper.classList.add('contracts-container');
+        closedContractsWrapper.classList.add('display-container');
 
         contractsData.forEach((contractWithHistory, index) => {
             const contractHTML = generateContractHTML(contractWithHistory, index);
@@ -115,9 +115,9 @@ export function loadContracts() {
             }
 
             // Handle contract box clicks
-            const contractElement = target.closest('.contract');
+            const contractElement = target.closest('.display');
             if (contractElement) {
-                const checkbox = contractElement.querySelector('.contract-checkbox');
+                const checkbox = contractElement.querySelector('.display-checkbox');
                 if (checkbox) {
                     checkbox.checked = !checkbox.checked;
                     contractElement.classList.toggle('selected', checkbox.checked);

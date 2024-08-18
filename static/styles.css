@@ -237,7 +237,7 @@ label {
     display: none;
 }
 
-.contracts-container {
+.display-container {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
@@ -256,7 +256,7 @@ label {
     /* Includes padding and border in the element’s total width and height */
 }
 
-.contract {
+.display {
     border: 1px solid #ddd;
     border-radius: 8px;
     padding: 15px;
@@ -270,27 +270,26 @@ label {
     transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.1s ease;
 }
 
-.contract:hover {
+.display:hover {
     background-color: #f1f1f1;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     transform: translateY(-2px);
     cursor: pointer;
 }
 
-.contract.selected {
+.display.selected {
     background-color: #e9f5ff !important;
     border-color: #007BFF !important;
     box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3) !important;
 }
 
-.contract h3,
-.contract p,
-.contract button {
+.display h3,
+.display p {
     margin: 0 0 10px 0;
     /* Adds space between elements */
 }
 
-.contract button {
+.display button {
     margin-top: auto;
     background-color: #007BFF;
     color: white;
@@ -301,40 +300,19 @@ label {
     transition: background-color 0.3s ease;
 }
 
-.contract button:hover {
+.display button:hover {
     background-color: #0056b3;
 }
 
-.contract button:focus {
+.display button:focus {
     outline: none;
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5);
 }
 
-.contract-history {
+.display-history {
     margin-top: 10px;
     border-top: 1px solid #ddd;
     padding-top: 10px;
-}
-
-.bank-section {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-    .contract {
-        width: calc(50% - 20px);
-        /* Two items per row on smaller screens */
-    }
-}
-
-@media (max-width: 480px) {
-    .contract {
-        width: 100%;
-        /* One item per row on very small screens */
-    }
 }
 
 .bank-button-container {
@@ -378,7 +356,7 @@ label {
     /* Remove margin */
 }
 
-.contract-checkbox {
+.display-checkbox {
     appearance: none;
     width: 20px;
     height: 20px;
@@ -391,7 +369,7 @@ label {
     /* Space between checkbox and contract name */
 }
 
-.contract-checkbox:checked {
+.display-checkbox:checked {
     background-color: #007BFF;
     border-color: #007BFF;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M20.285 4.711a1 1 0 00-1.41 0l-10.182 10.18-4.178-4.178a1 1 0 00-1.414 1.414l4.888 4.889a.996.996 0 001.414 0l10.888-10.89a1 1 0 000-1.415z'/%3E%3C/svg%3E");

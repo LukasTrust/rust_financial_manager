@@ -14,7 +14,7 @@
                 <button style="width: auto">Delete selected contracts</button>
                 <button style="width: auto">Scan for new contracts / contract changes</button>
             </div> 
-            <div id="contracts-container">
+            <div id="display-container">
                 <!-- Contracts will be dynamically inserted here -->
             </div>
         </div>
