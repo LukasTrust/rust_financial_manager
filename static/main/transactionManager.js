@@ -4,6 +4,7 @@ let filteredData = [];
 let transactionsData = [];
 let hidden_transactions = [];
 let sortConfig = { key: null, ascending: true };
+let dateRange = { start: null, end: null };
 
 const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -23,11 +24,13 @@ const generateTransactionHTML = ({ transaction, contract }, index) => {
         hidden_transactions.push(transaction.id);
     }
 
+    const rowClass = transaction.is_hidden ? 'hidden_transaction' : '';
+
     if (contract) {
         const contractAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
         contractRow = `
             <tr class="contract-row">
-                <td colspan="5">
+                <td colspan="4">
                     <div class="contract-details">
                         <p>Contract Name: ${contract.name}</p>
                         <p>Contract Current Amount: <span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
@@ -40,7 +43,7 @@ const generateTransactionHTML = ({ transaction, contract }, index) => {
     }
 
     return `
-        <tr class="transaction-row" data-index="${index}" data-id="${transaction.id}">
+        <tr class="transaction-row ${rowClass}" data-index="${index}" data-id="${transaction.id}">
             <td>${transaction.counterparty}</td>
             <td class="${amountClass}">$${transaction.amount.toFixed(2)}</td>
             <td class="${balanceClass}">$${transaction.bank_balance_after.toFixed(2)}</td>
@@ -54,8 +57,38 @@ const setupEventListeners = () => {
     document.getElementById('transaction-search').addEventListener('input', filterTransactions);
     document.getElementById('contract-filter').addEventListener('change', filterTransactions);
     document.getElementById('no-contract-filter').addEventListener('change', filterTransactions);
+
     document.querySelectorAll('.sortable').forEach(header => {
         header.addEventListener('click', () => sortColumn(header.dataset.key));
+    });
+
+    document.getElementById('remove-transaction').addEventListener('click', () => {
+        handleHideOrRemove('remove');
+    });
+
+    document.getElementById('hide-transaction').addEventListener('click', () => {
+        handleHideOrRemove('hide');
+    });
+
+    document.getElementById('transaction-table-body').innerHTML = filteredData
+        .map((item, index) => generateTransactionHTML(item, index, index + 1))
+        .join('');
+
+    document.querySelectorAll('.transaction-row').forEach(row => {
+        row.addEventListener('click', (event) => handleRowSelection(event, row));
+    });
+
+    document.getElementById('toggle-hidden-transaction').addEventListener('click', showHiddenTransactions);
+
+    flatpickr("#date-range", {
+        mode: "range",  // Enable range selection mode
+        dateFormat: "d-m-Y",  // Format the date as Year-Month-Day
+        onChange: (selectedDates) => {
+            // Set start and end dates when a range is selected
+            dateRange.start = selectedDates[0];
+            dateRange.end = selectedDates[1];
+            filterTransactions();  // Apply filter when dates are selected
+        }
     });
 };
 
@@ -71,7 +104,6 @@ export const loadTransactions = () => {
 
         filteredData = transactionsData;
 
-        // Populate contract filter dropdown
         const contractFilter = document.getElementById('contract-filter');
         const contractNames = [...new Set(transactionsData.map(t => t.contract?.name).filter(Boolean))];
         contractNames.forEach(name => {
@@ -81,25 +113,17 @@ export const loadTransactions = () => {
             contractFilter.appendChild(option);
         });
 
-        // Populate the table with all transactions at once
-        document.getElementById('transaction-table-body').innerHTML = filteredData
-            .map((item, index) => generateTransactionHTML(item, index, index + 1))
-            .join('');
+        const toggleButton = document.getElementById('toggle-hidden-transaction');
+        const slider = toggleButton.querySelector('.slider');
+
+        slider.classList.toggle('active');
+        slider.classList.toggle('active');
 
         setupEventListeners();
 
-        // Add event listeners for rows
-        document.querySelectorAll('.transaction-row').forEach(row => {
-            row.addEventListener('click', (event) => handleRowSelection(event, row));
-        });
-
-        document.getElementById('remove-transaction').addEventListener('click', () => {
-            handleButtonClick('remove');
-        });
-
-        document.getElementById('hide-transaction').addEventListener('click', () => {
-            handleButtonClick('hide');
-        });
+        sortConfig.ascending = true;
+        sortConfig.key = 'date';
+        sortColumn('date');
 
         log('Transactions loaded successfully.', 'loadTransactions');
     } catch (err) {
@@ -117,6 +141,10 @@ const sortColumn = (key) => {
         .join('');
 
     updateSortIcons();
+
+    document.querySelectorAll('.transaction-row').forEach(row => {
+        row.addEventListener('click', (event) => handleRowSelection(event, row));
+    });
 };
 
 const sortData = () => {
@@ -159,6 +187,11 @@ const filterTransactions = () => {
         const formattedDate = formatDate(date);
         const amountString = amount.toFixed(2);
 
+        // Check if transaction date is within the selected date range
+        const transactionDate = new Date(date);
+        const withinDateRange = (!dateRange.start || !dateRange.end) ||
+            (transactionDate >= dateRange.start && transactionDate <= dateRange.end);
+
         const matchesSearch = (
             counterparty.toLowerCase().includes(searchQuery) ||
             formattedDate.includes(searchQuery) ||
@@ -169,7 +202,7 @@ const filterTransactions = () => {
         const matchesContract = selectedContract ? contractName === selectedContract : true;
         const matchesNoContract = showNoContract ? !contract : true;
 
-        return matchesSearch && matchesContract && matchesNoContract;
+        return matchesSearch && matchesContract && matchesNoContract && withinDateRange;
     });
 
     sortData();
@@ -178,13 +211,12 @@ const filterTransactions = () => {
         .join('');
 };
 
-const handleButtonClick = (action) => {
+const handleHideOrRemove = (action) => {
     const selectedRows = document.querySelectorAll('.transaction-row.selected');
 
-    // Convert the dataset IDs to integers
     const selectedIds = Array.from(selectedRows).map(row => parseInt(row.dataset.id));
 
-    fetch(`bank/transaction/${action}`, {
+    fetch(`/bank/transaction/${action}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -193,7 +225,6 @@ const handleButtonClick = (action) => {
     })
         .then(result => {
             if (result.ok) {
-
                 selectedRows.forEach(row => {
                     const transactionIndex = filteredData.findIndex(item => item.transaction.id === parseInt(row.dataset.id));
                     if (transactionIndex !== -1) {
@@ -203,21 +234,19 @@ const handleButtonClick = (action) => {
                         row.classList.remove('selected');
 
                         if (action === 'hide') {
-                            document.getElementById('success').innerHTML = `Transactions have been hidden action was successful`;
+                            row.classList.add('hidden');
 
-                            // Mark the transaction as hidden and hide the row
+                            document.getElementById('success').innerHTML = 'Transactions have been hidden successfully.';
+
                             filteredData[transactionIndex].transaction.is_hidden = true;
-                            row.style.display = 'none';
 
-                            // Hide the associated contract row if it exists
                             const contractRow = row.nextElementSibling;
                             if (contractRow && contractRow.classList.contains('contract-row')) {
                                 contractRow.style.display = 'none';
                             }
                         } else if (action === 'remove') {
-                            document.getElementById('success').innerHTML = `Contracts of the selected transactions have been removed`;
+                            document.getElementById('success').innerHTML = 'Selected transactions have been removed.';
 
-                            // Remove the transaction and its contract row from data and DOM
                             filteredData.splice(transactionIndex, 1);
 
                             const contractRow = row.nextElementSibling;
@@ -228,11 +257,31 @@ const handleButtonClick = (action) => {
                     }
                 });
 
-            } else if (result.Err) {
-                document.getElementById('error').innerHTML = `Failed to ${action.replace('-', ' ')}: ${result.Err}`;
+            } else {
+                document.getElementById('error').innerHTML = `Failed to ${action.replace('-', ' ')}: ${result.statusText}`;
                 document.getElementById('error').style.display = 'block';
                 document.getElementById('success').style.display = 'none';
             }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(err => console.error('Error:', err));
+};
+
+const showHiddenTransactions = () => {
+    const toggleButton = document.getElementById('toggle-hidden-transaction');
+    const slider = toggleButton.querySelector('.slider');
+
+    console.log("Test");
+
+    slider.classList.toggle('active');
+
+    const state = slider.classList.contains('active');
+
+    const displayStyle = state ? 'table-row' : 'none';
+
+    hidden_transactions.forEach(id => {
+        const row = document.querySelector(`.transaction-row[data-id="${id}"]`);
+        if (row) {
+            row.style.display = displayStyle;
+        }
+    });
 };

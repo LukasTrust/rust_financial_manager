@@ -10,7 +10,7 @@ export function initializeChartAndDatePicker() {
     setTimeout(() => {
         flatpickr("#dateRange", {
             mode: "range",
-            dateFormat: "Y-m-d",
+            dateFormat: "d-m-Y",
             onChange: function (selectedDates) {
                 if (selectedDates.length === 2) {
                     const [startDate, endDate] = selectedDates.map(date => date.toISOString().split('T')[0]);

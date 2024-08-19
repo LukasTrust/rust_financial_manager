@@ -98,6 +98,7 @@ body {
     gap: 20px;
 }
 
+
 .centered-container {
     display: flex;
     flex-direction: column;
@@ -432,7 +433,62 @@ label {
     transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.hidden-transaction {
-    background-color: #c7c7c7;
+.hidden_transaction {
     display: none;
+    background-color: gray;
+}
+
+#toggle-hidden-transaction {
+    position: relative;
+    width: 100px;
+    height: 40px;
+    background-color: #f0f0f0;
+    /* Light background for a modern look */
+    border: 2px solid #bbb;
+    /* Slightly darker border */
+    border-radius: 30px;
+    /* More rounded corners for a softer appearance */
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    /* Subtle shadow for depth */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    /* Smooth background transition */
+}
+
+/* Slider inside the button */
+.slider {
+    position: absolute;
+    width: 50%;
+    height: 100%;
+    background-color: #4CAF50;
+    /* Brighter green for a fresh look */
+    border-radius: 30px;
+    transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1), background-color 0.3s ease;
+    /* Smooth easing for transform */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    /* Shadow for slider to enhance 3D effect */
+    margin-top: -10px;
+    margin-left: -10px;
+}
+
+/* State: Slider moved to the right */
+.slider.active {
+    transform: translateX(100%);
+}
+
+/* Button text */
+#toggle-hidden-transaction span {
+    position: relative;
+    z-index: 1;
+    font-family: 'Arial', sans-serif;
+    /* Modern font */
+    color: #333;
+    /* Darker text color for contrast */
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    /* Slight spacing for readability */
+    transition: color 0.3s ease;
+    /* Smooth text color transition */
 }
