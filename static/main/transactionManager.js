@@ -7,6 +7,7 @@ let isLoading = false;
 let filteredData = [];
 let transactionsData = [];
 let sortConfig = { key: null, ascending: true };
+let showHidden = false; // State for hidden transactions
 
 const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -20,34 +21,35 @@ const formatDate = (dateString) => {
 const generateTransactionHTML = ({ transaction, contract }, index, rowNumber) => {
     const amountClass = transaction.amount < 0 ? 'negative' : 'positive';
     const balanceClass = transaction.bank_balance_after < 0 ? 'negative' : 'positive';
+    const hiddenClass = transaction.is_hidden ? 'hidden-transaction' : '';
     let contractRow = '';
 
     if (contract) {
         const contractAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
         contractRow = `
-            <tr class="contract-row">
-                <td colspan="5">
-                    <div class="contract-details">
-                        <p>Contract Name: ${contract.name}</p>
-                        <p>Contract Current Amount: <span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
-                        <p>Months Between Payment: ${contract.months_between_payment}</p>
-                        <p>Contract End Date: ${contract.end_date ? formatDate(contract.end_date) : 'N/A'}</p>
-                    </div>
-                </td>
-            </tr>
-        `;
+                    <tr class="contract-row ${hiddenClass}">
+                        <td colspan="5">
+                            <div class="contract-details">
+                                <p>Contract Name: ${contract.name}</p>
+                                <p>Contract Current Amount: <span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
+                                <p>Months Between Payment: ${contract.months_between_payment}</p>
+                                <p>Contract End Date: ${contract.end_date ? formatDate(contract.end_date) : 'N/A'}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
     }
 
     return `
-        <tr class="transaction-row" data-index="${index}" data-id="${transaction.id}">
-            <td>${rowNumber}</td>
-            <td>${transaction.counterparty}</td>
-            <td class="${amountClass}">$${transaction.amount.toFixed(2)}</td>
-            <td class="${balanceClass}">$${transaction.bank_balance_after.toFixed(2)}</td>
-            <td>${formatDate(transaction.date)}</td>
-        </tr>
-        ${contractRow}
-    `;
+                <tr class="transaction-row ${hiddenClass}" data-index="${index}" data-id="${transaction.id}">
+                    <td>${rowNumber}</td>
+                    <td>${transaction.counterparty}</td>
+                    <td class="${amountClass}">$${transaction.amount.toFixed(2)}</td>
+                    <td class="${balanceClass}">$${transaction.bank_balance_after.toFixed(2)}</td>
+                    <td>${formatDate(transaction.date)}</td>
+                </tr>
+                ${contractRow}
+            `;
 };
 
 const setupEventListeners = () => {
@@ -57,6 +59,7 @@ const setupEventListeners = () => {
     document.querySelectorAll('.sortable').forEach(header => {
         header.addEventListener('click', () => sortColumn(header.dataset.key));
     });
+    document.getElementById('toggle-hidden-transaction').addEventListener('click', toggleHiddenTransactions);
 };
 
 export const loadTransactions = () => {
@@ -321,4 +324,16 @@ const handleButtonClick = (action) => {
             }
         })
         .catch(error => console.error('Error:', error));
+};
+
+const toggleHiddenTransactions = () => {
+    showHidden = !showHidden;
+    const button = document.getElementById('toggle-hidden-transaction');
+    const hiddenRows = document.querySelectorAll('.transaction-row.hidden-transaction, .contract-row.hidden-transaction');
+
+    hiddenRows.forEach(row => {
+        row.style.display = showHidden ? '' : 'none';
+    });
+
+    button.textContent = showHidden ? 'Hide hidden transactions' : 'Show hidden transactions';
 };

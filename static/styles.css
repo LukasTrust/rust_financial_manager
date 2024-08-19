@@ -431,3 +431,8 @@ label {
     border-color: #007BFF;
     transition: background-color 0.2s ease, border-color 0.2s ease;
 }
+
+.hidden-transaction {
+    background-color: #f0e68c;
+    color: #555;
+}

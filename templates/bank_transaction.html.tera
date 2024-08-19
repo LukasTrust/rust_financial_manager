@@ -17,7 +17,7 @@
             <div class="container-without-border-horizontally-header">
                 <button id="remove-transaction" style="width: auto">Remove transaction from contract</button>
                 <button id="hide-transaction" style="width: auto">Hide transaction</button>
-                <button style="width: auto">Show hidden transactions</button>
+                <button id="toggle-hidden-transaction" style="width: auto">Show hidden transactions</button>
             </div>
 
             <!-- Static header and table structure -->
