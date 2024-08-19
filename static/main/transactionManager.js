@@ -72,61 +72,28 @@ export const loadTransactions = () => {
         filteredData = transactionsData;
 
         const container = document.getElementById('display-container');
-        container.innerHTML = '';
 
-        if (transactionsData.length === 0) {
-            container.innerHTML = '<h3>Info: No transactions available.</h3>';
-            log('No transactions available.', 'loadTransactions');
-            return;
-        }
-
-        const headerContainer = document.createElement('div');
-        headerContainer.classList.add('container-without-border-horizontally');
-        container.appendChild(headerContainer);
-
-        headerContainer.innerHTML = `
-            <label for="date-range">Select date range:</label>
-            <input type="text" id="date-range" class="flatpickr">
-            <label for="contract-filter">Filter by Contract:</label>
-            <select style="max-width: 300px" id="contract-filter">
-                <option value="">All Contracts</option>
-                ${[...new Set(transactionsData.map(t => t.contract?.name).filter(Boolean))].map(name => `<option value="${name}">${name}</option>`).join('')}
-            </select>
-            <label>
-                <input type="checkbox" id="no-contract-filter"> Show only transactions without contracts
-            </label>
-            <input style="width: auto; height: 15px" type="text" id="transaction-search" placeholder="Search transactions...">
-        `;
-
-        flatpickr("#date-range", {
-            mode: "range",
-            dateFormat: "Y-m-d",
-            onChange: filterByDateRange,
+        // Populate contract filter dropdown
+        const contractFilter = document.getElementById('contract-filter');
+        const contractNames = [...new Set(transactionsData.map(t => t.contract?.name).filter(Boolean))];
+        contractNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            contractFilter.appendChild(option);
         });
 
-        container.insertAdjacentHTML('beforeend', `
-            <table class="transaction-table">
-                <thead>
-                    <tr>
-                        <th>Row</th>
-                        <th data-key="counterparty" class="sortable">Counterparty <span>↑</span></th>
-                        <th data-key="amount" class="sortable">Amount <span>↑</span></th>
-                        <th data-key="bank_balance_after" class="sortable">Bank Balance After <span>↑</span></th>
-                        <th data-key="date" class="sortable">Date <span>↑</span></th>
-                    </tr>
-                </thead>
-                <tbody id="transaction-table-body">
-                    ${renderVirtualizedRows(filteredData, 0, INITIAL_ROWS)}
-                </tbody>
-            </table>
-        `);
+        // Initially populate the table with the first set of transactions
+        document.getElementById('transaction-table-body').innerHTML = renderVirtualizedRows(filteredData, 0, INITIAL_ROWS);
 
         setupEventListeners();
 
+        // Add event listeners for rows
         document.querySelectorAll('.transaction-row').forEach(row => {
             row.addEventListener('click', (event) => handleRowSelection(event, row));
         });
 
+        // Scroll event to load more transactions
         const scrollContainer = document.querySelector('.scroll-container');
         const debounce = (func, delay) => {
             let timeout;
@@ -313,7 +280,6 @@ const handleButtonClick = (action) => {
     })
         .then(result => {
             if (result.ok) {
-
                 selectedRows.forEach(row => {
                     const transactionIndex = filteredData.findIndex(item => item.transaction.id === parseInt(row.dataset.id));
                     if (transactionIndex !== -1) {
@@ -323,12 +289,11 @@ const handleButtonClick = (action) => {
                         row.classList.remove('selected');
 
                         if (action === 'hide') {
-                            document.getElementById('success').innerHTML = `Transactions have been hidden action was successful`;
+                            document.getElementById('success').innerHTML = `Transactions have been hidden successfully`;
 
                             // Mark the transaction as hidden and hide the row
                             filteredData[transactionIndex].transaction.is_hidden = true;
                             row.style.display = 'none';
-
 
                             // Hide the associated contract row if it exists
                             const contractRow = row.nextElementSibling;
@@ -336,7 +301,7 @@ const handleButtonClick = (action) => {
                                 contractRow.style.display = 'none';
                             }
                         } else if (action === 'remove') {
-                            document.getElementById('success').innerHTML = `Contracts of the selected transactions have been removed`;
+                            document.getElementById('success').innerHTML = `Selected transactions have been removed successfully`;
 
                             // Remove the transaction and its contract row from data and DOM
                             filteredData.splice(transactionIndex, 1);
