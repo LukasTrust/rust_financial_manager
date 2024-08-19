@@ -1,13 +1,9 @@
 import { log, error } from './logger.js';
 
-let virtualizedStartIndex = 0;
-const PAGE_SIZE = 30;
-const INITIAL_ROWS = 30;
-let isLoading = false;
 let filteredData = [];
 let transactionsData = [];
+let hidden_transactions = [];
 let sortConfig = { key: null, ascending: true };
-let showHidden = false; // State for hidden transactions
 
 const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -18,38 +14,40 @@ const formatDate = (dateString) => {
     return `${day}.${month}.${year}`;
 };
 
-const generateTransactionHTML = ({ transaction, contract }, index, rowNumber) => {
+const generateTransactionHTML = ({ transaction, contract }, index) => {
     const amountClass = transaction.amount < 0 ? 'negative' : 'positive';
     const balanceClass = transaction.bank_balance_after < 0 ? 'negative' : 'positive';
-    const hiddenClass = transaction.is_hidden ? 'hidden-transaction' : '';
     let contractRow = '';
+
+    if (transaction.is_hidden) {
+        hidden_transactions.push(transaction.id);
+    }
 
     if (contract) {
         const contractAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
         contractRow = `
-                    <tr class="contract-row ${hiddenClass}">
-                        <td colspan="5">
-                            <div class="contract-details">
-                                <p>Contract Name: ${contract.name}</p>
-                                <p>Contract Current Amount: <span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
-                                <p>Months Between Payment: ${contract.months_between_payment}</p>
-                                <p>Contract End Date: ${contract.end_date ? formatDate(contract.end_date) : 'N/A'}</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+            <tr class="contract-row">
+                <td colspan="5">
+                    <div class="contract-details">
+                        <p>Contract Name: ${contract.name}</p>
+                        <p>Contract Current Amount: <span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
+                        <p>Months Between Payment: ${contract.months_between_payment}</p>
+                        <p>Contract End Date: ${contract.end_date ? formatDate(contract.end_date) : 'N/A'}</p>
+                    </div>
+                </td>
+            </tr>
+        `;
     }
 
     return `
-                <tr class="transaction-row ${hiddenClass}" data-index="${index}" data-id="${transaction.id}">
-                    <td>${rowNumber}</td>
-                    <td>${transaction.counterparty}</td>
-                    <td class="${amountClass}">$${transaction.amount.toFixed(2)}</td>
-                    <td class="${balanceClass}">$${transaction.bank_balance_after.toFixed(2)}</td>
-                    <td>${formatDate(transaction.date)}</td>
-                </tr>
-                ${contractRow}
-            `;
+        <tr class="transaction-row" data-index="${index}" data-id="${transaction.id}">
+            <td>${transaction.counterparty}</td>
+            <td class="${amountClass}">$${transaction.amount.toFixed(2)}</td>
+            <td class="${balanceClass}">$${transaction.bank_balance_after.toFixed(2)}</td>
+            <td>${formatDate(transaction.date)}</td>
+        </tr>
+        ${contractRow}
+    `;
 };
 
 const setupEventListeners = () => {
@@ -59,7 +57,6 @@ const setupEventListeners = () => {
     document.querySelectorAll('.sortable').forEach(header => {
         header.addEventListener('click', () => sortColumn(header.dataset.key));
     });
-    document.getElementById('toggle-hidden-transaction').addEventListener('click', toggleHiddenTransactions);
 };
 
 export const loadTransactions = () => {
@@ -74,8 +71,6 @@ export const loadTransactions = () => {
 
         filteredData = transactionsData;
 
-        const container = document.getElementById('display-container');
-
         // Populate contract filter dropdown
         const contractFilter = document.getElementById('contract-filter');
         const contractNames = [...new Set(transactionsData.map(t => t.contract?.name).filter(Boolean))];
@@ -86,8 +81,10 @@ export const loadTransactions = () => {
             contractFilter.appendChild(option);
         });
 
-        // Initially populate the table with the first set of transactions
-        document.getElementById('transaction-table-body').innerHTML = renderVirtualizedRows(filteredData, 0, INITIAL_ROWS);
+        // Populate the table with all transactions at once
+        document.getElementById('transaction-table-body').innerHTML = filteredData
+            .map((item, index) => generateTransactionHTML(item, index, index + 1))
+            .join('');
 
         setupEventListeners();
 
@@ -95,34 +92,6 @@ export const loadTransactions = () => {
         document.querySelectorAll('.transaction-row').forEach(row => {
             row.addEventListener('click', (event) => handleRowSelection(event, row));
         });
-
-        // Scroll event to load more transactions
-        const scrollContainer = document.querySelector('.scroll-container');
-        const debounce = (func, delay) => {
-            let timeout;
-            return (...args) => {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), delay);
-            };
-        };
-
-        scrollContainer.addEventListener('scroll', debounce(() => {
-            const { scrollHeight, scrollTop, clientHeight } = scrollContainer;
-
-            if (scrollTop + clientHeight >= scrollHeight - 10 && !isLoading) {
-                if (filteredData.length > virtualizedStartIndex + PAGE_SIZE) {
-                    isLoading = true;
-                    virtualizedStartIndex += PAGE_SIZE;
-                    loadMoreRows(filteredData);
-                }
-            } else if (scrollTop === 0 && !isLoading) {
-                if (virtualizedStartIndex > INITIAL_ROWS) {
-                    isLoading = true;
-                    virtualizedStartIndex = INITIAL_ROWS;
-                    refreshInitialRows(filteredData);
-                }
-            }
-        }, 100));
 
         document.getElementById('remove-transaction').addEventListener('click', () => {
             handleButtonClick('remove');
@@ -138,41 +107,41 @@ export const loadTransactions = () => {
     }
 };
 
-const renderVirtualizedRows = (transactions, startIndex, pageSize) => {
-    const rowsHTML = transactions.slice(startIndex, startIndex + pageSize)
-        .map((item, index) => generateTransactionHTML(item, startIndex + index, startIndex + index + 1))
+const sortColumn = (key) => {
+    sortConfig.ascending = (sortConfig.key === key) ? !sortConfig.ascending : true;
+    sortConfig.key = key;
+
+    sortData();
+    document.getElementById('transaction-table-body').innerHTML = filteredData
+        .map((item, index) => generateTransactionHTML(item, index, index + 1))
         .join('');
-    log(`Rendered rows from ${startIndex + 1} to ${startIndex + rowsHTML.split('</tr>').length - 1}`, 'renderVirtualizedRows');
-    return rowsHTML;
+
+    updateSortIcons();
 };
 
-const loadMoreRows = (transactions) => {
-    const tableBody = document.getElementById('transaction-table-body');
-    const newRowsHTML = renderVirtualizedRows(transactions, virtualizedStartIndex, PAGE_SIZE);
+const sortData = () => {
+    if (!sortConfig.key) return;
 
-    if (newRowsHTML.trim() === '') {
-        isLoading = false;
-        return;
-    }
+    filteredData.sort((a, b) => {
+        const aValue = a.transaction[sortConfig.key];
+        const bValue = b.transaction[sortConfig.key];
 
-    tableBody.insertAdjacentHTML('beforeend', newRowsHTML);
-    document.querySelectorAll('.transaction-row').forEach(row => {
-        row.addEventListener('click', (event) => handleRowSelection(event, row));
+        if (aValue < bValue) return sortConfig.ascending ? -1 : 1;
+        if (aValue > bValue) return sortConfig.ascending ? 1 : -1;
+        return 0;
     });
-    isLoading = false;
-    log(`Loaded ${PAGE_SIZE} rows, total rows now: ${tableBody.children.length}`, 'loadMoreRows');
 };
 
-const refreshInitialRows = (transactions) => {
-    const tableBody = document.getElementById('transaction-table-body');
-    const initialRowsHTML = renderVirtualizedRows(transactions, 0, INITIAL_ROWS);
+const updateSortIcons = () => {
+    document.querySelectorAll('.sortable').forEach(header => {
+        const icon = header.querySelector('span');
 
-    tableBody.innerHTML = initialRowsHTML;
-    document.querySelectorAll('.transaction-row').forEach(row => {
-        row.addEventListener('click', (event) => handleRowSelection(event, row));
+        if (header.dataset.key === sortConfig.key) {
+            icon.textContent = sortConfig.ascending ? '↑' : '↓';
+        } else {
+            icon.textContent = '↑';
+        }
     });
-    isLoading = false;
-    log(`Refreshed to initial ${INITIAL_ROWS} rows, total rows now: ${tableBody.children.length}`, 'refreshInitialRows');
 };
 
 const handleRowSelection = (event, row) => {
@@ -204,68 +173,9 @@ const filterTransactions = () => {
     });
 
     sortData();
-    virtualizedStartIndex = 0;
-    document.getElementById('transaction-table-body').innerHTML = '';
-    loadMoreRows(filteredData);
-};
-
-const sortColumn = (key) => {
-    if (key === 'rowNumber') return; // Exclude sorting for the "Row" column
-
-    sortConfig.ascending = (sortConfig.key === key) ? !sortConfig.ascending : true;
-    sortConfig.key = key;
-
-    sortData();
-    virtualizedStartIndex = 0;
-    document.getElementById('transaction-table-body').innerHTML = '';
-    loadMoreRows(filteredData);
-
-    updateSortIcons();
-};
-
-const sortData = () => {
-    if (!sortConfig.key) return;
-
-    filteredData.sort((a, b) => {
-        const aValue = sortConfig.key === 'rowNumber' ? filteredData.indexOf(a) : a.transaction[sortConfig.key];
-        const bValue = sortConfig.key === 'rowNumber' ? filteredData.indexOf(b) : b.transaction[sortConfig.key];
-
-        if (aValue < bValue) return sortConfig.ascending ? -1 : 1;
-        if (aValue > bValue) return sortConfig.ascending ? 1 : -1;
-        return 0;
-    });
-};
-
-const updateSortIcons = () => {
-    document.querySelectorAll('.sortable').forEach(header => {
-        const icon = header.querySelector('span');
-
-        if (header.dataset.key === sortConfig.key) {
-            icon.textContent = sortConfig.ascending ? '↑' : '↓';
-        } else {
-            icon.textContent = '↑'; // Default icon for unsorted columns
-        }
-    });
-};
-
-const filterByDateRange = () => {
-    const dateRange = document.getElementById('date-range').value.split(' to ');
-    const startDate = new Date(dateRange[0]);
-    const endDate = new Date(dateRange[1]);
-
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate > endDate) {
-        return;
-    }
-
-    filteredData = transactionsData.filter(({ transaction }) => {
-        const transactionDate = new Date(transaction.date);
-        return transactionDate >= startDate && transactionDate <= endDate;
-    });
-
-    sortData();
-    virtualizedStartIndex = 0;
-    document.getElementById('transaction-table-body').innerHTML = '';
-    loadMoreRows(filteredData);
+    document.getElementById('transaction-table-body').innerHTML = filteredData
+        .map((item, index) => generateTransactionHTML(item, index, index + 1))
+        .join('');
 };
 
 const handleButtonClick = (action) => {
@@ -283,6 +193,7 @@ const handleButtonClick = (action) => {
     })
         .then(result => {
             if (result.ok) {
+
                 selectedRows.forEach(row => {
                     const transactionIndex = filteredData.findIndex(item => item.transaction.id === parseInt(row.dataset.id));
                     if (transactionIndex !== -1) {
@@ -292,7 +203,7 @@ const handleButtonClick = (action) => {
                         row.classList.remove('selected');
 
                         if (action === 'hide') {
-                            document.getElementById('success').innerHTML = `Transactions have been hidden successfully`;
+                            document.getElementById('success').innerHTML = `Transactions have been hidden action was successful`;
 
                             // Mark the transaction as hidden and hide the row
                             filteredData[transactionIndex].transaction.is_hidden = true;
@@ -304,7 +215,7 @@ const handleButtonClick = (action) => {
                                 contractRow.style.display = 'none';
                             }
                         } else if (action === 'remove') {
-                            document.getElementById('success').innerHTML = `Selected transactions have been removed successfully`;
+                            document.getElementById('success').innerHTML = `Contracts of the selected transactions have been removed`;
 
                             // Remove the transaction and its contract row from data and DOM
                             filteredData.splice(transactionIndex, 1);
@@ -324,16 +235,4 @@ const handleButtonClick = (action) => {
             }
         })
         .catch(error => console.error('Error:', error));
-};
-
-const toggleHiddenTransactions = () => {
-    showHidden = !showHidden;
-    const button = document.getElementById('toggle-hidden-transaction');
-    const hiddenRows = document.querySelectorAll('.transaction-row.hidden-transaction, .contract-row.hidden-transaction');
-
-    hiddenRows.forEach(row => {
-        row.style.display = showHidden ? '' : 'none';
-    });
-
-    button.textContent = showHidden ? 'Hide hidden transactions' : 'Show hidden transactions';
 };

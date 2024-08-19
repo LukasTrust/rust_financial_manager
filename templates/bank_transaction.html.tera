@@ -38,7 +38,6 @@
             <table class="transaction-table">
                 <thead>
                     <tr>
-                        <th>Row</th>
                         <th data-key="counterparty" class="sortable">Counterparty <span>↑</span></th>
                         <th data-key="amount" class="sortable">Amount <span>↑</span></th>
                         <th data-key="bank_balance_after" class="sortable">Bank Balance After <span>↑</span></th>

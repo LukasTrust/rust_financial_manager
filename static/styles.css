@@ -433,6 +433,6 @@ label {
 }
 
 .hidden-transaction {
-    background-color: #f0e68c;
-    color: #555;
+    background-color: #c7c7c7;
+    display: none;
 }
