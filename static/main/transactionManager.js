@@ -3,8 +3,9 @@ import { log, error } from './logger.js';
 let filteredData = [];
 let transactionsData = [];
 let hidden_transactions = [];
-let sortConfig = { key: null, ascending: true };
+let sortConfig = { key: 'date', ascending: false };
 let dateRange = { start: null, end: null };
+let showNoContract = true;
 
 const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -56,7 +57,6 @@ const generateTransactionHTML = ({ transaction, contract }, index) => {
 const setupEventListeners = () => {
     document.getElementById('transaction-search').addEventListener('input', filterTransactions);
     document.getElementById('contract-filter').addEventListener('change', filterTransactions);
-    document.getElementById('no-contract-filter').addEventListener('change', filterTransactions);
 
     document.querySelectorAll('.sortable').forEach(header => {
         header.addEventListener('click', () => sortColumn(header.dataset.key));
@@ -74,9 +74,7 @@ const setupEventListeners = () => {
         .map((item, index) => generateTransactionHTML(item, index, index + 1))
         .join('');
 
-    document.querySelectorAll('.transaction-row').forEach(row => {
-        row.addEventListener('click', (event) => handleRowSelection(event, row));
-    });
+    document.getElementById('toggle-only-contract').addEventListener('click', showOnlyTransactionsWithContracts);
 
     document.getElementById('toggle-hidden-transaction').addEventListener('click', showHiddenTransactions);
 
@@ -113,17 +111,24 @@ export const loadTransactions = () => {
             contractFilter.appendChild(option);
         });
 
-        const toggleButton = document.getElementById('toggle-hidden-transaction');
-        const slider = toggleButton.querySelector('.slider');
+        let toggleButton = document.getElementById('toggle-hidden-transaction');
+        let slider = toggleButton.querySelector('.slider');
 
+        slider.classList.toggle('active');
+        slider.classList.toggle('active');
+
+        toggleButton = document.getElementById('toggle-only-contract');
+        slider = toggleButton.querySelector('.slider');
         slider.classList.toggle('active');
         slider.classList.toggle('active');
 
         setupEventListeners();
 
-        sortConfig.ascending = true;
-        sortConfig.key = 'date';
-        sortColumn('date');
+        filterTransactions();
+
+        document.querySelectorAll('.transaction-row').forEach(row => {
+            row.addEventListener('click', (event) => handleRowSelection(event, row));
+        });
 
         log('Transactions loaded successfully.', 'loadTransactions');
     } catch (err) {
@@ -179,7 +184,6 @@ const handleRowSelection = (event, row) => {
 const filterTransactions = () => {
     const searchQuery = document.getElementById('transaction-search').value.toLowerCase();
     const selectedContract = document.getElementById('contract-filter').value;
-    const showNoContract = document.getElementById('no-contract-filter').checked;
 
     filteredData = transactionsData.filter(({ transaction, contract }) => {
         const { counterparty, date, amount } = transaction;
@@ -240,6 +244,8 @@ const handleHideOrRemove = (action) => {
 
                             filteredData[transactionIndex].transaction.is_hidden = true;
 
+                            hidden_transactions.push(row.getAttribute('data-id'));
+
                             const contractRow = row.nextElementSibling;
                             if (contractRow && contractRow.classList.contains('contract-row')) {
                                 contractRow.style.display = 'none';
@@ -270,8 +276,6 @@ const showHiddenTransactions = () => {
     const toggleButton = document.getElementById('toggle-hidden-transaction');
     const slider = toggleButton.querySelector('.slider');
 
-    console.log("Test");
-
     slider.classList.toggle('active');
 
     const state = slider.classList.contains('active');
@@ -285,3 +289,14 @@ const showHiddenTransactions = () => {
         }
     });
 };
+
+const showOnlyTransactionsWithContracts = () => {
+    const toggleButton = document.getElementById('toggle-only-contract');
+    const slider = toggleButton.querySelector('.slider');
+
+    slider.classList.toggle('active');
+
+    showNoContract = !slider.classList.contains('active');
+
+    filterTransactions();
+}

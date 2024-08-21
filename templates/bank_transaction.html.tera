@@ -14,14 +14,27 @@
                 <p id="success" class="success"></p>
                 <p id="error" class="error"></p> 
             </div> 
-            <div class="container-without-border-horizontally-header">
+            <div class="container-without-border-horizontally">
                 <button id="remove-transaction" style="width: auto">Remove transaction from contract</button>
                 <button id="hide-transaction" style="width: auto">Hide transaction</button>
-                    <span id="show-text">Show hidden transactions</span>
-                    <button id="toggle-hidden-transaction">
+                <div class="container-without-border-horizontally-header" style="width: auto">
+                    <button id="toggle-hidden-transaction" class="toggle-button">
                         <div class="slider"></div>
                     </button>
-                    <span id="hide-text">Hide hidden transactions</span>
+                    <div class="container-without-border">
+                        <span>Show hidden transactions</span>
+                        <span>Hide hidden transactions</span>
+                    </div>
+                </div>
+                <div class="container-without-border-horizontally-header" style="width: auto">
+                    <button id="toggle-only-contract" class="toggle-button">
+                        <div class="slider"></div>
+                    </button>
+                    <div class="container-without-border">
+                        <span>Show only transactions without contracts</span>
+                        <span>Show all transactions</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Static header and table structure -->
@@ -33,9 +46,6 @@
                     <option value="">All Contracts</option>
                     <!-- Options will be dynamically populated by JS -->
                 </select>
-                <label>
-                    <input type="checkbox" id="no-contract-filter"> Show only transactions without contracts
-                </label>
                 <input style="width: auto; height: 15px" type="text" id="transaction-search" placeholder="Search transactions...">
             </div>
 
