@@ -36,7 +36,10 @@ pub async fn update_csv(
     if current_bank.is_none() {
         return Ok(Json(ResponseData {
             success: None,
-            error: Some("No bank selected".to_string()),
+            error: Some(
+                "Please select a bank before tying to updated the CSV converters".to_string(),
+            ),
+            header: Some("No bank selected".to_string()),
         }));
     }
 
@@ -47,7 +50,8 @@ pub async fn update_csv(
     if let Err(e) = csv_converter_of_bank {
         return Ok(Json(ResponseData {
             success: None,
-            error: Some(e),
+            error: Some("There was an internal error loading the CSV converter".to_string()),
+            header: Some(e),
         }));
     }
 
@@ -77,15 +81,21 @@ pub async fn update_csv(
                 Ok(_) => {
                     info!("CSV converter updated");
                     Ok(Json(ResponseData {
-                        success: Some("CSV converter updated".to_string()),
+                        success: Some(
+                            "The CSV converters have been successfully updated".to_string(),
+                        ),
                         error: None,
+                        header: Some("CSV converters updated".to_string()),
                     }))
                 }
                 Err(e) => {
                     error!("Error updating CSV converter: {}", e);
                     Ok(Json(ResponseData {
                         success: None,
-                        error: Some(e),
+                        error: Some(
+                            "There was an internal error updating the CSV converters".to_string(),
+                        ),
+                        header: Some(e),
                     }))
                 }
             }
@@ -103,17 +113,23 @@ pub async fn update_csv(
 
             match result {
                 Ok(_) => {
-                    info!("CSV converter added");
+                    info!("CSV converter updated");
                     Ok(Json(ResponseData {
-                        success: Some("CSV converter updated".to_string()),
-                        error: None,
+                        success: Some("The CSV converters were s".to_string()),
+                        error: Some(
+                            "The CSV converters have been successfully updated".to_string(),
+                        ),
+                        header: Some("CSV converters updated".to_string()),
                     }))
                 }
                 Err(e) => {
                     error!("Error adding CSV converter: {}", e);
                     Ok(Json(ResponseData {
                         success: None,
-                        error: Some(e),
+                        error: Some(
+                            "There was an internal error adding the CSV converters".to_string(),
+                        ),
+                        header: Some(e),
                     }))
                 }
             }

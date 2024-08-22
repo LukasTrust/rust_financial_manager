@@ -9,11 +9,7 @@
 <body>
     <div class="scroll-container">
         <div class="container-without-border">
-            <div class="container-without-border-horizontally-header">
-                <h1>Transactions</h1>
-                <p id="success" class="success"></p>
-                <p id="error" class="error"></p> 
-            </div> 
+            <h1>Transactions</h1>
             <div class="container-without-border-horizontally">
                 <button id="remove-transaction" style="width: auto">Remove transaction from contract</button>
                 <button id="hide-transaction" style="width: auto">Hide transaction</button>

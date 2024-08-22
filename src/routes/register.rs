@@ -36,24 +36,26 @@ pub async fn register_user(
 ) -> Json<ResponseData> {
     if !is_valid_email(&user_form.email) {
         return Json(ResponseData {
-            error: Some("Invalid email format. Please use a valid email.".into()),
             success: None,
+            error: Some("Invalid email format. Please use a valid email.".into()),
+            header: None,
         });
     }
 
     if !is_strong_password(&user_form.password) {
         return Json(ResponseData {
-            error: Some("Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character".into()),
             success: None,
-        });
+            error: Some("Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character".into()),
+            header: None,        });
     }
 
     let hashed_password = match hash(user_form.password.clone(), DEFAULT_COST) {
         Ok(h) => h,
         Err(_) => {
             return Json(ResponseData {
-                error: Some("Internal server error. Please try again later.".into()),
                 success: None,
+                error: Some("Internal server error. Please try again later.".into()),
+                header: None,
             });
         }
     };
@@ -74,11 +76,13 @@ pub async fn register_user(
         Ok(_) => Json(ResponseData {
             success: Some("Registration successful. Please log in.".into()),
             error: None,
+            header: None,
         }),
         Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
             Json(ResponseData {
                 error: Some("Email already exists. Please use a different email.".into()),
                 success: None,
+                header: None,
             })
         }
         Err(_) => {
@@ -86,6 +90,7 @@ pub async fn register_user(
             Json(ResponseData {
                 error: Some("Internal server error. Please try again later.".into()),
                 success: None,
+                header: None,
             })
         }
     }

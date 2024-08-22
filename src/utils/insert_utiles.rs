@@ -15,7 +15,7 @@ pub async fn insert_bank(new_bank: NewBank, db: &mut Connection<DbConn>) -> Resu
         .values(&new_bank)
         .get_result::<Bank>(db)
         .await
-        .map_err(|e| format!("Error inserting bank: {:?}", e))
+        .map_err(|_| "Error inserting bank".into())
 }
 
 pub async fn insert_csv_converter(
@@ -28,7 +28,7 @@ pub async fn insert_csv_converter(
         .values(&new_csv_converter)
         .get_result::<CSVConverter>(db)
         .await
-        .map_err(|e| format!("Error inserting csv converter: {:?}", e))
+        .map_err(|_| "Error inserting csv converter".into())
 }
 
 pub async fn insert_contract(
@@ -41,7 +41,7 @@ pub async fn insert_contract(
         .values(&new_contract)
         .get_result::<Contract>(db)
         .await
-        .map_err(|e| format!("Error inserting contract: {:?}", e))?;
+        .map_err(|_| "Error inserting contract")?;
 
     info!("Contract inserted: {:?}", new_contract);
 
@@ -58,7 +58,7 @@ pub async fn insert_contract_history(
         .values(&new_contract_history)
         .get_result::<ContractHistory>(db)
         .await
-        .map_err(|e| format!("Error inserting contract history: {:?}", e))?;
+        .map_err(|_| "Error inserting contract history")?;
 
     info!("Contract history inserted: {:?}", new_contract_history);
 

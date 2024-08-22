@@ -4,11 +4,7 @@
 <body>
     <div class="container-without-border-horizontally">
         <div class="container-without-border">
-            <div class="container-without-border-horizontally">
-                <h1>{{ bank.name }}</h1>
-                <p id="success" class="success"></p>
-                <p id="error" class="error"></p>
-            </div>
+            <h1>{{ bank.name }}</h1>
             <div id="balance_graph" class="balance_graph"></div>
             <h2>Transaction data:</h2>
             <div class="container-without-border-horizontally">

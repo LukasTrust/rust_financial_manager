@@ -56,6 +56,7 @@ pub async fn login_user(
                 Json(ResponseData {
                     success: Some("Login successful.".into()),
                     error: None,
+                    header: None,
                 })
             }
             Ok(false) => {
@@ -64,15 +65,17 @@ pub async fn login_user(
                     email_of_user
                 );
                 Json(ResponseData {
-                    error: Some("Login failed. Either the email or password was incorrect.".into()),
                     success: None,
+                    error: Some("Login failed. Either the email or password was incorrect.".into()),
+                    header: None,
                 })
             }
             Err(err) => {
                 error!("Login failed, bcrypt error: {}", err);
                 Json(ResponseData {
-                    error: Some("Internal server error. Please try again later.".into()),
                     success: None,
+                    error: Some("Login failed. Please input both email and passowrd".into()),
+                    header: None,
                 })
             }
         },
@@ -81,6 +84,7 @@ pub async fn login_user(
             Json(ResponseData {
                 error: Some("Login failed. Either the email or password was incorrect.".into()),
                 success: None,
+                header: None,
             })
         }
     }

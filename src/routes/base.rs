@@ -3,7 +3,7 @@ use log::info;
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
 use rocket::serde::json::json;
-use rocket::{get, post, State};
+use rocket::{get, State};
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 use rocket_dyn_templates::Template;
 
@@ -116,9 +116,9 @@ pub async fn settings(
 
 /// Display the login page.
 /// Remove the user_id cookie to log the user out.
-#[post("/logout")]
-pub fn logout(cookies: &CookieJar<'_>) -> Redirect {
+#[get("/logout")]
+pub fn logout(cookies: &CookieJar<'_>) -> Template {
     info!("User logged out.");
     cookies.remove(Cookie::build("user_id"));
-    Redirect::to("/")
+    Template::render("/", json!({}))
 }

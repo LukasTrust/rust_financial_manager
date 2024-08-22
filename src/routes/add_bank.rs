@@ -51,18 +51,26 @@ pub async fn add_bank_form(
                     let banks = load_banks(cookie_user_id, &mut db).await;
 
                     if let Err(e) = banks {
-                        return Ok(Json(json!({ "error": e })));
+                        return Ok(Json(json!({ "error": e, "header": "Error loading banks" })));
                     }
 
                     let banks = banks.unwrap();
 
                     return Ok(Json(
-                        json!({ "banks": banks, "success": format!("Bank {} added", new_bank.name) }),
+                        json!({ "banks": banks, "success": format!("Bank {} added", new_bank.name), "header": format!("New bank '{}' added", new_bank.name) }),
                     ));
                 }
-                Err(e) => return Ok(Json(json!({ "error": e }))),
+                Err(e) => {
+                    return Ok(Json(
+                        json!({ "error": e, "header": format!("Error bank '{}' already exsists", new_bank.name) }),
+                    ))
+                }
             }
         }
-        Err(e) => return Ok(Json(json!({ "error": e }))),
+        Err(e) => {
+            return Ok(Json(
+                json!({ "error": e, "header": format!("New bank '{}' added", new_bank.name) }),
+            ))
+        }
     };
 }

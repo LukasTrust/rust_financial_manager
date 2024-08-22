@@ -13,12 +13,12 @@
         <div class="full-page-container">
             <div class="sidebar-left">
                 <h2>Rust Financial Manager</h2>
-                <button onclick="loadContent('/dashboard')">Dashboard</button>
-                <button onclick="loadContent('/add-bank')">Add new bank</button>
+                <button url="/dashboard">Dashboard</button>
+                <button url="/add-bank">Add new bank</button>
                 <div id="banks">
                     {% for bank in banks %}
                         <div class="bank-button-container" data-bank-id="{{ bank.id }}">
-                            <button class="bank-button" onclick="loadContent('/bank/{{ bank.id }}')" style="width: 100%">
+                            <button class="bank-button" url="/bank/{{ bank.id }}" style="width: 100%">
                                 {{ bank.name }}
                             </button>
                         <div class="bank-sub-buttons" style="display: none;">
@@ -33,13 +33,11 @@
                 <p>Loading...</p>
             </div>
             <div class="sidebar-right">
-                <button onclick="loadContent('/settings')">Settings</button>
-                <form id="logout-form" action="/logout" method="post">
-                    <button type="submit">Logout</button>
-                </form>
+                <button url="/settings">Settings</button>
+                <button url="/logout">Logout</button>
             </div>
         </div>
         <!-- Include JavaScript modules -->
-        <script type="module" src="/static/main/main.js"></script>
+        <script type="module" src="/static/new_main/main.js"></script>
     </body>
 </html>

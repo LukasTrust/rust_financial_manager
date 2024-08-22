@@ -492,3 +492,68 @@ label {
     pointer-events: none;
     /* Ensures text doesn't interfere with interaction */
 }
+
+/* Backdrop to gray out the page when the alert is active */
+.alert-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    /* Slightly transparent gray */
+    z-index: 999;
+    /* Below the alert but above the rest of the content */
+    pointer-events: none;
+    /* Prevent interactions with the page */
+}
+
+/* Common alert styles */
+.alert {
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #fff;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    width: 80%;
+    max-width: 400px;
+}
+
+/* Error alert */
+.alert-error {
+    background-color: #e57373;
+    /* Softer red */
+    border-left: 6px solid #d32f2f;
+    /* Slightly darker red for contrast */
+}
+
+/* Info alert */
+.alert-info {
+    background-color: #64b5f6;
+    /* Softer blue */
+    border-left: 6px solid #1976d2;
+    /* Slightly darker blue for contrast */
+}
+
+/* Success alert */
+.alert-success {
+    background-color: #81c784;
+    /* Softer green */
+    border-left: 6px solid #388e3c;
+    /* Slightly darker green for contrast */
+}
+
+/* Icon styles */
+.alert-icon {
+    margin-right: 10px;
+    font-size: 20px;
+}

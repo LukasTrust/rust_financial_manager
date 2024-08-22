@@ -107,6 +107,7 @@ impl Default for PerformanceData {
 pub struct ResponseData {
     pub success: Option<String>,
     pub error: Option<String>,
+    pub header: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

@@ -16,7 +16,7 @@ pub async fn update_transaction_with_contract_id(
         .set(transactions::contract_id.eq(Some(contract_id)))
         .execute(db)
         .await
-        .map_err(|e| format!("Error updating transaction: {}", e))?;
+        .map_err(|_| "Error updating transaction")?;
 
     info!(
         "Transaction ID {} updated with contract ID {}.",
@@ -35,7 +35,7 @@ pub async fn update_transaction_remove_contract_id(
         .set(contract_id.eq(None::<i32>))
         .execute(db)
         .await
-        .map_err(|e| format!("Error updating transactions: {}", e))?;
+        .map_err(|_| "Error updating transactions")?;
 
     info!(
         "Transaction IDs {:?} updated with contract ID None.",
@@ -56,7 +56,7 @@ pub async fn update_transaction_with_hidden(
         .set(is_hidden.eq(is_hidden_for_updating))
         .execute(db)
         .await
-        .map_err(|e| format!("Error updating transactions: {}", e))?;
+        .map_err(|_| "Error updating transactions")?;
 
     info!(
         "Transaction IDs {:?} updated with hidden {}.",
@@ -77,7 +77,7 @@ pub async fn update_contract_with_new_amount(
         .set(current_amount.eq(new_amount))
         .execute(db)
         .await
-        .map_err(|e| format!("Error updating contract: {}", e))?;
+        .map_err(|_| "Error updating contract")?;
 
     info!(
         "Contract ID {} updated with new amount {}.",
@@ -98,7 +98,7 @@ pub async fn update_contract_with_end_date(
         .set(end_date.eq(end_date_for_update))
         .execute(db)
         .await
-        .map_err(|e| format!("Error updating contract: {}", e))?;
+        .map_err(|_| "Error updating contract")?;
 
     Ok(())
 }
@@ -118,7 +118,7 @@ pub async fn update_csv_converter(
         ))
         .execute(db)
         .await
-        .map_err(|e| format!("Error updating CSV converter: {}", e))?;
+        .map_err(|_| "Error updating CSV converter")?;
 
     info!("CSV converter updated: {:?}", csv_converter);
 

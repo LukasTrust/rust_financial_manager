@@ -2,14 +2,10 @@ use ::diesel::ExpressionMethods;
 use diesel::BoolExpressionMethods;
 use diesel::QueryDsl;
 use log::{error, info};
-use rocket::response::Redirect;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
 use crate::database::db_connector::DbConn;
-use crate::{
-    database::models::{CSVConverter, Contract, ContractHistory},
-    routes::error_page::show_error_page,
-};
+use crate::database::models::{CSVConverter, Contract, ContractHistory};
 
 use super::structs::{Bank, Transaction};
 
@@ -61,7 +57,7 @@ pub async fn load_banks(
         .filter(user_id.eq(cookie_user_id))
         .load::<Bank>(db)
         .await
-        .map_err(|e| format!("Error loading banks: {}", e))?;
+        .map_err(|_| "Error loading banks")?;
 
     info!(
         "Banks count for user {}: {}",
@@ -87,7 +83,7 @@ pub async fn load_transactions_of_bank(
         .filter(bank_id.eq(bank_id_for_loading))
         .load::<Transaction>(db)
         .await
-        .map_err(|e| format!("Error loading transactions: {}", e))?;
+        .map_err(|_| "Error loading transactions")?;
 
     info!(
         "Transactions count for bank {}: {}",
@@ -133,7 +129,7 @@ pub async fn load_transactions_of_bank_without_contract(
         .filter(bank_id.eq(bank_id_for_loading).and(contract_id.is_null()))
         .load::<Transaction>(db)
         .await
-        .map_err(|e| format!("Error loading transactions: {}", e))?;
+        .map_err(|_| "Error loading transactions")?;
 
     info!(
         "Transactions count for bank without a contract {}: {}",
@@ -154,7 +150,7 @@ pub async fn load_transactions_of_contract(
         .filter(contract_id.eq(contract_id_for_loading))
         .load::<Transaction>(db)
         .await
-        .map_err(|e| format!("Error loading transactions: {}", e))?;
+        .map_err(|_| "Error loading transactions")?;
 
     info!(
         "Transactions count for contract {}: {}",
@@ -204,7 +200,7 @@ pub async fn load_contracts_of_bank(
         .filter(bank_id.eq(bank_id_for_loading))
         .load::<Contract>(db)
         .await
-        .map_err(|e| format!("Error loading contracts of bank: {}", e))?;
+        .map_err(|_| "Error loading contracts of bank")?;
 
     info!(
         "Contracts count for bank {}: {}",
@@ -226,7 +222,7 @@ pub async fn load_contracts_of_bank_without_end_date(
         .filter(bank_id.eq(bank_id_for_loading).and(end_date.is_null()))
         .load::<Contract>(db)
         .await
-        .map_err(|e| format!("Error loading contracts of bank: {}", e))?;
+        .map_err(|_| "Error loading contracts of bank")?;
 
     info!(
         "Contracts count for bank without end date {}: {}",
@@ -264,7 +260,7 @@ pub async fn load_contract_from_id(
 pub async fn load_contract_history(
     contract_id_for_loading: i32,
     db: &mut Connection<DbConn>,
-) -> Result<Vec<ContractHistory>, Redirect> {
+) -> Result<Vec<ContractHistory>, String> {
     use crate::schema::contract_history as contract_history_without_dsl;
     use crate::schema::contract_history::dsl::*;
 
@@ -272,12 +268,7 @@ pub async fn load_contract_history(
         .filter(contract_id.eq(contract_id_for_loading))
         .load::<ContractHistory>(db)
         .await
-        .map_err(|_| {
-            show_error_page(
-                "Error loading contract history!".to_string(),
-                "".to_string(),
-            )
-        })?;
+        .map_err(|_| "Error loading contract history!".to_string())?;
 
     info!(
         "Contract history count for contract {}: {}",

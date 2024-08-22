@@ -1,11 +1,7 @@
 <body>
 
 <div class="container-without-border">
-    <div class="container-without-border-horizontally">
 <h1>Add Bank</h1>
-    <p id="error" class="error"></p>
-    <p id="success" class="success"></p>
-    </div>
 <form id="add_bankForm" action="/add-bank" method="post">
     <div class="form-group">
         <label for="name">Name</label>
