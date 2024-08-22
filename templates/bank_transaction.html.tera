@@ -18,8 +18,8 @@
                         <div class="slider"></div>
                     </button>
                     <div class="container-without-border">
-                        <span>Show hidden transactions</span>
                         <span>Hide hidden transactions</span>
+                        <span>Show hidden transactions</span>
                     </div>
                 </div>
                 <div class="container-without-border-horizontally-header" style="width: auto">

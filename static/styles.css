@@ -406,10 +406,6 @@ label {
     box-sizing: border-box;
 }
 
-.transaction-checkbox {
-    margin-right: 10px;
-}
-
 #transaction-search,
 #group-by,
 #start-date,
@@ -420,10 +416,6 @@ label {
     box-sizing: border-box;
 }
 
-.transaction-checkbox {
-    margin-right: 10px;
-}
-
 .transaction-row.selected {
     background-color: #52a5ff;
     border-color: #007BFF;
@@ -432,7 +424,13 @@ label {
 
 .hidden_transaction {
     display: none;
-    background-color: gray;
+    /* Keeps the row hidden */
+    background-color: #d3d3d3;
+    /* Slightly darker gray for the hidden state */
+    color: #777;
+    /* Light gray text color to indicate it's a hidden row */
+    transition: all 0.3s ease;
+    /* Smooth transition for visibility change */
 }
 
 .toggle-button {

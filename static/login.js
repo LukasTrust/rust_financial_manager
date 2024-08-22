@@ -40,7 +40,6 @@ async function handleSubmit(event) {
         const contentType = response.headers.get('Content-Type');
         if (contentType && contentType.includes('application/json')) {
             result = await response.json();
-            console.log('Response body:', result);
         } else {
             result = {};
         }
@@ -51,8 +50,11 @@ async function handleSubmit(event) {
         } else if (result.error) {
             errorDiv.textContent = result.error;
             errorDiv.style.display = 'block';
-            const successDiv = urlParams.get('success');
+            const successDiv = document.getElementById('success');
             successDiv.style.display = 'none';
+
+            // Clear the password field
+            form.querySelector('input[type="password"]').value = '';
         } else {
             throw new Error('Unexpected response format');
         }

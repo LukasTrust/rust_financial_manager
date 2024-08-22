@@ -43,13 +43,13 @@ pub async fn update_date_range(
             .await;
 
             if let Err(error) = result {
-                return Ok(Json(json!({
-                    "response":
-                    ResponseData {
-                        success: None,
-                        error: Some("There was an internal error while loading the bank. Please try again.".into()),
-                        header: Some(error),
-                    },
+                return Ok(Json(json!(ResponseData {
+                    success: None,
+                    error: Some(
+                        "There was an internal error while loading the bank. Please try again."
+                            .into()
+                    ),
+                    header: Some(error),
                 })));
             }
 
@@ -64,12 +64,14 @@ pub async fn update_date_range(
             let banks = load_banks(cookie_user_id, &mut db).await;
 
             if let Err(error) = banks {
-                return Ok(Json(json!({ "response":
-                ResponseData {
+                return Ok(Json(json!(ResponseData {
                     success: None,
-                    error: Some("There was an internal error trying to load the banks of the profile".into()),
+                    error: Some(
+                        "There was an internal error trying to load the banks of the profile"
+                            .into()
+                    ),
                     header: Some(error),
-                }})));
+                })));
             }
 
             let banks = banks.unwrap();
@@ -79,12 +81,14 @@ pub async fn update_date_range(
                     .await;
 
             if let Err(error) = result {
-                return Ok(Json(json!({ "response":
-                ResponseData {
+                return Ok(Json(json!(ResponseData {
                     success: None,
-                    error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                    error: Some(
+                        "There was an internal error while loading the bank. Please try again."
+                            .into()
+                    ),
                     header: Some(error),
-                }})));
+                })));
             }
 
             let (performance_value, graph_data) = result.unwrap();

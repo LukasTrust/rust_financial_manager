@@ -23,11 +23,13 @@ pub async fn bank_contract(
     if current_bank.is_none() {
         return Ok(Template::render(
             "bank_contract",
-            json!({ "response": ResponseData {
+            json!(ResponseData {
                 success: None,
-                error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                error: Some(
+                    "There was an internal error while loading the bank. Please try again.".into()
+                ),
                 header: Some("No bank selected".into()),
-            } }),
+            }),
         ));
     }
 
@@ -47,14 +49,20 @@ pub async fn bank_contract(
         String::new()
     };
 
-    Ok(Template::render(
-        "bank_contract",
-        json!({
-            "contracts": contract_string,
-            "response": ResponseData {
-                success: None,
-                error: if error.is_none() { None } else { Some(format!("There was an internal error trying to load the contracts of '{}'.", current_bank.name)) },
-                header: error,
-        }}),
-    ))
+    let mut result = json!(ResponseData {
+        success: None,
+        error: if error.is_none() {
+            None
+        } else {
+            Some(format!(
+                "There was an internal error trying to load the contracts of '{}'.",
+                current_bank.name
+            ))
+        },
+        header: error,
+    });
+
+    result["contracts"] = json!(contract_string);
+
+    Ok(Template::render("bank_contract", json!(result)))
 }

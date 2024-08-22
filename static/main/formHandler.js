@@ -1,49 +1,66 @@
-import { log, error } from './logger.js';
+import { error, log } from './main.js';
+import { displayCustomAlert, parseJsonResponse } from './utils.js';
+import { loadContent } from './main.js';
 import { initializeChartAndDatePicker } from './chartManager.js';
 import { update_performance } from './performanceUpdater.js';
-import { loadContent } from './contentLoader.js';
 
-// Function to handle JSON response parsing
-async function parseJsonResponse(response) {
-    try {
-        return await response.json();
-    } catch {
-        throw new Error('Error parsing JSON response');
-    }
+// Main form submission handler
+async function handleFormSubmission(form) {
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch(form.action, {
+                method: form.method,
+                body: formData
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+            const result = await parseJsonResponse(response);
+
+            log('Form submission result:', 'handleFormSubmission', result);
+
+            if (result.banks) {
+                updateBankList(result.banks);
+            }
+
+            if (result.graph_data) {
+                window.plotData = JSON.parse(result.graph_data);
+                log('Form submitted successfully. Reinitializing chart with new data:', 'handleFormSubmission', window.plotData);
+                initializeChartAndDatePicker();
+            }
+
+            if (result.performance_value) {
+                update_performance(result.performance_value);
+            }
+
+            if (result.success) {
+                displayCustomAlert('success', result.header, result.success, 'Close');
+            } else if (result.error) {
+                displayCustomAlert('error', result.header, result.error, 'Close');
+            }
+
+            if (!result.error) form.reset();
+        } catch (err) {
+            error('Error submitting form:', 'handleFormSubmission', err);
+        }
+    });
 }
 
-// Function to handle success response
-function handleSuccessResponse(result, successDiv, errorDiv) {
-    successDiv.textContent = result.success;
-    successDiv.style.display = 'block';
-    errorDiv.style.display = 'none';
+// Function to initialize form handling
+export function initializeFormHandling() {
+    const forms = document.querySelectorAll('form');
 
-    if (result.graph_data) {
-        window.plotData = JSON.parse(result.graph_data);
-        log('Form submitted successfully. Reinitializing chart with new data:', 'handleFormSubmission', window.plotData);
-        initializeChartAndDatePicker();
-    }
-
-    if (result.performance_value) {
-        update_performance(result);
-    }
-
-    if (result.banks) {
-        updateBankList(result.banks);
-    }
-}
-
-// Function to handle error response
-function handleError(result, errorDiv, successDiv) {
-    error('Form submission error:', 'handleFormSubmission', result.error);
-    errorDiv.textContent = result.error;
-    errorDiv.style.display = 'block';
-    successDiv.style.display = 'none';
+    forms.forEach(form => {
+        handleFormSubmission(form);
+    });
 }
 
 // Function to update the bank list
 function updateBankList(banks) {
-    log('Updating bank list:', 'handleFormSubmission', banks);
     const banksContainer = document.getElementById('banks');
 
     if (banksContainer) {
@@ -53,14 +70,13 @@ function updateBankList(banks) {
         Array.from(banksContainer.children).forEach(bankButtonContainer => {
             const bankId = bankButtonContainer.getAttribute('data-bank-id');
             if (!newBankIds.has(bankId)) {
+                log(`Removing bank button for bank ID ${bankId}.`, 'handleFormSubmission');
                 banksContainer.removeChild(bankButtonContainer);
             }
         });
 
         // Add or update bank buttons
         banks.forEach(bank => updateOrCreateBankButton(bank, banksContainer));
-
-        log('Bank list updated.', 'handleFormSubmission');
     }
 }
 
@@ -69,11 +85,15 @@ function updateOrCreateBankButton(bank, banksContainer) {
     let bankButtonContainer = banksContainer.querySelector(`div[data-bank-id="${bank.id}"]`);
 
     if (!bankButtonContainer) {
+        log(`Creating bank button for bank ID ${bank.id}.`, 'handleFormSubmission');
         bankButtonContainer = createBankButtonContainer(bank);
         banksContainer.appendChild(bankButtonContainer);
     } else {
         const bankButton = bankButtonContainer.querySelector('.bank-button');
-        if (bankButton) bankButton.textContent = bank.name;
+        if (bankButton) {
+            log(`Updating bank button for bank ID ${bank.id}.`, 'handleFormSubmission');
+            bankButton.textContent = bank.name;
+        }
     }
 }
 
@@ -97,12 +117,10 @@ function createBankButton(bank) {
     const bankButton = document.createElement('button');
     bankButton.classList.add('bank-button');
     bankButton.textContent = bank.name;
-    bankButton.setAttribute('data-url', `/bank/${bank.id}`);
+    bankButton.setAttribute('url', `/bank/${bank.id}`);
 
     bankButton.addEventListener("click", function () {
-        const url = this.getAttribute("data-url");
-        log('Bank button clicked. Loading content from URL:', 'handleFormSubmission', url);
-        loadContent(url);
+        loadContent(this.getAttribute("url"));
 
         const subButtonsContainer = this.nextElementSibling;
         subButtonsContainer.style.display = subButtonsContainer.style.display === 'none' ? 'block' : 'none';
@@ -130,60 +148,12 @@ function createSubButtonsContainer() {
 function createSubButton(text, url) {
     const button = document.createElement('button');
     button.textContent = text;
-    button.setAttribute('data-url', url);
+    button.setAttribute('url', url);
     button.style.width = '100%';
 
     button.addEventListener("click", function () {
-        log(`${text} button clicked. Loading content from URL:`, 'handleFormSubmission', url);
-        loadContent(url);
+        loadContent(this.getAttribute("url"));
     });
 
     return button;
-}
-
-// Main form submission handler
-export async function handleFormSubmission(form) {
-    form.addEventListener('submit', async function (event) {
-        event.preventDefault();
-
-        const formData = new FormData(form);
-        const errorDiv = document.getElementById('error');
-        const successDiv = document.getElementById('success');
-
-        try {
-            const response = await fetch(form.action, {
-                method: form.method,
-                body: formData
-            });
-
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-            const result = await parseJsonResponse(response);
-
-            if (result.success) {
-                handleSuccessResponse(result, successDiv, errorDiv);
-            } else if (result.error) {
-                handleError(result, errorDiv, successDiv);
-            }
-
-            if (!result.error) form.reset();
-        } catch (err) {
-            error('An unexpected error occurred:', 'handleFormSubmission', err);
-            errorDiv.textContent = `An unexpected error occurred: ${err.message}`;
-            errorDiv.style.display = 'block';
-            successDiv.style.display = 'none';
-        }
-    });
-}
-
-// Function to initialize form handling
-export function initializeFormHandling() {
-    log('Initializing form handling for all forms:', 'initializeFormHandling');
-    const forms = document.querySelectorAll('form');
-
-    forms.forEach(form => {
-        if (form.id !== 'logout-form') {
-            handleFormSubmission(form);
-        }
-    });
 }

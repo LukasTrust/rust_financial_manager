@@ -31,7 +31,6 @@ async function handleSubmit(event) {
         const contentType = response.headers.get('Content-Type');
         if (contentType && contentType.includes('application/json')) {
             result = await response.json();
-            console.log('Response body:', result);
         } else {
             result = {};
         }

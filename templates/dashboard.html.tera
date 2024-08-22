@@ -1,8 +1,8 @@
 <script id="graph-data" type="application/json">
     {{ graph_data | safe }}
 </script>
-<script id="response-data" type="application/json">
-    {{ response | safe }}
+<script id="response-data">
+    {{ success | safe }}
 </script>
     <body>
         <div class="container-without-border">

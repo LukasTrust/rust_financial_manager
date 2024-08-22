@@ -1,4 +1,5 @@
-import { log, error } from './logger.js';
+import { formatDate, displayCustomAlert } from './utils.js';
+import { error } from './main.js';
 
 let filteredData = [];
 let transactionsData = [];
@@ -6,17 +7,58 @@ let hidden_transactions = [];
 let sortConfig = { key: 'date', ascending: false };
 let dateRange = { start: null, end: null };
 let showNoContract = true;
+let showHiddenTransaction = true;
 
-const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'N/A';
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}.${month}.${year}`;
+export const loadTransactions = () => {
+    try {
+        const transactionsDataScript = document.getElementById('transactions-data');
+        if (!transactionsDataScript) {
+            error('No transaction data found.', 'loadTransactions');
+        }
+
+        transactionsData = JSON.parse(transactionsDataScript.textContent);
+        if (!Array.isArray(transactionsData)) {
+            error('Invalid transaction data found.', 'loadTransactions');
+        }
+
+        filteredData = transactionsData;
+
+        fillContractFilter();
+
+        setupToggleButtons();
+
+        setupEventListeners();
+
+        filterTransactions();
+    } catch (err) {
+    }
 };
 
-const generateTransactionHTML = ({ transaction, contract }, index) => {
+function fillContractFilter() {
+    const contractFilter = document.getElementById('contract-filter');
+    const contractNames = [...new Set(transactionsData.map(t => t.contract?.name).filter(Boolean))];
+    contractNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        contractFilter.appendChild(option);
+    });
+}
+
+function setupToggleButtons() {
+    let toggleButton = document.getElementById('toggle-hidden-transaction');
+    let slider = toggleButton.querySelector('.slider');
+
+    slider.classList.toggle('active');
+    slider.classList.toggle('active');
+
+    toggleButton = document.getElementById('toggle-only-contract');
+    slider = toggleButton.querySelector('.slider');
+    slider.classList.toggle('active');
+    slider.classList.toggle('active');
+}
+
+function generateTransactionHTML({ transaction, contract }, index) {
     const amountClass = transaction.amount < 0 ? 'negative' : 'positive';
     const balanceClass = transaction.bank_balance_after < 0 ? 'negative' : 'positive';
     let contractRow = '';
@@ -54,7 +96,7 @@ const generateTransactionHTML = ({ transaction, contract }, index) => {
     `;
 };
 
-const setupEventListeners = () => {
+function setupEventListeners() {
     document.getElementById('transaction-search').addEventListener('input', filterTransactions);
     document.getElementById('contract-filter').addEventListener('change', filterTransactions);
 
@@ -90,69 +132,25 @@ const setupEventListeners = () => {
     });
 };
 
-export const loadTransactions = () => {
-    try {
-        log('Loading transactions...', 'loadTransactions');
-
-        const transactionsDataScript = document.getElementById('transactions-data');
-        if (!transactionsDataScript) throw new Error('Transactions data script element not found.');
-
-        transactionsData = JSON.parse(transactionsDataScript.textContent);
-        if (!Array.isArray(transactionsData)) throw new Error('Unexpected data format.');
-
-        filteredData = transactionsData;
-
-        const contractFilter = document.getElementById('contract-filter');
-        const contractNames = [...new Set(transactionsData.map(t => t.contract?.name).filter(Boolean))];
-        contractNames.forEach(name => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            contractFilter.appendChild(option);
-        });
-
-        let toggleButton = document.getElementById('toggle-hidden-transaction');
-        let slider = toggleButton.querySelector('.slider');
-
-        slider.classList.toggle('active');
-        slider.classList.toggle('active');
-
-        toggleButton = document.getElementById('toggle-only-contract');
-        slider = toggleButton.querySelector('.slider');
-        slider.classList.toggle('active');
-        slider.classList.toggle('active');
-
-        setupEventListeners();
-
-        filterTransactions();
-
-        document.querySelectorAll('.transaction-row').forEach(row => {
-            row.addEventListener('click', (event) => handleRowSelection(event, row));
-        });
-
-        log('Transactions loaded successfully.', 'loadTransactions');
-    } catch (err) {
-        error(err.message, 'loadTransactions');
-    }
-};
-
-const sortColumn = (key) => {
-    sortConfig.ascending = (sortConfig.key === key) ? !sortConfig.ascending : true;
-    sortConfig.key = key;
-
-    sortData();
-    document.getElementById('transaction-table-body').innerHTML = filteredData
-        .map((item, index) => generateTransactionHTML(item, index, index + 1))
-        .join('');
-
-    updateSortIcons();
+function attachRowEventListeners() {
+    const rows = document.querySelectorAll('.transaction-row');
 
     document.querySelectorAll('.transaction-row').forEach(row => {
         row.addEventListener('click', (event) => handleRowSelection(event, row));
     });
+}
+
+function sortColumn(key) {
+    sortConfig.ascending = (sortConfig.key === key) ? !sortConfig.ascending : true;
+    sortConfig.key = key;
+
+    sortData();
+    updateSortIcons();
+
+    attachRowEventListeners();
 };
 
-const sortData = () => {
+function sortData() {
     if (!sortConfig.key) return;
 
     filteredData.sort((a, b) => {
@@ -163,9 +161,13 @@ const sortData = () => {
         if (aValue > bValue) return sortConfig.ascending ? 1 : -1;
         return 0;
     });
+
+    document.getElementById('transaction-table-body').innerHTML = filteredData
+        .map((item, index) => generateTransactionHTML(item, index, index + 1))
+        .join('');
 };
 
-const updateSortIcons = () => {
+function updateSortIcons() {
     document.querySelectorAll('.sortable').forEach(header => {
         const icon = header.querySelector('span');
 
@@ -177,11 +179,11 @@ const updateSortIcons = () => {
     });
 };
 
-const handleRowSelection = (event, row) => {
+function handleRowSelection(event, row) {
     row.classList.toggle('selected');
 };
 
-const filterTransactions = () => {
+function filterTransactions() {
     const searchQuery = document.getElementById('transaction-search').value.toLowerCase();
     const selectedContract = document.getElementById('contract-filter').value;
 
@@ -210,12 +212,11 @@ const filterTransactions = () => {
     });
 
     sortData();
-    document.getElementById('transaction-table-body').innerHTML = filteredData
-        .map((item, index) => generateTransactionHTML(item, index, index + 1))
-        .join('');
+
+    attachRowEventListeners();
 };
 
-const handleHideOrRemove = (action) => {
+function handleHideOrRemove(action) {
     const selectedRows = document.querySelectorAll('.transaction-row.selected');
 
     const selectedIds = Array.from(selectedRows).map(row => parseInt(row.dataset.id));
@@ -228,19 +229,16 @@ const handleHideOrRemove = (action) => {
         body: JSON.stringify({ ids: selectedIds }),
     })
         .then(result => {
+            const action_text = action === 'hide' ? 'hidden' : 'removed';
+
             if (result.ok) {
                 selectedRows.forEach(row => {
                     const transactionIndex = filteredData.findIndex(item => item.transaction.id === parseInt(row.dataset.id));
                     if (transactionIndex !== -1) {
-                        document.getElementById('success').style.display = 'block';
-                        document.getElementById('error').style.display = 'none';
-
                         row.classList.remove('selected');
 
                         if (action === 'hide') {
-                            row.classList.add('hidden');
-
-                            document.getElementById('success').innerHTML = 'Transactions have been hidden successfully.';
+                            row.classList.add('hidden_transaction');
 
                             filteredData[transactionIndex].transaction.is_hidden = true;
 
@@ -250,9 +248,7 @@ const handleHideOrRemove = (action) => {
                             if (contractRow && contractRow.classList.contains('contract-row')) {
                                 contractRow.style.display = 'none';
                             }
-                        } else if (action === 'remove') {
-                            document.getElementById('success').innerHTML = 'Selected transactions have been removed.';
-
+                        } else {
                             filteredData.splice(transactionIndex, 1);
 
                             const contractRow = row.nextElementSibling;
@@ -263,16 +259,17 @@ const handleHideOrRemove = (action) => {
                     }
                 });
 
+                const body_text = 'A total of ' + selectedIds.length + ' transactions have been ' + action_text + ' successfully.';
+                displayCustomAlert('success', 'Transactions have been hidden successfully.', body_text, 'Close');
             } else {
-                document.getElementById('error').innerHTML = `Failed to ${action.replace('-', ' ')}: ${result.statusText}`;
-                document.getElementById('error').style.display = 'block';
-                document.getElementById('success').style.display = 'none';
+                const body_text = 'An error occurred while trying to ' + action_text + ' a total of ' + selectedIds.length + ' transactions.';
+                displayCustomAlert('error', 'Error ' + action_text + ' transactions.', body_text, 'Close');
             }
         })
-        .catch(err => console.error('Error:', err));
+        .catch(err => error('Error while trying to ' + action + ' transactions:', 'handleHideOrRemove', err));
 };
 
-const showHiddenTransactions = () => {
+function showHiddenTransactions() {
     const toggleButton = document.getElementById('toggle-hidden-transaction');
     const slider = toggleButton.querySelector('.slider');
 
@@ -290,7 +287,7 @@ const showHiddenTransactions = () => {
     });
 };
 
-const showOnlyTransactionsWithContracts = () => {
+function showOnlyTransactionsWithContracts() {
     const toggleButton = document.getElementById('toggle-only-contract');
     const slider = toggleButton.querySelector('.slider');
 

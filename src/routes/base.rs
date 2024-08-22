@@ -1,6 +1,6 @@
 use ::diesel::{ExpressionMethods, QueryDsl};
 use log::info;
-use rocket::http::{Cookie, CookieJar};
+use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::serde::json::json;
 use rocket::{get, State};
@@ -34,12 +34,13 @@ pub async fn base(
     if let Err(error) = banks {
         return Ok(Template::render(
             "base",
-            json!({ "response":
-            ResponseData {
+            json!(ResponseData {
                 success: None,
-                error: Some("There was an internal error trying to load the banks of the profile".into()),
+                error: Some(
+                    "There was an internal error trying to load the banks of the profile".into()
+                ),
                 header: Some(error),
-            }}),
+            }),
         ));
     }
 
@@ -87,12 +88,13 @@ pub async fn dashboard(
     if let Err(error) = banks {
         return Ok(Template::render(
             "dashboard",
-            json!({ "response":
-            ResponseData {
+            json!(ResponseData {
                 success: None,
-                error: Some("There was an internal error trying to load the banks of the profile".into()),
+                error: Some(
+                    "There was an internal error trying to load the banks of the profile".into()
+                ),
                 header: Some(error),
-            }}),
+            }),
         ));
     }
 
@@ -103,30 +105,28 @@ pub async fn dashboard(
     if let Err(error) = result {
         return Ok(Template::render(
             "bank",
-            json!({"response":
-            serde_json::to_string(&ResponseData {
+            json!(ResponseData {
                 success: None,
-                error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                error: Some(
+                    "There was an internal error while loading the bank. Please try again.".into()
+                ),
                 header: Some(error),
-            }).unwrap(),}),
+            }),
         ));
-    }
+    };
 
     let (performance_value, graph_data) = result.unwrap();
 
-    Ok(Template::render(
-        "dashboard",
-        json!({
-            "response":
-            serde_json::to_string(&ResponseData {
-                success: Some(format!("Welcome, {} {}!", user_first_name, user_last_name)),
-                error: None,
-                header: None,
-            }).unwrap(),
-            "graph_data": graph_data,
-            "performance_value": performance_value,
-        }),
-    ))
+    let mut result = json!(ResponseData {
+        success: Some(format!("Welcome, {} {}!", user_first_name, user_last_name)),
+        error: None,
+        header: None,
+    });
+
+    result["graph_data"] = json!(graph_data);
+    result["performance_value"] = json!(performance_value);
+
+    Ok(Template::render("dashboard", json!(result)))
 }
 
 /// Display the settings page.
@@ -147,8 +147,19 @@ pub async fn settings(
 /// Display the login page.
 /// Remove the user_id cookie to log the user out.
 #[get("/logout")]
-pub fn logout(cookies: &CookieJar<'_>) -> Template {
+pub fn logout(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
     info!("User logged out.");
-    cookies.remove(Cookie::build("user_id"));
-    Template::render("/", json!({}))
+    let cookie = cookies.get_private("user_id");
+
+    if cookie.is_none() {
+        return Err(show_error_page(
+            "Error validating the login!".to_string(),
+            "Please login again.".to_string(),
+        ));
+    }
+
+    let cookie = cookie.unwrap();
+
+    cookies.remove_private(cookie);
+    Ok(Template::render("login", json!({})))
 }

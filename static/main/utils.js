@@ -1,3 +1,5 @@
+import { log, error } from './main.js';
+
 export function formatDate(dateString) {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'N/A';
@@ -10,6 +12,8 @@ export function formatDate(dateString) {
 }
 
 export function displayCustomAlert(type, header_text, body_text, button_text) {
+    log('Displaying custom alert:', 'displayCustomAlert', type, header_text, body_text, button_text);
+
     // Create the backdrop
     const backdrop = document.createElement('div');
     backdrop.className = 'alert-backdrop';
@@ -56,7 +60,7 @@ export function displayCustomAlert(type, header_text, body_text, button_text) {
     const closeButton = alert.querySelector('.alert-close');
     closeButton.addEventListener('click', () => {
         document.body.removeChild(alert);
-        document.body.removeChild(backdrop); // Remove the backdrop when the alert is closed
+        document.body.removeChild(backdrop);
     });
 }
 
@@ -64,6 +68,7 @@ export async function parseJsonResponse(response) {
     try {
         return await response.json();
     } catch {
+        error('Error parsing JSON response:', 'parseJsonResponse', response);
         throw new Error('Error parsing JSON response');
     }
 }

@@ -32,15 +32,12 @@ pub async fn bank_transaction(
     if current_bank.is_none() {
         return Ok(Template::render(
             "bank_trasaction",
-            json!({ "response":
-                ResponseData {
-                    success: None,
-                    error: Some(
-                        "There was an internal error while loading the bank. Please try again."
-                            .into(),
-                    ),
-                    header: Some("No bank selected".into()),
-                }
+            json!(ResponseData {
+                success: None,
+                error: Some(
+                    "There was an internal error while loading the bank. Please try again.".into(),
+                ),
+                header: Some("No bank selected".into()),
             }),
         ));
     }
@@ -61,17 +58,18 @@ pub async fn bank_transaction(
         String::new()
     };
 
-    Ok(Template::render(
-        "bank_transaction",
-        json!({"transactions": transaction_string, "response":
-        ResponseData {
-            success: None,
-            error: Some(
-                format!("There was an internal error trying to load the transactions of '{}'.", current_bank.name)
-            ),
-            header: error,
-        }}),
-    ))
+    let mut result = json!(ResponseData {
+        success: None,
+        error: Some(format!(
+            "There was an internal error trying to load the transactions of '{}'.",
+            current_bank.name
+        )),
+        header: error,
+    });
+
+    result["transactions"] = json!(transaction_string);
+
+    Ok(Template::render("bank_transaction", json!(result)))
 }
 
 #[post(

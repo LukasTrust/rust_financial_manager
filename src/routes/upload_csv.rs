@@ -31,13 +31,12 @@ pub async fn upload_csv(
     let current_bank = state.get_current_bank(cookie_user_id).await;
 
     if current_bank.is_none() {
-        return Ok(Json(json!({
-            "response":
-            ResponseData {
-                success: None,
-                error: Some("There was an internal error while loading the bank. Please try again.".into()),
-                header: Some("No bank selected".into()),
-            },
+        return Ok(Json(json!(ResponseData {
+            success: None,
+            error: Some(
+                "There was an internal error while loading the bank. Please try again.".into()
+            ),
+            header: Some("No bank selected".into()),
         })));
     }
 
@@ -48,11 +47,11 @@ pub async fn upload_csv(
         Ok(bytes) => bytes,
         Err(_) => {
             error!("Failed to read CSV file");
-            return Ok(Json(json!({"response": ResponseData {
-                 success: None,
-                 error: Some("There was an internal error while trying to read the CSV file".into()),
-                 header: Some("Failed to read CSV file".into()),
-            }})));
+            return Ok(Json(json!(ResponseData {
+                success: None,
+                error: Some("There was an internal error while trying to read the CSV file".into()),
+                header: Some("Failed to read CSV file".into()),
+            })));
         }
     };
 
@@ -70,36 +69,37 @@ pub async fn upload_csv(
                 get_performance_value_and_graph_data(&vec![current_bank], None, None, db).await;
 
             if let Err(error) = result {
-                return Ok(Json(json!({ "response":
-                ResponseData {
+                return Ok(Json(json!(ResponseData {
                     success: None,
-                    error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                    error: Some(
+                        "There was an internal error while loading the bank. Please try again."
+                            .into()
+                    ),
                     header: Some(error),
-                }})));
+                })));
             }
 
             let (performance_value, graph_data) = result.unwrap();
 
-            Ok(Json(json!({
-                "response":
-                ResponseData {
-                    success: Some(result_string),
-                    error: None,
-                    header: None,
-                },
-                "graph_data": graph_data,
-                "performance_value": performance_value,
-            })))
+            let mut result = json!(ResponseData {
+                success: Some(result_string),
+                error: None,
+                header: Some("Succesfully parsed the CSV file".to_string()),
+            });
+
+            result["graph_data"] = json!(graph_data);
+            result["performance_value"] = json!(performance_value);
+
+            Ok(Json(result))
         }
         Err(e) => {
             error!("Failed to insert records: {}", e);
-            return Ok(Json(json!({
-                "response":
-                ResponseData {
-                    success: None,
-                    error: Some("There was an internal error while trying to insert the records".into()),
-                    header: Some(e),
-                },
+            return Ok(Json(json!(ResponseData {
+                success: None,
+                error: Some(
+                    "There was an internal error while trying to insert the records".into()
+                ),
+                header: Some(e),
             })));
         }
     }

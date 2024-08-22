@@ -25,12 +25,13 @@ pub async fn bank_view(
     if let Err(error) = current_bank {
         return Ok(Template::render(
             "bank",
-            json!({ "response":
-            ResponseData {
+            json!(ResponseData {
                 success: None,
-                error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                error: Some(
+                    "There was an internal error while loading the bank. Please try again.".into()
+                ),
                 header: Some(error),
-            }}),
+            }),
         ));
     }
 
@@ -39,12 +40,13 @@ pub async fn bank_view(
     if current_bank.is_none() {
         return Ok(Template::render(
             "bank",
-            json!({ "response":
-            ResponseData {
+            json!(ResponseData {
                 success: None,
-                error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                error: Some(
+                    "There was an internal error while loading the bank. Please try again.".into()
+                ),
                 header: Some("No bank selected".into()),
-            }}),
+            }),
         ));
     }
 
@@ -62,12 +64,13 @@ pub async fn bank_view(
     if let Err(error) = result {
         return Ok(Template::render(
             "bank",
-            json!({ "response":
-            ResponseData {
+            json!(ResponseData {
                 success: None,
-                error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                error: Some(
+                    "There was an internal error while loading the bank. Please try again.".into()
+                ),
                 header: Some(error),
-            }}),
+            }),
         ));
     }
 

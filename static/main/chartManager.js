@@ -1,10 +1,6 @@
-import { log, error } from './logger.js';
-import { update_graph } from './graphUpdater.js';
 import { update_performance } from './performanceUpdater.js';
 
 export function initializeChartAndDatePicker() {
-    log('Initializing Plotly chart and Flatpickr date range picker with data:', 'initializeChartAndDatePicker', window.plotData);
-
     update_graph();
 
     setTimeout(() => {
@@ -22,13 +18,11 @@ export function initializeChartAndDatePicker() {
                         .then(response => response.json())
                         .then(data => {
                             if (data.performance_value) {
-                                update_performance(data);
-                                log('Update date range form submitted successfully. Updating performance metrics:', 'initializeChartAndDatePicker', data.performance_value);
+                                update_performance(data.performance_value);
                             }
 
                             if (data.graph_data) {
                                 window.plotData = JSON.parse(data.graph_data);
-                                log('Update date range form submitted successfully. Reinitializing chart with new data:', 'initializeChartAndDatePicker', window.plotData);
                                 update_graph();
                             }
                         })
@@ -37,4 +31,32 @@ export function initializeChartAndDatePicker() {
             }
         });
     }, 0);
+}
+
+function update_graph() {
+    const layout = {
+        title: 'Bank Account Balances',
+        xaxis: { title: 'Date', type: 'date' },
+        yaxis: { title: 'Balance' },
+        hovermode: 'closest',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+    };
+
+    const config = {
+        displayModeBar: true,
+        modeBarButtonsToRemove: [
+            'zoom', 'pan', 'hoverClosestCartesian', 'hoverCompareCartesian', 'zoomIn2d', 'zoomOut2d',
+            'pan2d', 'select2d', 'lasso2d', 'zoom3d', 'pan3d', 'orbitRotation', 'tableRotation',
+            'resetCameraDefault3d', 'resetCameraLastSave3d', 'toImage', 'sendDataToCloud',
+            'toggleSpikelines', 'zoomInGeo', 'zoomOutGeo', 'resetGeo', 'resetMapbox'
+        ],
+        modeBarButtons: [['toImage', 'resetViews']]
+    };
+
+    // Initialize Plotly chart if data is available
+    if (window.plotData && window.plotData.length) {
+        Plotly.newPlot('balance_graph', window.plotData, layout, config);
+    } else {
+    }
 }

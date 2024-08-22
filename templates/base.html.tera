@@ -38,6 +38,6 @@
             </div>
         </div>
         <!-- Include JavaScript modules -->
-        <script type="module" src="/static/new_main/main.js"></script>
+        <script type="module" src="/static/main/main.js"></script>
     </body>
 </html>
