@@ -13,6 +13,7 @@ use crate::schema::users::{self, first_name, last_name};
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
 use crate::utils::loading_utils::load_banks;
+use crate::utils::structs::ResponseData;
 
 /// Display the base page.
 /// The base page is the dashboard that displays the user's bank accounts and transactions.
@@ -30,8 +31,16 @@ pub async fn base(
 
     let banks = load_banks(cookie_user_id, &mut db).await;
 
-    if let Err(e) = banks {
-        return Ok(Template::render("base", json!({ "error": e })));
+    if let Err(error) = banks {
+        return Ok(Template::render(
+            "base",
+            json!({ "response":
+            ResponseData {
+                success: None,
+                error: Some("There was an internal error trying to load the banks of the profile".into()),
+                header: Some(error),
+            }}),
+        ));
     }
 
     let banks = banks.unwrap();
@@ -75,16 +84,32 @@ pub async fn dashboard(
 
     let banks = load_banks(cookie_user_id, &mut db).await;
 
-    if let Err(e) = banks {
-        return Ok(Template::render("dashboard", json!({ "error": e })));
+    if let Err(error) = banks {
+        return Ok(Template::render(
+            "dashboard",
+            json!({ "response":
+            ResponseData {
+                success: None,
+                error: Some("There was an internal error trying to load the banks of the profile".into()),
+                header: Some(error),
+            }}),
+        ));
     }
 
     let banks = banks.unwrap();
 
     let result = get_performance_value_and_graph_data(&banks, None, None, db).await;
 
-    if let Err(e) = result {
-        return Ok(Template::render("bank", json!({ "error": e })));
+    if let Err(error) = result {
+        return Ok(Template::render(
+            "bank",
+            json!({ "response":
+            ResponseData {
+                success: None,
+                error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                header: Some(error),
+            }}),
+        ));
     }
 
     let (performance_value, graph_data) = result.unwrap();
@@ -92,7 +117,12 @@ pub async fn dashboard(
     Ok(Template::render(
         "dashboard",
         json!({
-            "success": format!("Welcome, {} {}!", user_first_name, user_last_name),
+            "response":
+            ResponseData {
+                success: Some(format!("Welcome, {} {}!", user_first_name, user_last_name)),
+                error: None,
+                header: None,
+            },
             "graph_data": graph_data,
             "performance_value": performance_value,
         }),

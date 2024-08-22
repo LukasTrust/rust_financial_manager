@@ -8,6 +8,7 @@ use rocket_dyn_templates::Template;
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_contracts_with_history, get_user_id};
+use crate::utils::structs::ResponseData;
 
 #[get("/bank/contract")]
 pub async fn bank_contract(
@@ -22,7 +23,11 @@ pub async fn bank_contract(
     if current_bank.is_none() {
         return Ok(Template::render(
             "bank_contract",
-            json!({ "error": "No bank selected" }),
+            json!({ "response": ResponseData {
+                success: None,
+                error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                header: Some("No bank selected".into()),
+            } }),
         ));
     }
 
@@ -44,7 +49,12 @@ pub async fn bank_contract(
 
     Ok(Template::render(
         "bank_contract",
-        json!({"contracts": contract_string,
-                       "error": error}),
+        json!({
+            "contracts": contract_string,
+            "response": ResponseData {
+                success: None,
+                error: if error.is_none() { None } else { Some(format!("There was an internal error trying to load the contracts of '{}'.", current_bank.name)) },
+                header: error,
+        }}),
     ))
 }

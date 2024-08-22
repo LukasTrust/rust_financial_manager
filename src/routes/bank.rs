@@ -9,6 +9,7 @@ use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
 use crate::utils::loading_utils::{load_bank_of_user, load_transactions_of_bank};
+use crate::utils::structs::ResponseData;
 
 #[get("/bank/<bank_id>")]
 pub async fn bank_view(
@@ -21,8 +22,16 @@ pub async fn bank_view(
 
     let current_bank = load_bank_of_user(cookie_user_id, bank_id, &mut db).await;
 
-    if let Err(e) = current_bank {
-        return Ok(Template::render("bank", json!({ "error": e })));
+    if let Err(error) = current_bank {
+        return Ok(Template::render(
+            "bank",
+            json!({ "response":
+            ResponseData {
+                success: None,
+                error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                header: Some(error),
+            }}),
+        ));
     }
 
     let current_bank = current_bank.unwrap();
@@ -30,7 +39,12 @@ pub async fn bank_view(
     if current_bank.is_none() {
         return Ok(Template::render(
             "bank",
-            json!("Bank not found".to_string()),
+            json!({ "response":
+            ResponseData {
+                success: None,
+                error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                header: Some("No bank selected".into()),
+            }}),
         ));
     }
 
@@ -45,8 +59,16 @@ pub async fn bank_view(
     let result =
         get_performance_value_and_graph_data(&vec![current_bank.clone()], None, None, db).await;
 
-    if let Err(e) = result {
-        return Ok(Template::render("bank", json!({ "error": e })));
+    if let Err(error) = result {
+        return Ok(Template::render(
+            "bank",
+            json!({ "response":
+            ResponseData {
+                success: None,
+                error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                header: Some(error),
+            }}),
+        ));
     }
 
     let (performance_value, graph_data) = result.unwrap();

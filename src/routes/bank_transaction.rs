@@ -10,6 +10,7 @@ use serde::Deserialize;
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_transactions_with_contract, get_user_id};
+use crate::utils::structs::ResponseData;
 use crate::utils::update_utils::update_transaction_remove_contract_id;
 use crate::utils::update_utils::update_transaction_with_hidden;
 
@@ -31,7 +32,16 @@ pub async fn bank_transaction(
     if current_bank.is_none() {
         return Ok(Template::render(
             "bank_trasaction",
-            json!({ "error": "No bank selected" }),
+            json!({ "response":
+                ResponseData {
+                    success: None,
+                    error: Some(
+                        "There was an internal error while loading the bank. Please try again."
+                            .into(),
+                    ),
+                    header: Some("No bank selected".into()),
+                }
+            }),
         ));
     }
 
@@ -53,7 +63,14 @@ pub async fn bank_transaction(
 
     Ok(Template::render(
         "bank_transaction",
-        json!({"transactions": transaction_string, "error": error}),
+        json!({"transactions": transaction_string, "response":
+        ResponseData {
+            success: None,
+            error: Some(
+                format!("There was an internal error trying to load the transactions of '{}'.", current_bank.name)
+            ),
+            header: error,
+        }}),
     ))
 }
 
@@ -65,10 +82,18 @@ pub async fn bank_transaction(
 pub async fn transaction_remove(
     transaction_ids: Json<TransactionIds>,
     mut db: Connection<DbConn>,
-) -> Result<(), String> {
+) -> Result<(), Json<ResponseData>> {
     let ids = &transaction_ids.ids;
 
-    update_transaction_remove_contract_id(ids.clone(), &mut db).await?;
+    let result = update_transaction_remove_contract_id(ids.clone(), &mut db).await;
+
+    if result.is_err() {
+        return Err(Json(ResponseData {
+            success: None,
+            error: Some("There was an internal error while removing the contract from the transactions. Please try again.".into()),
+            header: Some("Internal error".into()),
+        }));
+    }
 
     Ok(())
 }
@@ -77,10 +102,21 @@ pub async fn transaction_remove(
 pub async fn transaction_hide(
     transaction_ids: Json<TransactionIds>,
     mut db: Connection<DbConn>,
-) -> Result<(), String> {
+) -> Result<(), Json<ResponseData>> {
     let ids = &transaction_ids.ids;
 
-    update_transaction_with_hidden(ids.clone(), true, &mut db).await?;
+    let result = update_transaction_with_hidden(ids.clone(), true, &mut db).await;
+
+    if result.is_err() {
+        return Err(Json(ResponseData {
+            success: None,
+            error: Some(
+                "There was an internal error while trying to hide the transactions. Please try again."
+                    .into(),
+            ),
+            header: Some("Internal error".into()),
+        }));
+    }
 
     Ok(())
 }
@@ -89,10 +125,21 @@ pub async fn transaction_hide(
 pub async fn transaction_show(
     transaction_ids: Json<TransactionIds>,
     mut db: Connection<DbConn>,
-) -> Result<(), String> {
+) -> Result<(), Json<ResponseData>> {
     let ids = &transaction_ids.ids;
 
-    update_transaction_with_hidden(ids.clone(), false, &mut db).await?;
+    let result = update_transaction_with_hidden(ids.clone(), false, &mut db).await;
+
+    if result.is_err() {
+        return Err(Json(ResponseData {
+            success: None,
+            error: Some(
+                "There was an internal error while trying to unhide the transactions. Please try again."
+                    .into(),
+            ),
+            header: Some("Internal error".into()),
+        }));
+    }
 
     Ok(())
 }

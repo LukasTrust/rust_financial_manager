@@ -307,10 +307,6 @@ label {
     padding-top: 10px;
 }
 
-.bank-button-container {
-    position: relative;
-}
-
 .bank-button {
     position: relative;
     z-index: 1;

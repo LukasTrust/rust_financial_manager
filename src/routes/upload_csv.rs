@@ -18,7 +18,7 @@ use crate::utils::appstate::AppState;
 use crate::utils::create_contract::create_contract_from_transactions;
 use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
 use crate::utils::loading_utils::load_csv_converter_of_bank;
-use crate::utils::structs::{Bank, Transaction};
+use crate::utils::structs::{Bank, ResponseData, Transaction};
 
 #[post("/upload_csv", data = "<data>")]
 pub async fn upload_csv(
@@ -32,7 +32,12 @@ pub async fn upload_csv(
 
     if current_bank.is_none() {
         return Ok(Json(json!({
-            "error": "No bank selected",
+            "response":
+            ResponseData {
+                success: None,
+                error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                header: Some("No bank selected".into()),
+            },
         })));
     }
 
@@ -43,9 +48,11 @@ pub async fn upload_csv(
         Ok(bytes) => bytes,
         Err(_) => {
             error!("Failed to read CSV file");
-            return Ok(Json(json!({
-                "error": "Failed to read CSV file",
-            })));
+            return Ok(Json(json!({"response": ResponseData {
+                 success: None,
+                 error: Some("There was an internal error while trying to read the CSV file".into()),
+                 header: Some("Failed to read CSV file".into()),
+            }})));
         }
     };
 
@@ -62,16 +69,24 @@ pub async fn upload_csv(
             let result =
                 get_performance_value_and_graph_data(&vec![current_bank], None, None, db).await;
 
-            if let Err(e) = result {
-                return Ok(Json(json!({
-                    "error": e,
-                })));
+            if let Err(error) = result {
+                return Ok(Json(json!({ "response":
+                ResponseData {
+                    success: None,
+                    error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                    header: Some(error),
+                }})));
             }
 
             let (performance_value, graph_data) = result.unwrap();
 
             Ok(Json(json!({
-                "success": result_string,
+                "response":
+                ResponseData {
+                    success: Some(result_string),
+                    error: None,
+                    header: None,
+                },
                 "graph_data": graph_data,
                 "performance_value": performance_value,
             })))
@@ -79,8 +94,12 @@ pub async fn upload_csv(
         Err(e) => {
             error!("Failed to insert records: {}", e);
             return Ok(Json(json!({
-                "error": e.to_string(),
-                "success": false
+                "response":
+                ResponseData {
+                    success: None,
+                    error: Some("There was an internal error while trying to insert the records".into()),
+                    header: Some(e),
+                },
             })));
         }
     }

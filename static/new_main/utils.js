@@ -59,3 +59,11 @@ export function displayCustomAlert(type, header_text, body_text, button_text) {
         document.body.removeChild(backdrop); // Remove the backdrop when the alert is closed
     });
 }
+
+export async function parseJsonResponse(response) {
+    try {
+        return await response.json();
+    } catch {
+        throw new Error('Error parsing JSON response');
+    }
+}

@@ -59,7 +59,6 @@ export async function loadContent(url) {
                 loadTransactions();
             }
             else if (url === '/add-bank') {
-                log('Reinitializing form handling for add bank page:', 'loadContent');
                 initializeFormHandling();
             }
         }

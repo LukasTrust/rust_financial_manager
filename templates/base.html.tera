@@ -17,13 +17,13 @@
                 <button url="/add-bank">Add new bank</button>
                 <div id="banks">
                     {% for bank in banks %}
-                        <div class="bank-button-container" data-bank-id="{{ bank.id }}">
-                            <button class="bank-button" url="/bank/{{ bank.id }}" style="width: 100%">
+                        <div data-bank-id="{{ bank.id }}">
+                            <button url="/bank/{{ bank.id }}" style="width: 100%">
                                 {{ bank.name }}
                             </button>
                         <div class="bank-sub-buttons" style="display: none;">
-                            <button style="width: 100%" onclick="loadContent('/bank/contract')">Contracts</button>
-                            <button style="width: 100%" onclick="loadContent('/bank/transaction')">Transactions</button>
+                            <button style="width: 100%" url="/bank/contract">Contracts</button>
+                            <button style="width: 100%" url="/bank/transaction">Transactions</button>
                         </div>
                         </div>
                     {% endfor %}

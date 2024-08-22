@@ -11,6 +11,7 @@ use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
 use crate::utils::loading_utils::load_banks;
+use crate::utils::structs::ResponseData;
 
 #[get("/update_date_range/<start_date>/<end_date>")]
 pub async fn update_date_range(
@@ -41,9 +42,14 @@ pub async fn update_date_range(
             )
             .await;
 
-            if let Err(e) = result {
+            if let Err(error) = result {
                 return Ok(Json(json!({
-                    "error": e,
+                    "response":
+                    ResponseData {
+                        success: None,
+                        error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                        header: Some(error),
+                    },
                 })));
             }
 
@@ -57,10 +63,13 @@ pub async fn update_date_range(
         None => {
             let banks = load_banks(cookie_user_id, &mut db).await;
 
-            if let Err(e) = banks {
-                return Ok(Json(json!({
-                    "error": e,
-                })));
+            if let Err(error) = banks {
+                return Ok(Json(json!({ "response":
+                ResponseData {
+                    success: None,
+                    error: Some("There was an internal error trying to load the banks of the profile".into()),
+                    header: Some(error),
+                }})));
             }
 
             let banks = banks.unwrap();
@@ -69,10 +78,13 @@ pub async fn update_date_range(
                 get_performance_value_and_graph_data(&banks, Some(first_date), Some(last_date), db)
                     .await;
 
-            if let Err(e) = result {
-                return Ok(Json(json!({
-                    "error": e,
-                })));
+            if let Err(error) = result {
+                return Ok(Json(json!({ "response":
+                ResponseData {
+                    success: None,
+                    error: Some("There was an internal error while loading the bank. Please try again.".into()),
+                    header: Some(error),
+                }})));
             }
 
             let (performance_value, graph_data) = result.unwrap();

@@ -1,5 +1,7 @@
 import { error, log } from './main.js';
 import { displayCustomAlert } from './utils.js';
+import { parseJsonResponse } from './utils.js';
+import { loadContent } from './main.js';
 
 // Main form submission handler
 async function handleFormSubmission(form) {
@@ -19,6 +21,10 @@ async function handleFormSubmission(form) {
             const result = await parseJsonResponse(response);
 
             log('Form submission result:', 'handleFormSubmission', result);
+
+            if (result.banks) {
+                updateBankList(result.banks);
+            }
 
             if (result.success) {
                 displayCustomAlert('success', result.header, result.success, 'Close');
@@ -42,10 +48,101 @@ export function initializeFormHandling() {
     });
 }
 
-async function parseJsonResponse(response) {
-    try {
-        return await response.json();
-    } catch {
-        throw new Error('Error parsing JSON response');
+// Function to update the bank list
+function updateBankList(banks) {
+    const banksContainer = document.getElementById('banks');
+
+    if (banksContainer) {
+        const newBankIds = new Set(banks.map(bank => bank.id));
+
+        // Remove buttons for banks that no longer exist
+        Array.from(banksContainer.children).forEach(bankButtonContainer => {
+            const bankId = bankButtonContainer.getAttribute('data-bank-id');
+            if (!newBankIds.has(bankId)) {
+                log(`Removing bank button for bank ID ${bankId}.`, 'handleFormSubmission');
+                banksContainer.removeChild(bankButtonContainer);
+            }
+        });
+
+        // Add or update bank buttons
+        banks.forEach(bank => updateOrCreateBankButton(bank, banksContainer));
     }
+}
+
+// Function to create or update a bank button
+function updateOrCreateBankButton(bank, banksContainer) {
+    let bankButtonContainer = banksContainer.querySelector(`div[data-bank-id="${bank.id}"]`);
+
+    if (!bankButtonContainer) {
+        log(`Creating bank button for bank ID ${bank.id}.`, 'handleFormSubmission');
+        bankButtonContainer = createBankButtonContainer(bank);
+        banksContainer.appendChild(bankButtonContainer);
+    } else {
+        const bankButton = bankButtonContainer.querySelector('.bank-button');
+        if (bankButton) {
+            log(`Updating bank button for bank ID ${bank.id}.`, 'handleFormSubmission');
+            bankButton.textContent = bank.name;
+        }
+    }
+}
+
+// Function to create a new bank button container
+function createBankButtonContainer(bank) {
+    const bankButtonContainer = document.createElement('div');
+    bankButtonContainer.setAttribute('data-bank-id', bank.id);
+    bankButtonContainer.classList.add('bank-button-container');
+
+    const bankButton = createBankButton(bank);
+    bankButtonContainer.appendChild(bankButton);
+
+    const subButtonsContainer = createSubButtonsContainer();
+    bankButtonContainer.appendChild(subButtonsContainer);
+
+    return bankButtonContainer;
+}
+
+// Function to create the main bank button
+function createBankButton(bank) {
+    const bankButton = document.createElement('button');
+    bankButton.classList.add('bank-button');
+    bankButton.textContent = bank.name;
+    bankButton.setAttribute('url', `/bank/${bank.id}`);
+
+    bankButton.addEventListener("click", function () {
+        loadContent(this.getAttribute("url"));
+
+        const subButtonsContainer = this.nextElementSibling;
+        subButtonsContainer.style.display = subButtonsContainer.style.display === 'none' ? 'block' : 'none';
+    });
+
+    return bankButton;
+}
+
+// Function to create sub-buttons for a bank
+function createSubButtonsContainer() {
+    const subButtonsContainer = document.createElement('div');
+    subButtonsContainer.classList.add('bank-sub-buttons');
+    subButtonsContainer.style.display = 'none';
+
+    const contractButton = createSubButton('Contract', `/bank/contract`);
+    const transactionButton = createSubButton('Transaction', `/bank/transaction`);
+
+    subButtonsContainer.appendChild(contractButton);
+    subButtonsContainer.appendChild(transactionButton);
+
+    return subButtonsContainer;
+}
+
+// Function to create a single sub-button
+function createSubButton(text, url) {
+    const button = document.createElement('button');
+    button.textContent = text;
+    button.setAttribute('url', url);
+    button.style.width = '100%';
+
+    button.addEventListener("click", function () {
+        loadContent(this.getAttribute("url"));
+    });
+
+    return button;
 }
