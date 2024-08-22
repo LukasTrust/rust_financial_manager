@@ -17,25 +17,9 @@ export const loadTransactions = () => {
 
         filteredData = transactionsData;
 
-        const contractFilter = document.getElementById('contract-filter');
-        const contractNames = [...new Set(transactionsData.map(t => t.contract?.name).filter(Boolean))];
-        contractNames.forEach(name => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            contractFilter.appendChild(option);
-        });
+        fillContractFilter();
 
-        let toggleButton = document.getElementById('toggle-hidden-transaction');
-        let slider = toggleButton.querySelector('.slider');
-
-        slider.classList.toggle('active');
-        slider.classList.toggle('active');
-
-        toggleButton = document.getElementById('toggle-only-contract');
-        slider = toggleButton.querySelector('.slider');
-        slider.classList.toggle('active');
-        slider.classList.toggle('active');
+        setupToggleButtons();
 
         setupEventListeners();
 
@@ -48,7 +32,31 @@ export const loadTransactions = () => {
     }
 };
 
-const generateTransactionHTML = ({ transaction, contract }, index) => {
+function fillContractFilter() {
+    const contractFilter = document.getElementById('contract-filter');
+    const contractNames = [...new Set(transactionsData.map(t => t.contract?.name).filter(Boolean))];
+    contractNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        contractFilter.appendChild(option);
+    });
+}
+
+function setupToggleButtons() {
+    let toggleButton = document.getElementById('toggle-hidden-transaction');
+    let slider = toggleButton.querySelector('.slider');
+
+    slider.classList.toggle('active');
+    slider.classList.toggle('active');
+
+    toggleButton = document.getElementById('toggle-only-contract');
+    slider = toggleButton.querySelector('.slider');
+    slider.classList.toggle('active');
+    slider.classList.toggle('active');
+}
+
+function generateTransactionHTML({ transaction, contract }, index) {
     const amountClass = transaction.amount < 0 ? 'negative' : 'positive';
     const balanceClass = transaction.bank_balance_after < 0 ? 'negative' : 'positive';
     let contractRow = '';
@@ -86,7 +94,7 @@ const generateTransactionHTML = ({ transaction, contract }, index) => {
     `;
 };
 
-const setupEventListeners = () => {
+function setupEventListeners() {
     document.getElementById('transaction-search').addEventListener('input', filterTransactions);
     document.getElementById('contract-filter').addEventListener('change', filterTransactions);
 
@@ -122,14 +130,11 @@ const setupEventListeners = () => {
     });
 };
 
-const sortColumn = (key) => {
+function sortColumn(key) {
     sortConfig.ascending = (sortConfig.key === key) ? !sortConfig.ascending : true;
     sortConfig.key = key;
 
     sortData();
-    document.getElementById('transaction-table-body').innerHTML = filteredData
-        .map((item, index) => generateTransactionHTML(item, index, index + 1))
-        .join('');
 
     updateSortIcons();
 
@@ -138,7 +143,7 @@ const sortColumn = (key) => {
     });
 };
 
-const sortData = () => {
+function sortData() {
     if (!sortConfig.key) return;
 
     filteredData.sort((a, b) => {
@@ -149,9 +154,13 @@ const sortData = () => {
         if (aValue > bValue) return sortConfig.ascending ? 1 : -1;
         return 0;
     });
+
+    document.getElementById('transaction-table-body').innerHTML = filteredData
+        .map((item, index) => generateTransactionHTML(item, index, index + 1))
+        .join('');
 };
 
-const updateSortIcons = () => {
+function updateSortIcons() {
     document.querySelectorAll('.sortable').forEach(header => {
         const icon = header.querySelector('span');
 
@@ -163,11 +172,11 @@ const updateSortIcons = () => {
     });
 };
 
-const handleRowSelection = (event, row) => {
+function handleRowSelection(event, row) {
     row.classList.toggle('selected');
 };
 
-const filterTransactions = () => {
+function filterTransactions() {
     const searchQuery = document.getElementById('transaction-search').value.toLowerCase();
     const selectedContract = document.getElementById('contract-filter').value;
 
@@ -196,12 +205,9 @@ const filterTransactions = () => {
     });
 
     sortData();
-    document.getElementById('transaction-table-body').innerHTML = filteredData
-        .map((item, index) => generateTransactionHTML(item, index, index + 1))
-        .join('');
 };
 
-const handleHideOrRemove = (action) => {
+function handleHideOrRemove(action) {
     const selectedRows = document.querySelectorAll('.transaction-row.selected');
 
     const selectedIds = Array.from(selectedRows).map(row => parseInt(row.dataset.id));
@@ -258,7 +264,7 @@ const handleHideOrRemove = (action) => {
         .catch(err => console.error('Error:', err));
 };
 
-const showHiddenTransactions = () => {
+function showHiddenTransactions() {
     const toggleButton = document.getElementById('toggle-hidden-transaction');
     const slider = toggleButton.querySelector('.slider');
 
@@ -276,7 +282,7 @@ const showHiddenTransactions = () => {
     });
 };
 
-const showOnlyTransactionsWithContracts = () => {
+function showOnlyTransactionsWithContracts() {
     const toggleButton = document.getElementById('toggle-only-contract');
     const slider = toggleButton.querySelector('.slider');
 

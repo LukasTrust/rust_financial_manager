@@ -50,9 +50,7 @@ export async function loadContent(url) {
             }
 
             if (url === '/dashboard' || /^\/bank\/\d+$/.test(url)) {
-                initializeFormHandling();
-                formatAndColorNumbers();
-                initializeChartAndDatePicker();
+                handleDashboard();
             } else if (url === '/bank/contract') {
                 loadContracts();
             } else if (url === '/bank/transaction') {
@@ -71,7 +69,6 @@ export async function loadContent(url) {
 
 // Function to fetch content from a URL
 async function fetchContent(url) {
-    log('Loading content from URL:', 'loadContent', url);
     document.getElementById('main-content').innerHTML = '<p>Loading...</p>';
 
     const response = await fetch(url);
@@ -79,6 +76,23 @@ async function fetchContent(url) {
     if (!response.ok) throw new Error('Network response was not ok');
 
     return response.text();
+}
+
+function handleDashboard() {
+    const success_data = document.getElementById('response-data');
+
+    if (success_data) {
+        let json_data = JSON.parse(success_data.textContent);
+
+        if (json_data && json_data.success) {
+            const success = document.getElementById('header-success');
+            success.innerHTML = json_data.success;
+        }
+    }
+
+    initializeFormHandling();
+    formatAndColorNumbers();
+    initializeChartAndDatePicker();
 }
 
 // Function to handle login validation errors

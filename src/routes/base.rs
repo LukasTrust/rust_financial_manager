@@ -103,12 +103,12 @@ pub async fn dashboard(
     if let Err(error) = result {
         return Ok(Template::render(
             "bank",
-            json!({ "response":
-            ResponseData {
+            json!({"response":
+            serde_json::to_string(&ResponseData {
                 success: None,
                 error: Some("There was an internal error while loading the bank. Please try again.".into()),
                 header: Some(error),
-            }}),
+            }).unwrap(),}),
         ));
     }
 
@@ -118,11 +118,11 @@ pub async fn dashboard(
         "dashboard",
         json!({
             "response":
-            ResponseData {
+            serde_json::to_string(&ResponseData {
                 success: Some(format!("Welcome, {} {}!", user_first_name, user_last_name)),
                 error: None,
                 header: None,
-            },
+            }).unwrap(),
             "graph_data": graph_data,
             "performance_value": performance_value,
         }),

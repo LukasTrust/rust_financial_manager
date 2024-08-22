@@ -46,7 +46,8 @@ pub async fn register_user(
         return Json(ResponseData {
             success: None,
             error: Some("Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character".into()),
-            header: None,        });
+            header: None,        
+        });
     }
 
     let hashed_password = match hash(user_form.password.clone(), DEFAULT_COST) {

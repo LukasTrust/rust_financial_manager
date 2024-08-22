@@ -13,9 +13,6 @@ export function loadContracts() {
         container.innerHTML = '';
 
         if (contractsData.length === 0) {
-            const message = document.createElement('h3');
-            message.textContent = 'Info: No contracts available.';
-            container.appendChild(message);
             return;
         }
 

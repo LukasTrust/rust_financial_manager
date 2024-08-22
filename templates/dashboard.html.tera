@@ -1,10 +1,13 @@
 <script id="graph-data" type="application/json">
     {{ graph_data | safe }}
 </script>
+<script id="response-data" type="application/json">
+    {{ response | safe }}
+</script>
     <body>
         <div class="container-without-border">
             <div class="container-without-border-horizontally-header">
-                <h1>{{ success }}</h1>
+                <h1 id="header-success"></h1>
                 <label for="dateRange" class="date-label">Select date
                     range:</label>
                 <input type="text" id="dateRange" class="date-input"
