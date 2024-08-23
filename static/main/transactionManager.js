@@ -6,6 +6,7 @@ let transactionsData = [];
 let sortConfig = { key: 'date', ascending: false };
 let dateRange = { start: null, end: null };
 let showOrHideTransaction = false;
+let contracts = [];
 
 export const loadTransactions = () => {
     try {
@@ -38,6 +39,10 @@ function fillContractFilter() {
         option.value = name;
         option.textContent = name;
         contractFilter.appendChild(option);
+
+        const contract = transactionsData.find(t => t.contract?.name === name).contract;
+
+        contracts.push(contract);
     });
 }
 
@@ -199,8 +204,6 @@ function updateSortIcons() {
     });
 };
 
-
-
 function filterTransactions() {
     const searchQuery = document.getElementById('transaction-search').value.toLowerCase();
     const selectedContract = document.getElementById('contract-filter').value;
@@ -231,8 +234,6 @@ function filterTransactions() {
 }
 // Generalized function to handle transaction operations
 function handleTransactionOperation(index, url, successCallback, errorMessage, buttonText = null) {
-    const transaction = filteredData[index].transaction;
-
     fetch(url, {
         method: 'GET',
         headers: {
@@ -260,6 +261,140 @@ function handleTransactionOperation(index, url, successCallback, errorMessage, b
             }
         })
         .catch(err => error(`Error while trying to ${errorMessage}:`, url, err));
+}
+
+function handleAddContract(index) {
+    // Check if the modal already exists; if so, remove it
+    const existingModal = document.getElementById('contractModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Create backdrop div
+    const backdrop = document.createElement('div');
+    backdrop.id = 'contractModal';
+    backdrop.className = 'alert-backdrop';
+
+    // Create the modal container
+    const modal = document.createElement('div');
+    modal.className = 'alert alert-info';
+
+    // Create the inner container with horizontal layout
+    const horizontalContainer = document.createElement('div');
+    horizontalContainer.className = 'container-without-border-horizontally';
+
+    // Add icon and header text
+    const icon = document.createElement('span');
+    icon.className = 'alert-icon';
+    icon.textContent = 'ℹ️';
+
+    const headerText = document.createElement('strong');
+    headerText.textContent = 'Pick a contract from this list:';
+
+    // Flex-grow div to push the header to the left
+    const flexDiv = document.createElement('div');
+    flexDiv.style.flexGrow = '1';
+    flexDiv.appendChild(headerText);
+
+    // Append icon and headerText to horizontalContainer
+    horizontalContainer.appendChild(icon);
+    horizontalContainer.appendChild(flexDiv);
+
+    // Create body text
+    const bodyText = document.createElement('p');
+    bodyText.textContent = 'Please select a contract from the list below:';
+
+    // Create select dropdown
+    const select = document.createElement('select');
+    select.id = 'contractSelect';
+    contracts.forEach(contract => {
+        const option = document.createElement('option');
+        option.value = contract.id;
+        option.text = contract.name;
+        select.add(option);
+    });
+
+    // Create buttons container with horizontal alignment
+    const buttonContainer = document.createElement('div');
+    buttonContainer.classList.add('container-without-border-horizontally-header');
+
+    // Create Add and Cancel buttons
+    const addButton = document.createElement('button');
+    addButton.textContent = 'Add';
+    addButton.onclick = () => addSelectedContract(index);
+
+    const cancelButton = document.createElement('button');
+    cancelButton.textContent = 'Cancel';
+    cancelButton.onclick = closeModal;
+
+    // Append buttons to the buttonContainer
+    buttonContainer.appendChild(addButton);
+    buttonContainer.appendChild(cancelButton);
+
+    // Create the main container and append all elements
+    const container = document.createElement('div');
+    container.className = 'container-without-border';
+    container.appendChild(horizontalContainer);
+    container.appendChild(bodyText);
+    container.appendChild(select);
+    container.appendChild(buttonContainer);
+
+    // Append the main container to the modal
+    modal.appendChild(container);
+
+    // Append modal to the backdrop
+    backdrop.appendChild(modal);
+
+    // Append backdrop to the body
+    document.body.appendChild(backdrop);
+
+    // Show the modal
+    backdrop.style.display = 'flex';
+}
+
+function addSelectedContract(index) {
+    const selectedContract = document.getElementById('contractSelect');
+
+    if (selectedContract && selectedContract.value) {
+        const selectedContractId = parseInt(selectedContract.value);
+
+        const url = `/bank/transaction/add/${filteredData[index].transaction.id}/${selectedContractId}`;
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(async response => {
+                if (response.ok) {
+                    filteredData[index].contract = contracts.find(c => c.id === selectedContractId);
+                    transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = filteredData[index].contract;
+
+                    updateTransactionTable();
+
+                    const json = await response.json();
+
+                    if (json.success) {
+                        displayCustomAlert('success', json.header, json.success, 'Close');
+                    } else if (json.error) {
+                        displayCustomAlert('error', json.header, json.error, 'Close');
+                    }
+                } else {
+                    error(`Error ${errorMessage}:`, url, response);
+                    displayCustomAlert('error', `Error ${errorMessage}.`, `An error occurred while trying to ${errorMessage}.`, 'Close');
+                }
+            })
+            .catch(err => error(`Error while trying to ${errorMessage}:`, url, err));
+
+        closeModal();
+    }
+}
+
+function closeModal() {
+    const modal = document.getElementById('contractModal');
+    if (modal) {
+        modal.remove();
+    }
 }
 
 // Refactored removeContract function

@@ -470,9 +470,13 @@ label {
     background-color: rgba(0, 0, 0, 0.4);
     /* Slightly transparent gray */
     z-index: 999;
-    /* Below the alert but above the rest of the content */
-    pointer-events: none;
-    /* Prevent interactions with the page */
+    /* Ensure it's above all content */
+    pointer-events: auto;
+    /* Enable interaction */
+    display: flex;
+    /* Flex to center modal content */
+    align-items: center;
+    justify-content: center;
 }
 
 /* Common alert styles */

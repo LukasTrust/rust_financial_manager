@@ -88,6 +88,32 @@ pub async fn transaction_remove(
     }))
 }
 
+#[get("/bank/transaction/add/<transaction_id>/<contract_id>")]
+pub async fn transaction_add(
+    transaction_id: i32,
+    contract_id: i32,
+    mut db: Connection<DbConn>,
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
+    let result = update_transaction_with_contract(transaction_id, Some(contract_id), &mut db).await;
+
+    if result.is_err() {
+        return Err(Json(ResponseData {
+            success: None,
+            error: Some(
+                "There was an internal error while adding the contract to the transactions. Please try again."
+                    .into(),
+            ),
+            header: Some("Internal error".into()),
+        }));
+    }
+
+    Ok(Json(ResponseData {
+        success: Some("The contract was added to the transactions.".into()),
+        error: None,
+        header: Some("Contract added".into()),
+    }))
+}
+
 #[get("/bank/transaction/hide/<transaction_id>")]
 pub async fn transaction_hide(
     transaction_id: i32,

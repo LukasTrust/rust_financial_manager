@@ -15,7 +15,7 @@ use routes::add_bank::{add_bank, add_bank_form};
 use routes::bank::bank_view;
 use routes::bank_contract::bank_contract;
 use routes::bank_transaction::{
-    bank_transaction, transaction_hide, transaction_remove, transaction_show,
+    bank_transaction, transaction_add, transaction_hide, transaction_remove, transaction_show,
 };
 use routes::base::{base, dashboard, logout, settings};
 use routes::error_page::error_page;
@@ -72,6 +72,7 @@ fn rocket() -> _ {
                 // Bank Transaction
                 bank_transaction,
                 transaction_remove,
+                transaction_add,
                 transaction_hide,
                 transaction_show,
             ],
