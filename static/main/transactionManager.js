@@ -6,7 +6,6 @@ let transactionsData = [];
 let hidden_transactions = [];
 let sortConfig = { key: 'date', ascending: false };
 let dateRange = { start: null, end: null };
-let showNoContract = true;
 let showHiddenTransaction = true;
 
 export const loadTransactions = () => {
@@ -51,11 +50,6 @@ function setupToggleButtons() {
 
     slider.classList.toggle('active');
     slider.classList.toggle('active');
-
-    toggleButton = document.getElementById('toggle-only-contract');
-    slider = toggleButton.querySelector('.slider');
-    slider.classList.toggle('active');
-    slider.classList.toggle('active');
 }
 
 function generateTransactionHTML({ transaction, contract }, index) {
@@ -68,18 +62,48 @@ function generateTransactionHTML({ transaction, contract }, index) {
     }
 
     const rowClass = transaction.is_hidden ? 'hidden_transaction' : '';
+    const contractRowStyle = transaction.is_hidden ? 'display: none;' : '';
 
     if (contract) {
         const contractAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
         contractRow = `
-            <tr class="contract-row">
-                <td colspan="4">
-                    <div class="contract-details">
-                        <p>Contract Name: ${contract.name}</p>
-                        <p>Contract Current Amount: <span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
-                        <p>Months Between Payment: ${contract.months_between_payment}</p>
-                        <p>Contract End Date: ${contract.end_date ? formatDate(contract.end_date) : 'N/A'}</p>
-                    </div>
+            <tr class="${rowClass} contract-row" style="${contractRowStyle}">
+            <td colspan="4" style="padding-left: 0; text-align: right;">
+                    <button onclick="removeContract(${index})">Remove Contract</button>
+                        <table class="contract-table" style="width: auto;">
+                            <thead>
+                                <tr>
+                                    <th>Contract Name</th>
+                                    <th>Contract Current Amount</th>
+                                    <th>Months Between Payment</th>
+                                    ${contract.end_date ? '<th>Contract End Date</th>' : ''}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${contract.name}</td>
+                                    <td><span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span></td>
+                                    <td>${contract.months_between_payment}</td>
+                                    ${contract.end_date ? `<td>${formatDate(contract.end_date)}</td>` : ''}
+                                </tr>
+                            </tbody>
+                        </table>
+                </td>
+            </tr>
+        `;
+    } else {
+        contractRow = `
+            <tr class="${rowClass} contract-row" style="${contractRowStyle}">
+                <td colspan="4" style="text-align: right;">
+                        <table class="contract-table">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <button onclick="addContract(${index})">Add Contract</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                 </td>
             </tr>
         `;
@@ -115,8 +139,6 @@ function setupEventListeners() {
     document.getElementById('transaction-table-body').innerHTML = filteredData
         .map((item, index) => generateTransactionHTML(item, index, index + 1))
         .join('');
-
-    document.getElementById('toggle-only-contract').addEventListener('click', showOnlyTransactionsWithContracts);
 
     document.getElementById('toggle-hidden-transaction').addEventListener('click', showHiddenTransactions);
 
@@ -206,9 +228,8 @@ function filterTransactions() {
         );
 
         const matchesContract = selectedContract ? contractName === selectedContract : true;
-        const matchesNoContract = showNoContract ? !contract : true;
 
-        return matchesSearch && matchesContract && matchesNoContract && withinDateRange;
+        return matchesSearch && matchesContract && withinDateRange;
     });
 
     sortData();
@@ -276,24 +297,18 @@ function showHiddenTransactions() {
     slider.classList.toggle('active');
 
     const state = slider.classList.contains('active');
-
     const displayStyle = state ? 'table-row' : 'none';
 
     hidden_transactions.forEach(id => {
-        const row = document.querySelector(`.transaction-row[data-id="${id}"]`);
-        if (row) {
-            row.style.display = displayStyle;
+        const transactionRow = document.querySelector(`.transaction-row[data-id="${id}"]`);
+        if (transactionRow) {
+            transactionRow.style.display = displayStyle;
+
+            // Also update the associated contract row visibility
+            const contractRow = transactionRow.nextElementSibling;
+            if (contractRow && contractRow.classList.contains('contract-row')) {
+                contractRow.style.display = displayStyle;
+            }
         }
     });
 };
-
-function showOnlyTransactionsWithContracts() {
-    const toggleButton = document.getElementById('toggle-only-contract');
-    const slider = toggleButton.querySelector('.slider');
-
-    slider.classList.toggle('active');
-
-    showNoContract = !slider.classList.contains('active');
-
-    filterTransactions();
-}

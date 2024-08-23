@@ -368,7 +368,6 @@ label {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
-    padding-right: 20px;
 }
 
 .sort-icon {
@@ -396,26 +395,6 @@ label {
     font-weight: bold;
 }
 
-#transaction-search,
-#group-by,
-#start-date,
-#end-date {
-    margin-bottom: 10px;
-    padding: 5px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-#transaction-search,
-#group-by,
-#start-date,
-#end-date {
-    margin-bottom: 10px;
-    padding: 5px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
 .transaction-row.selected {
     background-color: #52a5ff;
     border-color: #007BFF;
@@ -424,13 +403,8 @@ label {
 
 .hidden_transaction {
     display: none;
-    /* Keeps the row hidden */
     background-color: #d3d3d3;
-    /* Slightly darker gray for the hidden state */
     color: #777;
-    /* Light gray text color to indicate it's a hidden row */
-    transition: all 0.3s ease;
-    /* Smooth transition for visibility change */
 }
 
 .toggle-button {
@@ -550,4 +524,26 @@ label {
 .alert-icon {
     margin-right: 10px;
     font-size: 20px;
+}
+
+/* Styles for the contract table */
+.contract-table {
+    width: 100%;
+    border-collapse: collapse;
+    display: inline-table;
+    width: auto;
+}
+
+.contract-table th,
+.contract-table td {
+    background-color: transparent;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-bottom: none;
+}
+
+.contract-table th {
+    background-color: transparent;
+    border-bottom: 1px solid #ddd;
 }
