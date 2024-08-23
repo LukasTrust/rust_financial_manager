@@ -525,25 +525,3 @@ label {
     margin-right: 10px;
     font-size: 20px;
 }
-
-/* Styles for the contract table */
-.contract-table {
-    width: 100%;
-    border-collapse: collapse;
-    display: inline-table;
-    width: auto;
-}
-
-.contract-table th,
-.contract-table td {
-    background-color: transparent;
-    text-align: center;
-    border: 1px solid #ddd;
-    border-top: none;
-    border-bottom: none;
-}
-
-.contract-table th {
-    background-color: transparent;
-    border-bottom: 1px solid #ddd;
-}

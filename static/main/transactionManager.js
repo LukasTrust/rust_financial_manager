@@ -3,10 +3,9 @@ import { error } from './main.js';
 
 let filteredData = [];
 let transactionsData = [];
-let hidden_transactions = [];
 let sortConfig = { key: 'date', ascending: false };
 let dateRange = { start: null, end: null };
-let showHiddenTransaction = true;
+let showOrHideTransaction = false;
 
 export const loadTransactions = () => {
     try {
@@ -18,16 +17,14 @@ export const loadTransactions = () => {
         transactionsData = JSON.parse(transactionsDataScript.textContent);
         if (!Array.isArray(transactionsData)) {
             error('Invalid transaction data found.', 'loadTransactions');
+            return;
         }
 
         filteredData = transactionsData;
 
         fillContractFilter();
-
         setupToggleButtons();
-
         setupEventListeners();
-
         filterTransactions();
     } catch (err) {
     }
@@ -55,70 +52,44 @@ function setupToggleButtons() {
 function generateTransactionHTML({ transaction, contract }, index) {
     const amountClass = transaction.amount < 0 ? 'negative' : 'positive';
     const balanceClass = transaction.bank_balance_after < 0 ? 'negative' : 'positive';
-    let contractRow = '';
+    const rowClass = transaction.is_hidden ? 'hidden_transaction' : '';
+    let displayStyle = 'table-row';
 
     if (transaction.is_hidden) {
-        hidden_transactions.push(transaction.id);
+        displayStyle = showOrHideTransaction ? 'table-row' : 'none';
     }
 
-    const rowClass = transaction.is_hidden ? 'hidden_transaction' : '';
-    const contractRowStyle = transaction.is_hidden ? 'display: none;' : '';
+    let contractName = '';
+    let contractAmount = '';
+    let monthsBetweenPayment = '';
+    let contractEndDate = '';
+    let contractAction = '';
 
     if (contract) {
         const contractAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
-        contractRow = `
-            <tr class="${rowClass} contract-row" style="${contractRowStyle}">
-            <td colspan="4" style="padding-left: 0; text-align: right;">
-                    <button onclick="removeContract(${index})">Remove Contract</button>
-                        <table class="contract-table" style="width: auto;">
-                            <thead>
-                                <tr>
-                                    <th>Contract Name</th>
-                                    <th>Contract Current Amount</th>
-                                    <th>Months Between Payment</th>
-                                    ${contract.end_date ? '<th>Contract End Date</th>' : ''}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>${contract.name}</td>
-                                    <td><span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span></td>
-                                    <td>${contract.months_between_payment}</td>
-                                    ${contract.end_date ? `<td>${formatDate(contract.end_date)}</td>` : ''}
-                                </tr>
-                            </tbody>
-                        </table>
-                </td>
-            </tr>
-        `;
+        contractName = contract.name;
+        contractAmount = `<span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span>`;
+        monthsBetweenPayment = contract.months_between_payment;
+        contractEndDate = contract.end_date ? formatDate(contract.end_date) : '';
+        contractAction = `<button onclick="removeContract(${index})">Remove Contract</button>`;
     } else {
-        contractRow = `
-            <tr class="${rowClass} contract-row" style="${contractRowStyle}">
-                <td colspan="4" style="text-align: right;">
-                        <table class="contract-table">
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <button onclick="addContract(${index})">Add Contract</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                </td>
-            </tr>
-        `;
+        contractAction = `<button onclick="addContract(${index})">Add Contract</button>`;
     }
 
     return `
-        <tr class="transaction-row ${rowClass}" data-index="${index}" data-id="${transaction.id}">
+        <tr class="transaction-row ${rowClass}" style="display: ${displayStyle}" data-index="${index}" data-id="${transaction.id}">
             <td>${transaction.counterparty}</td>
             <td class="${amountClass}">$${transaction.amount.toFixed(2)}</td>
             <td class="${balanceClass}">$${transaction.bank_balance_after.toFixed(2)}</td>
             <td>${formatDate(transaction.date)}</td>
+            <td>${contractName}</td>
+            <td>${contractAmount}</td>
+            <td>${monthsBetweenPayment}</td>
+            <td>${contractEndDate}</td>
+            <td>${contractAction}</td>
         </tr>
-        ${contractRow}
     `;
-};
+}
 
 function setupEventListeners() {
     document.getElementById('transaction-search').addEventListener('input', filterTransactions);
@@ -152,11 +123,18 @@ function setupEventListeners() {
             filterTransactions();  // Apply filter when dates are selected
         }
     });
+
+    updateTransactionTable();
 };
 
-function attachRowEventListeners() {
-    const rows = document.querySelectorAll('.transaction-row');
+function updateTransactionTable() {
+    document.getElementById('transaction-table-body').innerHTML = filteredData
+        .map((item, index) => generateTransactionHTML(item, index))
+        .join('');
+    attachRowEventListeners();
+}
 
+function attachRowEventListeners() {
     document.querySelectorAll('.transaction-row').forEach(row => {
         row.addEventListener('click', (event) => handleRowSelection(event, row));
     });
@@ -168,26 +146,43 @@ function sortColumn(key) {
 
     sortData();
     updateSortIcons();
-
     attachRowEventListeners();
 };
 
 function sortData() {
     if (!sortConfig.key) return;
 
-    filteredData.sort((a, b) => {
-        const aValue = a.transaction[sortConfig.key];
-        const bValue = b.transaction[sortConfig.key];
+    // Helper function to get the value based on sortConfig.key
+    function getValue(item) {
+        return item.transaction?.[sortConfig.key] ?? item.contract?.[sortConfig.key];
+    }
 
-        if (aValue < bValue) return sortConfig.ascending ? -1 : 1;
-        if (aValue > bValue) return sortConfig.ascending ? 1 : -1;
+    filteredData.sort((a, b) => {
+        const aValue = getValue(a);
+        const bValue = getValue(b);
+
+        // Define the sort direction based on the sortConfig
+        const direction = sortConfig.ascending ? 1 : -1;
+
+        // Check if values are undefined and sort them accordingly
+        if (aValue === undefined && bValue === undefined) return 0;
+        if (aValue === undefined) return direction;
+        if (bValue === undefined) return -direction;
+
+        // Handle null values
+        if (aValue === null && bValue === null) return 0;
+        if (aValue === null) return direction;
+        if (bValue === null) return -direction;
+
+        // Compare non-null values
+        if (aValue < bValue) return -direction;
+        if (aValue > bValue) return direction;
         return 0;
     });
 
-    document.getElementById('transaction-table-body').innerHTML = filteredData
-        .map((item, index) => generateTransactionHTML(item, index, index + 1))
-        .join('');
-};
+    updateTransactionTable();
+}
+
 
 function updateSortIcons() {
     document.querySelectorAll('.sortable').forEach(header => {
@@ -215,7 +210,6 @@ function filterTransactions() {
         const formattedDate = formatDate(date);
         const amountString = amount.toFixed(2);
 
-        // Check if transaction date is within the selected date range
         const transactionDate = new Date(date);
         const withinDateRange = (!dateRange.start || !dateRange.end) ||
             (transactionDate >= dateRange.start && transactionDate <= dateRange.end);
@@ -233,9 +227,8 @@ function filterTransactions() {
     });
 
     sortData();
-
-    attachRowEventListeners();
-};
+    updateTransactionTable();
+}
 
 function handleHideOrRemove(action) {
     const selectedRows = document.querySelectorAll('.transaction-row.selected');
@@ -262,20 +255,8 @@ function handleHideOrRemove(action) {
                             row.classList.add('hidden_transaction');
 
                             filteredData[transactionIndex].transaction.is_hidden = true;
-
-                            hidden_transactions.push(row.getAttribute('data-id'));
-
-                            const contractRow = row.nextElementSibling;
-                            if (contractRow && contractRow.classList.contains('contract-row')) {
-                                contractRow.style.display = 'none';
-                            }
                         } else {
                             filteredData.splice(transactionIndex, 1);
-
-                            const contractRow = row.nextElementSibling;
-                            if (contractRow && contractRow.classList.contains('contract-row')) {
-                                contractRow.remove();
-                            }
                         }
                     }
                 });
@@ -295,20 +276,15 @@ function showHiddenTransactions() {
     const slider = toggleButton.querySelector('.slider');
 
     slider.classList.toggle('active');
+    showOrHideTransaction = !showOrHideTransaction;
 
-    const state = slider.classList.contains('active');
-    const displayStyle = state ? 'table-row' : 'none';
+    const displayStyle = showOrHideTransaction ? 'table-row' : 'none';
 
-    hidden_transactions.forEach(id => {
-        const transactionRow = document.querySelector(`.transaction-row[data-id="${id}"]`);
+    const hiddenTransactions = document.querySelectorAll('.hidden_transaction');
+
+    hiddenTransactions.forEach(transactionRow => {
         if (transactionRow) {
             transactionRow.style.display = displayStyle;
-
-            // Also update the associated contract row visibility
-            const contractRow = transactionRow.nextElementSibling;
-            if (contractRow && contractRow.classList.contains('contract-row')) {
-                contractRow.style.display = displayStyle;
-            }
         }
     });
-};
+}

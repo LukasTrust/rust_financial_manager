@@ -37,18 +37,23 @@
             </div>
 
             <table class="transaction-table">
-                <thead>
-                    <tr>
-                        <th data-key="counterparty" class="sortable">Counterparty <span>↑</span></th>
-                        <th data-key="amount" class="sortable">Amount <span>↑</span></th>
-                        <th data-key="bank_balance_after" class="sortable">Bank Balance After <span>↑</span></th>
-                        <th data-key="date" class="sortable">Date <span>↑</span></th>
-                    </tr>
-                </thead>
-                <tbody id="transaction-table-body">
-                    <!-- Transactions will be dynamically inserted here -->
-                </tbody>
-            </table>
+            <thead>
+                <tr>
+                <th data-key="counterparty" class="sortable">Counterparty <span>↑</span></th>
+                <th data-key="amount" class="sortable">Amount <span>↑</span></th>
+                <th data-key="bank_balance_after" class="sortable">Bank Balance After <span>↑</span></th>
+                <th data-key="date" class="sortable">Date <span>↑</span></th>
+                <th data-key="name" class="sortable">Contract Name <span>↑</span></th>
+                <th data-key="current_amount" class="sortable">Contract Current Amount <span>↑</span></th>
+                <th data-key="months_between_payment" class="sortable">Months Between Payment <span>↑</span></th>
+                <th data-key="end_date" class="sortable">Contract End Date <span>↑</span></th>
+                <th>Contract Action</th>
+            </tr>
+    </thead>
+    <tbody id="transaction-table-body">
+        <!-- Transactions will be dynamically inserted here -->
+    </tbody>
+</table>
         </div>
     </div>
 
