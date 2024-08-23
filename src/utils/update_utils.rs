@@ -7,39 +7,20 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::CSVConverter;
 use crate::schema::{contracts, csv_converters, transactions};
 
-pub async fn update_transaction_with_contract_id(
+pub async fn update_transaction_with_contract(
     transaction_id: i32,
-    contract_id: i32,
+    contract_id: Option<i32>,
     db: &mut Connection<DbConn>,
 ) -> Result<(), String> {
     diesel::update(transactions::table.find(transaction_id))
-        .set(transactions::contract_id.eq(Some(contract_id)))
+        .set(transactions::contract_id.eq(contract_id))
         .execute(db)
         .await
         .map_err(|_| "Error updating transaction")?;
 
     info!(
-        "Transaction ID {} updated with contract ID {}.",
+        "Transaction ID {} updated with contract ID {:?}.",
         transaction_id, contract_id
-    );
-    Ok(())
-}
-
-pub async fn update_transaction_remove_contract_id(
-    transaction_ids: Vec<i32>,
-    db: &mut Connection<DbConn>,
-) -> Result<(), String> {
-    use crate::schema::transactions::dsl::*;
-
-    diesel::update(transactions.filter(id.eq_any(transaction_ids.clone())))
-        .set(contract_id.eq(None::<i32>))
-        .execute(db)
-        .await
-        .map_err(|_| "Error updating transactions")?;
-
-    info!(
-        "Transaction IDs {:?} updated with contract ID None.",
-        transaction_ids
     );
 
     Ok(())

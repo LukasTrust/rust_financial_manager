@@ -1,5 +1,5 @@
 import { formatDate, displayCustomAlert } from './utils.js';
-import { error } from './main.js';
+import { error, log } from './main.js';
 
 let filteredData = [];
 let transactionsData = [];
@@ -71,13 +71,13 @@ function generateTransactionHTML({ transaction, contract }, index) {
         contractAmount = `<span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span>`;
         monthsBetweenPayment = contract.months_between_payment;
         contractEndDate = contract.end_date ? formatDate(contract.end_date) : '';
-        contractAction = `<button onclick="removeContract(${index})">Remove Contract</button>`;
+        contractAction = `<button class="remove-contract-btn" data-index="${index}">Remove Contract</button>`;
     } else {
-        contractAction = `<button onclick="addContract(${index})">Add Contract</button>`;
+        contractAction = `<button class="add-contract-btn" data-index="${index}">Add Contract</button>`;
     }
 
     return `
-        <tr class="transaction-row ${rowClass}" style="display: ${displayStyle}" data-index="${index}" data-id="${transaction.id}">
+        <tr class="transaction-row ${rowClass}" style="display: ${displayStyle}" data-index="${index}">
             <td>${transaction.counterparty}</td>
             <td class="${amountClass}">$${transaction.amount.toFixed(2)}</td>
             <td class="${balanceClass}">$${transaction.bank_balance_after.toFixed(2)}</td>
@@ -99,10 +99,6 @@ function setupEventListeners() {
         header.addEventListener('click', () => sortColumn(header.dataset.key));
     });
 
-    document.getElementById('remove-transaction').addEventListener('click', () => {
-        handleHideOrRemove('remove');
-    });
-
     document.getElementById('hide-transaction').addEventListener('click', () => {
         handleHideOrRemove('hide');
     });
@@ -112,6 +108,18 @@ function setupEventListeners() {
         .join('');
 
     document.getElementById('toggle-hidden-transaction').addEventListener('click', showHiddenTransactions);
+
+    const tableBody = document.getElementById('transaction-table-body');
+
+    // Handle click events for remove contract buttons
+    tableBody.addEventListener('click', (event) => {
+        const index = event.target.getAttribute('data-index');
+        if (event.target.classList.contains('remove-contract-btn')) {
+            removeContract(index);
+        } else if (event.target.classList.contains('add-contract-btn')) {
+            handleAddContract(event);
+        }
+    });
 
     flatpickr("#date-range", {
         mode: "range",  // Enable range selection mode
@@ -131,6 +139,7 @@ function updateTransactionTable() {
     document.getElementById('transaction-table-body').innerHTML = filteredData
         .map((item, index) => generateTransactionHTML(item, index))
         .join('');
+
     attachRowEventListeners();
 }
 
@@ -228,6 +237,39 @@ function filterTransactions() {
 
     sortData();
     updateTransactionTable();
+}
+
+function removeContract(index) {
+    const transaction = filteredData[index].transaction;
+
+    fetch(`/bank/transaction/remove/${transaction.id}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+        .then(async response => {
+            if (response.ok) {
+                filteredData[index].contract = null;
+                transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = null;
+
+                updateTransactionTable();
+
+                log('Contract removed successfully:', 'removeContract', response);
+
+                const json = await response.json();
+
+                if (json.success) {
+                    displayCustomAlert('success', json.header, json.success, 'Close');
+                } else if (json.error) {
+                    displayCustomAlert('error', json.header, json.error, 'Close');
+                }
+            } else {
+                error('Error removing contract:', 'removeContract', response);
+                displayCustomAlert('error', 'Error removing contract.', 'An error occurred while trying to remove the contract.', 'Close');
+            }
+        })
+        .catch(err => error('Error while trying to remove contract:', 'removeContract', err));
 }
 
 function handleHideOrRemove(action) {

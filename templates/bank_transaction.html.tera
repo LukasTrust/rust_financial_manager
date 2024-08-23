@@ -11,7 +11,6 @@
         <div class="container-without-border">
             <h1>Transactions</h1>
             <div class="container-without-border-horizontally">
-                <button id="remove-transaction" style="width: auto">Remove transaction from contract</button>
                 <button id="hide-transaction" style="width: auto">Hide transaction</button>
                 <div class="container-without-border-horizontally-header" style="width: auto">
                     <button id="toggle-hidden-transaction" class="toggle-button">

@@ -7,7 +7,7 @@ use crate::utils::loading_utils::{
 };
 use crate::utils::structs::Transaction;
 use crate::utils::update_utils::{
-    update_contract_with_new_amount, update_transaction_with_contract_id,
+    update_contract_with_new_amount, update_transaction_with_contract,
 };
 use chrono::{Datelike, NaiveDate};
 use log::info;
@@ -168,7 +168,7 @@ async fn update_transactions_with_contract_id(
 ) -> Result<()> {
     for (contract_id, transactions) in contracts_with_transactions {
         for transaction in transactions {
-            update_transaction_with_contract_id(transaction.id, contract_id, db).await?;
+            update_transaction_with_contract(transaction.id, Some(contract_id), db).await?;
         }
     }
 
@@ -312,9 +312,9 @@ async fn create_contracts_from_transactions(
                         let contract_id = insert_contract(contract, db).await?;
 
                         for transaction_id in &transaction_ids {
-                            update_transaction_with_contract_id(
+                            update_transaction_with_contract(
                                 *transaction_id,
-                                contract_id.id,
+                                Some(contract_id.id),
                                 db,
                             )
                             .await?;

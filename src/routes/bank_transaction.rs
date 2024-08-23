@@ -11,7 +11,7 @@ use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_transactions_with_contract, get_user_id};
 use crate::utils::structs::ResponseData;
-use crate::utils::update_utils::update_transaction_remove_contract_id;
+use crate::utils::update_utils::update_transaction_with_contract;
 use crate::utils::update_utils::update_transaction_with_hidden;
 
 #[derive(Deserialize)]
@@ -72,18 +72,12 @@ pub async fn bank_transaction(
     Ok(Template::render("bank_transaction", json!(result)))
 }
 
-#[post(
-    "/bank/transaction/remove",
-    format = "json",
-    data = "<transaction_ids>"
-)]
+#[get("/bank/transaction/remove/<bank_id>")]
 pub async fn transaction_remove(
-    transaction_ids: Json<TransactionIds>,
+    bank_id: i32,
     mut db: Connection<DbConn>,
-) -> Result<(), Json<ResponseData>> {
-    let ids = &transaction_ids.ids;
-
-    let result = update_transaction_remove_contract_id(ids.clone(), &mut db).await;
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
+    let result = update_transaction_with_contract(bank_id, None::<i32>, &mut db).await;
 
     if result.is_err() {
         return Err(Json(ResponseData {
@@ -93,7 +87,11 @@ pub async fn transaction_remove(
         }));
     }
 
-    Ok(())
+    Ok(Json(ResponseData {
+        success: Some("The contract was removed from the transactions.".into()),
+        error: None,
+        header: Some("Contract removed".into()),
+    }))
 }
 
 #[post("/bank/transaction/hide", format = "json", data = "<transaction_ids>")]
