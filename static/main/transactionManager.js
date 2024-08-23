@@ -61,8 +61,6 @@ function generateTransactionHTML({ transaction, contract }, index) {
 
     let contractName = '';
     let contractAmount = '';
-    let monthsBetweenPayment = '';
-    let contractEndDate = '';
     let contractAction = '';
     let visibility = transaction.is_hidden ? `<button class="table_button show-btn" data-index="${index}">Display</button>`
         : `<button class="table_button hide-btn" data-index="${index}">Hide</button>`;
@@ -71,8 +69,6 @@ function generateTransactionHTML({ transaction, contract }, index) {
         const contractAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
         contractName = contract.name;
         contractAmount = `<span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span>`;
-        monthsBetweenPayment = contract.months_between_payment;
-        contractEndDate = contract.end_date ? formatDate(contract.end_date) : '';
         contractAction = `<button class="table_button remove-contract-btn" data-index="${index}">Remove Contract</button>`;
     } else {
         contractAction = `<button class="table_button add-contract-btn" data-index="${index}">Add Contract</button>`;
@@ -114,7 +110,7 @@ function setupEventListeners() {
         if (event.target.classList.contains('remove-contract-btn')) {
             removeContract(index);
         } else if (event.target.classList.contains('add-contract-btn')) {
-            handleAddContract(event);
+            handleAddContract(index);
         } else if (event.target.classList.contains('hide-btn')) {
             handleHideTransaction(index);
         } else if (event.target.classList.contains('show-btn')) {
@@ -181,9 +177,9 @@ function sortData() {
         return 0;
     });
 
-    const test = filteredData.find(item => !item.transaction.is_hidden);
+    const noVisableTransaction = filteredData.find(item => !item.transaction.is_hidden);
 
-    if (!test && !showOrHideTransaction) {
+    if (!noVisableTransaction && !showOrHideTransaction) {
         showHiddenTransactions();
     }
 
@@ -233,11 +229,11 @@ function filterTransactions() {
 
     sortData();
 }
-
-function removeContract(index) {
+// Generalized function to handle transaction operations
+function handleTransactionOperation(index, url, successCallback, errorMessage, buttonText = null) {
     const transaction = filteredData[index].transaction;
 
-    fetch(`/bank/transaction/remove/${transaction.id}`, {
+    fetch(url, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -245,12 +241,11 @@ function removeContract(index) {
     })
         .then(async response => {
             if (response.ok) {
-                filteredData[index].contract = null;
-                transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = null;
+                successCallback();
 
                 updateTransactionTable();
 
-                log('Contract removed successfully:', 'removeContract', response);
+                log(`${errorMessage} successfully:`, url, response);
 
                 const json = await response.json();
 
@@ -260,11 +255,68 @@ function removeContract(index) {
                     displayCustomAlert('error', json.header, json.error, 'Close');
                 }
             } else {
-                error('Error removing contract:', 'removeContract', response);
-                displayCustomAlert('error', 'Error removing contract.', 'An error occurred while trying to remove the contract.', 'Close');
+                error(`Error ${errorMessage}:`, url, response);
+                displayCustomAlert('error', `Error ${errorMessage}.`, `An error occurred while trying to ${errorMessage}.`, 'Close');
             }
         })
-        .catch(err => error('Error while trying to remove contract:', 'removeContract', err));
+        .catch(err => error(`Error while trying to ${errorMessage}:`, url, err));
+}
+
+// Refactored removeContract function
+function removeContract(index) {
+    handleTransactionOperation(
+        index,
+        `/bank/transaction/remove/${filteredData[index].transaction.id}`,
+        () => {
+            filteredData[index].contract = null;
+            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = null;
+        },
+        'remove contract'
+    );
+}
+
+// Refactored handleHideTransaction function
+function handleHideTransaction(index) {
+    handleTransactionOperation(
+        index,
+        `/bank/transaction/hide/${filteredData[index].transaction.id}`,
+        () => {
+            filteredData[index].transaction.is_hidden = true;
+            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).transaction.is_hidden = true;
+
+            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
+            row.style.display = showOrHideTransaction ? 'table-row' : 'none';
+            row.classList.add('hidden_transaction');
+
+            const hiddenButton = row.querySelector('.hide-btn');
+            hiddenButton.classList.remove('hide-btn');
+            hiddenButton.classList.add('show-btn');
+            hiddenButton.textContent = 'Display';
+        },
+        'hide transaction'
+    );
+}
+
+// Refactored handleShowTransaction function
+function handleShowTransaction(index) {
+    handleTransactionOperation(
+        index,
+        `/bank/transaction/show/${filteredData[index].transaction.id}`,
+        () => {
+            filteredData[index].transaction.is_hidden = false;
+            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).transaction.is_hidden = false;
+
+            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
+            row.style.display = 'table-row';
+            row.classList.remove('hidden_transaction');
+
+            const hiddenButton = row.querySelector('.show-btn');
+            hiddenButton.classList.remove('show-btn');
+            hiddenButton.classList.add('hide-btn');
+            hiddenButton.textContent = 'Hide';
+        },
+        'show transaction'
+    );
 }
 
 function showHiddenTransactions() {

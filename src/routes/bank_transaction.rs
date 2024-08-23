@@ -2,10 +2,9 @@ use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::serde::json::json;
 use rocket::serde::json::Json;
-use rocket::{get, post, State};
+use rocket::{get, State};
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::Template;
-use serde::Deserialize;
 
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
@@ -13,11 +12,6 @@ use crate::utils::get_utils::{get_transactions_with_contract, get_user_id};
 use crate::utils::structs::ResponseData;
 use crate::utils::update_utils::update_transaction_with_contract;
 use crate::utils::update_utils::update_transaction_with_hidden;
-
-#[derive(Deserialize)]
-pub struct TransactionIds {
-    ids: Vec<i32>,
-}
 
 #[get("/bank/transaction")]
 pub async fn bank_transaction(
@@ -72,12 +66,12 @@ pub async fn bank_transaction(
     Ok(Template::render("bank_transaction", json!(result)))
 }
 
-#[get("/bank/transaction/remove/<bank_id>")]
+#[get("/bank/transaction/remove/<transaction_id>")]
 pub async fn transaction_remove(
-    bank_id: i32,
+    transaction_id: i32,
     mut db: Connection<DbConn>,
 ) -> Result<Json<ResponseData>, Json<ResponseData>> {
-    let result = update_transaction_with_contract(bank_id, None::<i32>, &mut db).await;
+    let result = update_transaction_with_contract(transaction_id, None::<i32>, &mut db).await;
 
     if result.is_err() {
         return Err(Json(ResponseData {
@@ -94,14 +88,12 @@ pub async fn transaction_remove(
     }))
 }
 
-#[post("/bank/transaction/hide", format = "json", data = "<transaction_ids>")]
+#[get("/bank/transaction/hide/<transaction_id>")]
 pub async fn transaction_hide(
-    transaction_ids: Json<TransactionIds>,
+    transaction_id: i32,
     mut db: Connection<DbConn>,
-) -> Result<(), Json<ResponseData>> {
-    let ids = &transaction_ids.ids;
-
-    let result = update_transaction_with_hidden(ids.clone(), true, &mut db).await;
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
+    let result = update_transaction_with_hidden(transaction_id, true, &mut db).await;
 
     if result.is_err() {
         return Err(Json(ResponseData {
@@ -114,17 +106,19 @@ pub async fn transaction_hide(
         }));
     }
 
-    Ok(())
+    Ok(Json(ResponseData {
+        success: Some("The transaction will now be hidden.".into()),
+        error: None,
+        header: Some("Transaction hidden".into()),
+    }))
 }
 
-#[post("/bank/transaction/show", format = "json", data = "<transaction_ids>")]
+#[get("/bank/transaction/show/<transaction_id>")]
 pub async fn transaction_show(
-    transaction_ids: Json<TransactionIds>,
+    transaction_id: i32,
     mut db: Connection<DbConn>,
-) -> Result<(), Json<ResponseData>> {
-    let ids = &transaction_ids.ids;
-
-    let result = update_transaction_with_hidden(ids.clone(), false, &mut db).await;
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
+    let result = update_transaction_with_hidden(transaction_id, false, &mut db).await;
 
     if result.is_err() {
         return Err(Json(ResponseData {
@@ -137,5 +131,9 @@ pub async fn transaction_show(
         }));
     }
 
-    Ok(())
+    Ok(Json(ResponseData {
+        success: Some("The transaction will now be displayed.".into()),
+        error: None,
+        header: Some("Transaction shown".into()),
+    }))
 }

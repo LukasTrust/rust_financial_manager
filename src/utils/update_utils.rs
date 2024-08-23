@@ -27,21 +27,21 @@ pub async fn update_transaction_with_contract(
 }
 
 pub async fn update_transaction_with_hidden(
-    transactions_ids: Vec<i32>,
+    transactions_id: i32,
     is_hidden_for_updating: bool,
     db: &mut Connection<DbConn>,
 ) -> Result<(), String> {
     use crate::schema::transactions::dsl::*;
 
-    diesel::update(transactions.filter(id.eq_any(transactions_ids.clone())))
+    diesel::update(transactions.filter(id.eq(transactions_id)))
         .set(is_hidden.eq(is_hidden_for_updating))
         .execute(db)
         .await
-        .map_err(|_| "Error updating transactions")?;
+        .map_err(|_| "Error updating transaction")?;
 
     info!(
-        "Transaction IDs {:?} updated with hidden {}.",
-        transactions_ids, is_hidden_for_updating
+        "Transaction ID {} updated with hidden status.",
+        transactions_id
     );
 
     Ok(())
