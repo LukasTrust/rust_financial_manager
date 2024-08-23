@@ -64,6 +64,8 @@ function generateTransactionHTML({ transaction, contract }, index) {
     let monthsBetweenPayment = '';
     let contractEndDate = '';
     let contractAction = '';
+    let visibility = transaction.is_hidden ? `<button class="table_button show-btn" data-index="${index}">Display</button>`
+        : `<button class="table_button hide-btn" data-index="${index}">Hide</button>`;
 
     if (contract) {
         const contractAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
@@ -71,9 +73,9 @@ function generateTransactionHTML({ transaction, contract }, index) {
         contractAmount = `<span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span>`;
         monthsBetweenPayment = contract.months_between_payment;
         contractEndDate = contract.end_date ? formatDate(contract.end_date) : '';
-        contractAction = `<button class="remove-contract-btn" data-index="${index}">Remove Contract</button>`;
+        contractAction = `<button class="table_button remove-contract-btn" data-index="${index}">Remove Contract</button>`;
     } else {
-        contractAction = `<button class="add-contract-btn" data-index="${index}">Add Contract</button>`;
+        contractAction = `<button class="table_button add-contract-btn" data-index="${index}">Add Contract</button>`;
     }
 
     return `
@@ -84,9 +86,8 @@ function generateTransactionHTML({ transaction, contract }, index) {
             <td>${formatDate(transaction.date)}</td>
             <td>${contractName}</td>
             <td>${contractAmount}</td>
-            <td>${monthsBetweenPayment}</td>
-            <td>${contractEndDate}</td>
             <td>${contractAction}</td>
+            <td>${visibility}</td>
         </tr>
     `;
 }
@@ -97,10 +98,6 @@ function setupEventListeners() {
 
     document.querySelectorAll('.sortable').forEach(header => {
         header.addEventListener('click', () => sortColumn(header.dataset.key));
-    });
-
-    document.getElementById('hide-transaction').addEventListener('click', () => {
-        handleHideOrRemove('hide');
     });
 
     document.getElementById('transaction-table-body').innerHTML = filteredData
@@ -118,6 +115,10 @@ function setupEventListeners() {
             removeContract(index);
         } else if (event.target.classList.contains('add-contract-btn')) {
             handleAddContract(event);
+        } else if (event.target.classList.contains('hide-btn')) {
+            handleHideTransaction(index);
+        } else if (event.target.classList.contains('show-btn')) {
+            handleShowTransaction(index);
         }
     });
 
@@ -139,14 +140,6 @@ function updateTransactionTable() {
     document.getElementById('transaction-table-body').innerHTML = filteredData
         .map((item, index) => generateTransactionHTML(item, index))
         .join('');
-
-    attachRowEventListeners();
-}
-
-function attachRowEventListeners() {
-    document.querySelectorAll('.transaction-row').forEach(row => {
-        row.addEventListener('click', (event) => handleRowSelection(event, row));
-    });
 }
 
 function sortColumn(key) {
@@ -155,7 +148,6 @@ function sortColumn(key) {
 
     sortData();
     updateSortIcons();
-    attachRowEventListeners();
 };
 
 function sortData() {
@@ -189,6 +181,12 @@ function sortData() {
         return 0;
     });
 
+    const test = filteredData.find(item => !item.transaction.is_hidden);
+
+    if (!test && !showOrHideTransaction) {
+        showHiddenTransactions();
+    }
+
     updateTransactionTable();
 }
 
@@ -205,9 +203,7 @@ function updateSortIcons() {
     });
 };
 
-function handleRowSelection(event, row) {
-    row.classList.toggle('selected');
-};
+
 
 function filterTransactions() {
     const searchQuery = document.getElementById('transaction-search').value.toLowerCase();
@@ -236,7 +232,6 @@ function filterTransactions() {
     });
 
     sortData();
-    updateTransactionTable();
 }
 
 function removeContract(index) {
@@ -271,47 +266,6 @@ function removeContract(index) {
         })
         .catch(err => error('Error while trying to remove contract:', 'removeContract', err));
 }
-
-function handleHideOrRemove(action) {
-    const selectedRows = document.querySelectorAll('.transaction-row.selected');
-
-    const selectedIds = Array.from(selectedRows).map(row => parseInt(row.dataset.id));
-
-    fetch(`/bank/transaction/${action}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ids: selectedIds }),
-    })
-        .then(result => {
-            const action_text = action === 'hide' ? 'hidden' : 'removed';
-
-            if (result.ok) {
-                selectedRows.forEach(row => {
-                    const transactionIndex = filteredData.findIndex(item => item.transaction.id === parseInt(row.dataset.id));
-                    if (transactionIndex !== -1) {
-                        row.classList.remove('selected');
-
-                        if (action === 'hide') {
-                            row.classList.add('hidden_transaction');
-
-                            filteredData[transactionIndex].transaction.is_hidden = true;
-                        } else {
-                            filteredData.splice(transactionIndex, 1);
-                        }
-                    }
-                });
-
-                const body_text = 'A total of ' + selectedIds.length + ' transactions have been ' + action_text + ' successfully.';
-                displayCustomAlert('success', 'Transactions have been hidden successfully.', body_text, 'Close');
-            } else {
-                const body_text = 'An error occurred while trying to ' + action_text + ' a total of ' + selectedIds.length + ' transactions.';
-                displayCustomAlert('error', 'Error ' + action_text + ' transactions.', body_text, 'Close');
-            }
-        })
-        .catch(err => error('Error while trying to ' + action + ' transactions:', 'handleHideOrRemove', err));
-};
 
 function showHiddenTransactions() {
     const toggleButton = document.getElementById('toggle-hidden-transaction');

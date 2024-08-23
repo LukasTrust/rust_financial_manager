@@ -367,7 +367,6 @@ label {
 .transaction-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
 }
 
 .sort-icon {
@@ -395,16 +394,16 @@ label {
     font-weight: bold;
 }
 
-.transaction-row.selected {
-    background-color: #52a5ff;
-    border-color: #007BFF;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
 .hidden_transaction {
     display: none;
     background-color: #d3d3d3;
     color: #777;
+}
+
+.table_button {
+    width: 100%;
+    align-self: center;
+    margin: 0px;
 }
 
 .toggle-button {
