@@ -58,6 +58,7 @@ pub struct Transaction {
     pub amount: f64,
     pub bank_balance_after: f64,
     pub is_hidden: bool,
+    pub contract_not_allowed: bool,
 }
 
 #[derive(Debug)]

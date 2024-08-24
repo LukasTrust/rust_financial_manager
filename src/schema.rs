@@ -55,6 +55,7 @@ diesel::table! {
         amount -> Float8,
         bank_balance_after -> Float8,
         is_hidden -> Bool,
+        contract_not_allowed -> Bool,
     }
 }
 

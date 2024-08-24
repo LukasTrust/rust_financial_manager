@@ -47,6 +47,27 @@ pub async fn update_transaction_with_hidden(
     Ok(())
 }
 
+pub async fn update_transaction_with_contract_not_allowed(
+    transaction_id: i32,
+    contract_not_allowed_for_updating: bool,
+    db: &mut Connection<DbConn>,
+) -> Result<(), String> {
+    use crate::schema::transactions::dsl::*;
+
+    diesel::update(transactions.filter(id.eq(transaction_id)))
+        .set(contract_not_allowed.eq(contract_not_allowed_for_updating))
+        .execute(db)
+        .await
+        .map_err(|_| "Error updating transaction")?;
+
+    info!(
+        "Transaction ID {} updated with has_no_contract status.",
+        transaction_id
+    );
+
+    Ok(())
+}
+
 pub async fn update_contract_with_new_amount(
     contract_id: i32,
     new_amount: f64,

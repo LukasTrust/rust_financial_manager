@@ -161,6 +161,33 @@ pub async fn load_transactions_of_contract(
     Ok(transactions_result)
 }
 
+pub async fn load_transaction_by_id(
+    transaction_id_for_loading: i32,
+    db: &mut Connection<DbConn>,
+) -> Result<Option<Transaction>, String> {
+    use crate::schema::transactions as transactions_without_dsl;
+    use crate::schema::transactions::dsl::*;
+
+    let transaction_result = transactions_without_dsl::table
+        .filter(id.eq(transaction_id_for_loading))
+        .first::<Transaction>(db)
+        .await;
+
+    match transaction_result {
+        Ok(transaction) => {
+            info!("Transaction loaded: {:?}", transaction);
+            Ok(Some(transaction))
+        }
+        Err(_) => {
+            info!(
+                "No transaction found with ID {}",
+                transaction_id_for_loading
+            );
+            Ok(None)
+        }
+    }
+}
+
 pub async fn load_last_transaction_data_of_contract(
     contract_id_for_loading: i32,
     db: &mut Connection<DbConn>,
