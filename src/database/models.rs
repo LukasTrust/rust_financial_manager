@@ -34,7 +34,7 @@ pub struct NewBank {
 
 #[derive(Insertable, Debug, Queryable)]
 #[diesel(table_name = transactions)]
-pub struct NewTransactions {
+pub struct NewTransaction {
     pub bank_id: i32,
     pub date: NaiveDate,
     pub counterparty: String,

@@ -6,18 +6,17 @@ use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::serde::json::Json;
 use rocket::{post, State};
-use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
+use rocket_db_pools::Connection;
 use serde_json::{json, Value};
-use std::collections::HashMap;
 use std::io::Cursor;
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{CSVConverter, NewTransactions};
-use crate::schema::transactions;
+use crate::database::models::{CSVConverter, NewTransaction};
 use crate::utils::appstate::AppState;
 use crate::utils::create_contract::create_contract_from_transactions;
 use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
-use crate::utils::loading_utils::load_csv_converter_of_bank;
+use crate::utils::insert_utiles::insert_transactions;
+use crate::utils::loading_utils::{load_csv_converter_of_bank, load_transactions_of_bank};
 use crate::utils::structs::{Bank, ResponseData, Transaction};
 
 #[post("/upload_csv", data = "<data>")]
@@ -42,6 +41,8 @@ pub async fn upload_csv(
 
     let current_bank = current_bank.unwrap();
 
+    let transactions_task = load_transactions_of_bank(current_bank.id, &mut db);
+
     // Read the CSV file
     let data_stream = match data.open(512.kibibytes()).into_bytes().await {
         Ok(bytes) => bytes,
@@ -61,7 +62,15 @@ pub async fn upload_csv(
         .flexible(true)
         .from_reader(cursor);
 
-    let result = extract_and_process_records(&mut rdr, current_bank.clone(), &mut db).await;
+    let existing_transactions = transactions_task.await.unwrap_or_default();
+
+    let result = extract_and_process_records(
+        &mut rdr,
+        current_bank.clone(),
+        existing_transactions,
+        &mut db,
+    )
+    .await;
 
     match result {
         Ok(result_string) => {
@@ -108,12 +117,10 @@ pub async fn upload_csv(
 async fn extract_and_process_records<R: std::io::Read>(
     rdr: &mut csv::Reader<R>,
     current_bank: Bank,
+    existing_transactions: Vec<Transaction>,
     db: &mut Connection<DbConn>,
 ) -> Result<String, String> {
-    let mut succesful_inserts = 0;
-    let mut failed_inserts = 0;
-
-    let mut new_transactions: HashMap<i32, Vec<Transaction>> = HashMap::new();
+    let mut transactions_to_insert = vec![];
 
     let csv_converter = load_csv_converter_of_bank(current_bank.id, db).await?;
 
@@ -212,7 +219,7 @@ async fn extract_and_process_records<R: std::io::Read>(
             continue;
         }
 
-        let new_transaction = NewTransactions {
+        let new_transaction = NewTransaction {
             bank_id: current_bank.id,
             date: date_from_csv,
             counterparty: counterparty_from_csv.to_string(),
@@ -220,23 +227,11 @@ async fn extract_and_process_records<R: std::io::Read>(
             bank_balance_after,
         };
 
-        let result = diesel::insert_into(transactions::table)
-            .values(&new_transaction)
-            .get_result::<Transaction>(db)
-            .await;
-
-        match result {
-            Ok(transaction) => {
-                new_transactions
-                    .entry(current_bank.id)
-                    .or_insert_with(Vec::new)
-                    .push(transaction);
-
-                succesful_inserts += 1
-            }
-            Err(_) => failed_inserts += 1,
-        }
+        transactions_to_insert.push(new_transaction);
     }
+
+    let (succesful_inserts, failed_inserts) =
+        insert_transactions(transactions_to_insert, existing_transactions, db).await?;
 
     info!(
         "Succesfully insertet {} and {} were duplicates",
