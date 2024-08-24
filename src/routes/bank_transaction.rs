@@ -13,8 +13,8 @@ use crate::utils::loading_utils::load_transaction_by_id;
 use crate::utils::structs::ResponseData;
 use crate::utils::structs::Transaction;
 use crate::utils::update_utils::{
-    update_transaction_with_contract, update_transaction_with_contract_not_allowed,
-    update_transaction_with_hidden,
+    update_transaction_with_contract_not_allowed, update_transaction_with_hidden,
+    update_transactions_with_contract,
 };
 
 #[get("/bank/transaction")]
@@ -75,7 +75,8 @@ pub async fn transaction_remove(
     transaction_id: i32,
     mut db: Connection<DbConn>,
 ) -> Json<ResponseData> {
-    let result = update_transaction_with_contract(transaction_id, None::<i32>, &mut db).await;
+    let result =
+        update_transactions_with_contract(vec![transaction_id], None::<i32>, &mut db).await;
 
     if let Err(error) = result {
         return Json(ResponseData {
@@ -114,7 +115,8 @@ pub async fn transaction_add(
         });
     }
 
-    let result = update_transaction_with_contract(transaction_id, Some(contract_id), &mut db).await;
+    let result =
+        update_transactions_with_contract(vec![transaction_id], Some(contract_id), &mut db).await;
 
     if let Err(error) = result {
         return Json(ResponseData {

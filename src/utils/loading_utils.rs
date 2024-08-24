@@ -118,7 +118,7 @@ pub async fn load_last_transaction_data_of_bank(
     }
 }
 
-pub async fn load_transactions_of_bank_without_contract(
+pub async fn load_transactions_of_bank_without_contract_and_contract_allowed(
     bank_id_for_loading: i32,
     db: &mut Connection<DbConn>,
 ) -> Result<Vec<Transaction>, String> {
@@ -126,7 +126,12 @@ pub async fn load_transactions_of_bank_without_contract(
     use crate::schema::transactions::dsl::*;
 
     let transactions_result = transactions_without_dsl::table
-        .filter(bank_id.eq(bank_id_for_loading).and(contract_id.is_null()))
+        .filter(
+            bank_id
+                .eq(bank_id_for_loading)
+                .and(contract_id.is_null())
+                .and(contract_not_allowed.eq(false)),
+        )
         .load::<Transaction>(db)
         .await
         .map_err(|_| "Error loading transactions")?;

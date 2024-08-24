@@ -1,21 +1,23 @@
+use chrono::{Datelike, NaiveDate};
+use log::info;
+use rocket::tokio;
+use rocket_db_pools::Connection;
+use std::collections::{HashMap, HashSet};
+use std::time::Instant;
+
 use crate::database::db_connector::DbConn;
 use crate::database::models::{Contract, NewContract, NewContractHistory};
-use crate::utils::insert_utiles::{insert_contract, insert_contract_history};
+use crate::utils::insert_utiles::{insert_contract, insert_contract_histories};
 use crate::utils::loading_utils::{
     load_contracts_of_bank_without_end_date, load_last_transaction_data_of_bank,
-    load_transactions_of_bank_without_contract,
+    load_last_transaction_data_of_contract,
+    load_transactions_of_bank_without_contract_and_contract_allowed,
 };
 use crate::utils::structs::Transaction;
 use crate::utils::update_utils::{
-    update_contract_with_new_amount, update_transaction_with_contract,
+    update_contract_with_end_date, update_contract_with_new_amount,
+    update_transactions_with_contract,
 };
-use chrono::{Datelike, NaiveDate};
-use log::info;
-use rocket_db_pools::Connection;
-use std::collections::{HashMap, HashSet};
-
-use super::loading_utils::load_last_transaction_data_of_contract;
-use super::update_utils::update_contract_with_end_date;
 
 type Result<T> = std::result::Result<T, String>;
 
@@ -23,20 +25,15 @@ pub async fn create_contract_from_transactions(
     bank_id: i32,
     db: &mut Connection<DbConn>,
 ) -> Result<String> {
+    let start = Instant::now();
     let existing_contracts = load_contracts_of_bank_without_end_date(bank_id, db).await?;
-    let mut transactions = load_transactions_of_bank_without_contract(bank_id, db).await?;
+
+    let mut transactions =
+        load_transactions_of_bank_without_contract_and_contract_allowed(bank_id, db).await?;
 
     if transactions.is_empty() {
         return Ok("No transactions without contract found!".to_string());
     }
-
-    let last_transaction_date = load_last_transaction_data_of_bank(bank_id, db).await?;
-
-    if last_transaction_date.is_none() {
-        return Err("No transactions found for bank!".to_string());
-    }
-
-    let last_transaction_date = last_transaction_date.unwrap().date;
 
     let transactions_matching_a_contract = filter_transactions_matching_to_existing_contract(
         transactions.clone(),
@@ -48,7 +45,8 @@ pub async fn create_contract_from_transactions(
         transactions_matching_a_contract.len()
     );
 
-    update_transactions_with_contract_id(transactions_matching_a_contract.clone(), db).await?;
+    update_transactions_with_contract_id_local(transactions_matching_a_contract.clone(), db)
+        .await?;
 
     transactions.retain(|transaction| {
         !transactions_matching_a_contract
@@ -59,10 +57,15 @@ pub async fn create_contract_from_transactions(
 
     info!("Transactions left after matching: {}", transactions.len());
 
-    let transactions_matching_changed_contracts = filter_transactions_matching_changed_contract(
-        transactions.clone(),
-        existing_contracts.clone(),
-    );
+    let transaction_clone = transactions.clone();
+    let existing_contracts_clone = existing_contracts.clone();
+
+    let transactions_matching_changed_contracts_task = tokio::spawn(async {
+        filter_transactions_matching_changed_contract(transaction_clone, existing_contracts_clone)
+    });
+
+    let transactions_matching_changed_contracts =
+        transactions_matching_changed_contracts_task.await.unwrap();
 
     info!(
         "Transactions matching changed contracts: {}",
@@ -98,6 +101,14 @@ pub async fn create_contract_from_transactions(
     let mut all_contracts = new_contracts_ids.clone();
     all_contracts.extend(existing_contracts);
 
+    let last_transaction_date = load_last_transaction_data_of_bank(bank_id, db).await?;
+
+    if last_transaction_date.is_none() {
+        return Err("No transactions found for bank!".to_string());
+    }
+
+    let last_transaction_date = last_transaction_date.unwrap().date;
+
     let contracts_closed =
         check_if_contract_should_be_closed(all_contracts, last_transaction_date, db).await?;
 
@@ -110,6 +121,8 @@ pub async fn create_contract_from_transactions(
     } else {
         base_message
     };
+
+    info!("Time taken: {:?}", start.elapsed());
 
     Ok(return_string)
 }
@@ -162,14 +175,17 @@ fn filter_transactions_matching_changed_contract(
     contract_transactions
 }
 
-async fn update_transactions_with_contract_id(
+async fn update_transactions_with_contract_id_local(
     contracts_with_transactions: HashMap<i32, Vec<Transaction>>,
     db: &mut Connection<DbConn>,
 ) -> Result<()> {
     for (contract_id, transactions) in contracts_with_transactions {
-        for transaction in transactions {
-            update_transaction_with_contract(transaction.id, Some(contract_id), db).await?;
-        }
+        let ids = transactions
+            .iter()
+            .map(|transaction| transaction.id)
+            .collect::<Vec<i32>>();
+
+        update_transactions_with_contract(ids, Some(contract_id), db).await?;
     }
 
     Ok(())
@@ -185,6 +201,8 @@ async fn create_contract_history(
     existing_contracts: Vec<Contract>,
     db: &mut Connection<DbConn>,
 ) -> Result<()> {
+    let mut new_contract_histories = Vec::new();
+
     for (contract_id, mut transactions) in contracts_with_transactions.clone() {
         let contract = match existing_contracts
             .iter()
@@ -214,12 +232,15 @@ async fn create_contract_history(
                 changed_at: transaction.date,
             };
 
-            insert_contract_history(contract_history, db).await?;
+            new_contract_histories.push(contract_history);
+
             update_contract_with_new_amount(contract_id, transaction.amount, db).await?;
         }
     }
 
-    update_transactions_with_contract_id(contracts_with_transactions, db).await?;
+    insert_contract_histories(&new_contract_histories, db).await?;
+
+    update_transactions_with_contract_id_local(contracts_with_transactions, db).await?;
     Ok(())
 }
 
@@ -311,14 +332,12 @@ async fn create_contracts_from_transactions(
 
                         let contract_id = insert_contract(contract, db).await?;
 
-                        for transaction_id in &transaction_ids {
-                            update_transaction_with_contract(
-                                *transaction_id,
-                                Some(contract_id.id),
-                                db,
-                            )
-                            .await?;
-                        }
+                        update_transactions_with_contract(
+                            transaction_ids,
+                            Some(contract_id.id),
+                            db,
+                        )
+                        .await?;
 
                         new_contracts.push(contract_id);
                         created_contracts.insert(contract_key);

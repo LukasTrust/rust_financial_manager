@@ -3,10 +3,11 @@ use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
 use crate::database::models::{
     CSVConverter, Contract, ContractHistory, NewCSVConverter, NewContract, NewContractHistory,
+    NewTransaction,
 };
 use crate::database::{db_connector::DbConn, models::NewBank};
 
-use super::structs::Bank;
+use super::structs::{Bank, Transaction};
 
 pub async fn insert_bank(new_bank: NewBank, db: &mut Connection<DbConn>) -> Result<Bank, String> {
     use crate::schema::banks;
@@ -48,19 +49,54 @@ pub async fn insert_contract(
     Ok(new_contract)
 }
 
-pub async fn insert_contract_history(
-    new_contract_history: NewContractHistory,
+pub async fn insert_contract_histories(
+    new_contract_histories: &Vec<NewContractHistory>,
     db: &mut Connection<DbConn>,
-) -> Result<ContractHistory, String> {
+) -> Result<(), String> {
     use crate::schema::contract_history;
 
-    let new_contract_history = diesel::insert_into(contract_history::table)
-        .values(&new_contract_history)
-        .get_result::<ContractHistory>(db)
+    diesel::insert_into(contract_history::table)
+        .values(new_contract_histories)
+        .get_results::<ContractHistory>(db)
         .await
-        .map_err(|_| "Error inserting contract history")?;
+        .map_err(|_| "Error inserting contract histories")?;
 
-    info!("Contract history inserted: {:?}", new_contract_history);
+    info!("Contract histories inserted");
 
-    Ok(new_contract_history)
+    Ok(())
+}
+
+pub async fn insert_transactions(
+    mut new_transactions: Vec<NewTransaction>,
+    existing_transactions: Vec<Transaction>,
+    db: &mut Connection<DbConn>,
+) -> Result<(usize, usize), String> {
+    use crate::schema::transactions;
+
+    info!(
+        "New transactions before filtering: {:?}",
+        new_transactions.len()
+    );
+
+    for transaction in &existing_transactions {
+        new_transactions.retain(|new_transaction| {
+            new_transaction.date != transaction.date
+                || new_transaction.counterparty != transaction.counterparty
+                || new_transaction.amount != transaction.amount
+                || new_transaction.bank_balance_after != transaction.bank_balance_after
+        });
+    }
+
+    info!(
+        "New transactions after filtering: {:?}",
+        new_transactions.len()
+    );
+
+    diesel::insert_into(transactions::table)
+        .values(&new_transactions)
+        .get_results::<Transaction>(db)
+        .await
+        .map_err(|_| "Error inserting transactions")?;
+
+    Ok((new_transactions.len(), existing_transactions.len()))
 }
