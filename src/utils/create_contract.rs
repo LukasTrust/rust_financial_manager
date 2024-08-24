@@ -3,11 +3,10 @@ use log::info;
 use rocket::tokio;
 use rocket_db_pools::Connection;
 use std::collections::{HashMap, HashSet};
-use std::time::Instant;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{Contract, NewContract, NewContractHistory};
-use crate::utils::insert_utiles::{insert_contract, insert_contract_histories};
+use crate::utils::insert_utiles::{insert_contract_histories, insert_contracts};
 use crate::utils::loading_utils::{
     load_contracts_of_bank_without_end_date, load_last_transaction_data_of_bank,
     load_last_transaction_data_of_contract,
@@ -25,7 +24,6 @@ pub async fn create_contract_from_transactions(
     bank_id: i32,
     db: &mut Connection<DbConn>,
 ) -> Result<String> {
-    let start = Instant::now();
     let existing_contracts = load_contracts_of_bank_without_end_date(bank_id, db).await?;
 
     let mut transactions =
@@ -121,8 +119,6 @@ pub async fn create_contract_from_transactions(
     } else {
         base_message
     };
-
-    info!("Time taken: {:?}", start.elapsed());
 
     Ok(return_string)
 }
@@ -279,9 +275,11 @@ async fn create_contracts_from_transactions(
     grouped_transactions: HashMap<String, HashMap<i64, Vec<(f64, NaiveDate, i32)>>>,
     db: &mut Connection<DbConn>,
 ) -> Result<Vec<Contract>> {
-    let mut new_contracts = Vec::new();
     let mut created_contracts = HashSet::new();
-    let allowable_gap = 6; // Increase the allowable gap to 6 months
+    let mut contract_insertions = Vec::new();
+    let mut contract_keys = Vec::new();
+    let mut transaction_updates = Vec::new();
+    let allowable_gap = 6;
 
     for (counterparty, amount_groups) in grouped_transactions {
         for (amount_key, transactions) in amount_groups {
@@ -330,16 +328,10 @@ async fn create_contracts_from_transactions(
                             months_between_payment: months,
                         };
 
-                        let contract_id = insert_contract(contract, db).await?;
+                        contract_insertions.push(contract);
+                        contract_keys.push(contract_key.clone());
+                        transaction_updates.push((transaction_ids, contract_key.clone()));
 
-                        update_transactions_with_contract(
-                            transaction_ids,
-                            Some(contract_id.id),
-                            db,
-                        )
-                        .await?;
-
-                        new_contracts.push(contract_id);
                         created_contracts.insert(contract_key);
                     }
                 }
@@ -348,7 +340,19 @@ async fn create_contracts_from_transactions(
         }
     }
 
-    Ok(new_contracts)
+    // Batch insert contracts and retrieve the inserted contract IDs
+    let inserted_contracts = insert_contracts(&contract_insertions, db).await?;
+
+    // Ensure the number of inserted contracts matches the contract_keys
+    assert_eq!(inserted_contracts.len(), contract_keys.len());
+
+    // Update transactions with the corresponding contract IDs
+    for (i, (transaction_ids, _contract_key)) in transaction_updates.iter().enumerate() {
+        let contract_id = inserted_contracts[i].id;
+        update_transactions_with_contract(transaction_ids.clone(), Some(contract_id), db).await?;
+    }
+
+    Ok(inserted_contracts)
 }
 
 fn months_between(date1: NaiveDate, date2: NaiveDate) -> Option<i32> {

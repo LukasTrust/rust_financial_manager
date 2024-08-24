@@ -32,21 +32,21 @@ pub async fn insert_csv_converter(
         .map_err(|_| "Error inserting csv converter".into())
 }
 
-pub async fn insert_contract(
-    new_contract: NewContract,
+pub async fn insert_contracts(
+    new_contracts: &Vec<NewContract>,
     db: &mut Connection<DbConn>,
-) -> Result<Contract, String> {
+) -> Result<Vec<Contract>, String> {
     use crate::schema::contracts;
 
-    let new_contract = diesel::insert_into(contracts::table)
-        .values(&new_contract)
-        .get_result::<Contract>(db)
+    let inserted_contracts = diesel::insert_into(contracts::table)
+        .values(new_contracts)
+        .get_results::<Contract>(db)
         .await
-        .map_err(|_| "Error inserting contract")?;
+        .map_err(|_| "Error inserting contracts")?;
 
-    info!("Contract inserted: {:?}", new_contract);
+    info!("Contracts inserted");
 
-    Ok(new_contract)
+    Ok(inserted_contracts)
 }
 
 pub async fn insert_contract_histories(
