@@ -1,63 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transactions</title>
-    <!-- Include necessary CSS and JS libraries here -->
-</head>
-<body>
-    <div class="scroll-container">
-        <div class="container-without-border">
-            <h1>Transactions</h1>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Transactions</title>
+        <!-- Include necessary CSS and JS libraries here -->
+    </head>
+    <body>
+        <div class="scroll-container">
+            <div class="container-without-border">
+                <h1>Transactions</h1>
 
-            <!-- Static header and table structure -->
-            <div class="container-without-border-horizontally-header">
-                <label for="date-range">Select date range:</label>
-                <input type="text" id="date-range" class="flatpickr">
-                <label for="contract-filter">Filter by Contract:</label>
-                <select style="max-width: 300px" id="contract-filter">
-                    <option value="">All Contracts</option>
-                    <!-- Options will be dynamically populated by JS -->
-                </select>
-                <input style="width: auto; height: 15px" type="text" id="transaction-search" placeholder="Search transactions...">
+                <!-- Static header and table structure -->
+                <div class="container-without-border-horizontally-header">
+                    <label for="date-range">Select date range:</label>
+                    <input type="text" id="date-range" class="flatpickr">
+                    <label for="contract-filter">Filter by Contract:</label>
+                    <select style="max-width: 300px" id="contract-filter">
+                        <option value>All Contracts</option>
+                        <!-- Options will be dynamically populated by JS -->
+                    </select>
+                    <input style="width: auto; height: 15px" type="text"
+                        id="transaction-search"
+                        placeholder="Search transactions...">
 
-                <div class="container-without-border-horizontally" style="width: auto">
-                    <button id="toggle-hidden-transaction" class="toggle-button">
-                        <div class="slider"></div>
-                    </button>
-                    <div class="container-without-border">
-                        <span>Hide hidden transactions</span>
-                        <span>Show hidden transactions</span>
+                    <div class="container-without-border-horizontally"
+                        style="width: auto">
+                        <button id="toggle-hidden-transaction"
+                            class="toggle-button">
+                            <div class="slider"></div>
+                        </button>
+                        <div class="container-without-border">
+                            <span>Hide hidden transactions</span>
+                            <span>Show hidden transactions</span>
+                        </div>
                     </div>
+
                 </div>
 
+                <table class="transaction-table">
+                    <thead>
+                        <tr>
+                            <th data-key="icon" class="sortable">Icon<span>↑</span></th> 
+                            <th data-key="counterparty" class="sortable">Counterparty<span>↑</span></th>
+                            <th data-key="amount" class="sortable">Amount<span>↑</span></th>
+                            <th data-key="bank_balance_after" class="sortable">Balance<span>↑</span></th>
+                            <th data-key="date" class="sortable">Date<span>↑</span></th>
+                            <th data-key="name" class="sortable">Contract Name<span>↑</span></th>
+                            <th data-key="current_amount" class="sortable">Contract Amount<span>↑</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-table-body">
+                        <!-- Rows will be generated and inserted here -->
+                    </tbody>
+                </table>
             </div>
-
-            <table class="transaction-table">
-            <thead>
-                <tr>
-                <th data-key="counterparty" class="sortable">Counterparty<span>↑</span></th>
-                <th data-key="amount" class="sortable">Amount<span>↑</span></th>
-                <th data-key="bank_balance_after" class="sortable">Balance<span>↑</span></th>
-                <th data-key="date" class="sortable">Date<span>↑</span></th>
-                <th data-key="name" class="sortable">Contract Name<span>↑</span></th>
-                <th data-key="current_amount" class="sortable">Contract Amount<span>↑</span></th>
-                <th>Contract Action</th>
-                <th>Visibility</th>
-                <th>Contract allow</th>
-            </tr>
-    </thead>
-    <tbody id="transaction-table-body">
-        <!-- Transactions will be dynamically inserted here -->
-    </tbody>
-</table>
         </div>
-    </div>
 
-    <!-- JSON data for transactions -->
-    <script id="transactions-data" type="application/json">
+        <!-- JSON data for transactions -->
+        <script id="transactions-data" type="application/json">
         {{ transactions | safe }}
     </script>
-</body>
+    </body>
 </html>

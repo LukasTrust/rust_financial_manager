@@ -63,37 +63,58 @@ function generateTransactionHTML({ transaction, contract }, index) {
     if (transaction.is_hidden) {
         displayStyle = showOrHideTransaction ? 'table-row' : 'none';
     }
-    let contractAllowed = transaction.contract_not_allowed ? `<button class="table_button allow-contract-btn" data-index="${index}">Allow Contract</button>` : `<button class="table_button not-allow-contract" data-index="${index}">Not allow Contract</button>`;
+
+    let contractAllowed = transaction.contract_not_allowed ?
+        `<button class="table_button allow-contract-btn" data-index="${index}">Allow Contract</button>` :
+        `<button class="table_button not-allow-contract" data-index="${index}">Not Allow Contract</button>`;
 
     let contractName = '';
     let contractAmount = '';
-    let contractAction = '';
-    let visibility = transaction.is_hidden ? `<button class="table_button show-btn" data-index="${index}">Display</button>`
-        : `<button class="table_button hide-btn" data-index="${index}">Hide</button>`;
+    let dropdownMenu = '';
 
     if (contract) {
         const contractAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
         contractName = contract.name;
         contractAmount = `<span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span>`;
-        contractAction = `<button class="table_button remove-contract-btn" data-index="${index}">Remove Contract</button>`;
+        dropdownMenu = `
+            <div class="dropdown-content" style="display:none;">
+                <button class="table_button remove-contract-btn" data-index="${index}">Remove Contract</button>
+                ${contractAllowed}
+                <button class="table_button hide-btn" data-index="${index}">${transaction.is_hidden ? 'Display' : 'Hide'}</button>
+            </div>`;
     } else {
-        contractAction = `<button class="table_button add-contract-btn" data-index="${index}">Add Contract</button>`;
+        dropdownMenu = `
+            <div class="dropdown-content" style="display:none;">
+                <button class="table_button add-contract-btn" data-index="${index}">Add Contract</button>
+                ${contractAllowed}
+                <button class="table_button hide-btn" data-index="${index}">${transaction.is_hidden ? 'Display' : 'Hide'}</button>
+            </div>`;
+    }
+
+    let emptyCellIcon = contract ? '📄' : '';
+
+    if (emptyCellIcon === '' && transaction.contract_not_allowed) {
+        emptyCellIcon = '🚫';
     }
 
     return `
         <tr class="transaction-row ${rowClass}" style="display: ${displayStyle}" data-index="${index}">
+            <td>
+                <div class="dropdown">
+                    ${emptyCellIcon}
+                    ${dropdownMenu}
+                </div>
+            </td>
             <td>${transaction.counterparty}</td>
             <td class="${amountClass}">$${transaction.amount.toFixed(2)}</td>
             <td class="${balanceClass}">$${transaction.bank_balance_after.toFixed(2)}</td>
             <td>${formatDate(transaction.date)}</td>
             <td>${contractName}</td>
             <td>${contractAmount}</td>
-            <td>${contractAction}</td>
-            <td>${visibility}</td>
-            <td>${contractAllowed}</td>
         </tr>
     `;
 }
+
 
 function setupEventListeners() {
     document.getElementById('transaction-search').addEventListener('input', filterTransactions);
@@ -147,6 +168,42 @@ function updateTransactionTable() {
     document.getElementById('transaction-table-body').innerHTML = filteredData
         .map((item, index) => generateTransactionHTML(item, index))
         .join('');
+
+    const rows = document.querySelectorAll('.transaction-row');
+    let activeRow = null;  // Track the currently active row
+
+    rows.forEach(row => {
+        row.addEventListener('click', function () {
+            // Close the currently active dropdown if another row is clicked
+            if (activeRow && activeRow !== row) {
+                activeRow.classList.remove('selected-row');
+                activeRow.querySelector('.dropdown-content').style.display = 'none';
+            }
+
+            // Toggle the clicked row's dropdown
+            const dropdownContent = row.querySelector('.dropdown-content');
+            if (dropdownContent.style.display === 'none' || !dropdownContent.style.display) {
+                dropdownContent.style.display = 'flex';
+                row.classList.add('selected-row');
+                activeRow = row;  // Set the active row to the current one
+            } else {
+                dropdownContent.style.display = 'none';
+                row.classList.remove('selected-row');
+                activeRow = null;  // Reset active row when closed
+            }
+        });
+    });
+
+    // Close dropdown if clicked outside
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('.transaction-row')) {
+            rows.forEach(row => {
+                row.classList.remove('selected-row');
+                row.querySelector('.dropdown-content').style.display = 'none';
+            });
+            activeRow = null;
+        }
+    });
 }
 
 function sortColumn(key) {
@@ -162,6 +219,17 @@ function sortData() {
 
     // Helper function to get the value based on sortConfig.key
     function getValue(item) {
+        if (sortConfig.key === 'icon') {
+            // Define how to evaluate the icon
+            let iconValue = '';
+            if (item.contract) {
+                iconValue = '📄';
+            } else if (item.transaction.contract_not_allowed) {
+                iconValue = '🚫';
+            }
+            return iconValue;
+        }
+
         return item.transaction?.[sortConfig.key] ?? item.contract?.[sortConfig.key];
     }
 
@@ -196,7 +264,6 @@ function sortData() {
 
     updateTransactionTable();
 }
-
 
 function updateSortIcons() {
     document.querySelectorAll('.sortable').forEach(header => {
@@ -269,6 +336,140 @@ function handleTransactionOperation(url, errorMessage) {
             error(`Error while trying to ${errorMessage}:`, url, err);
             return false;
         });
+}
+
+function showHiddenTransactions() {
+    const toggleButton = document.getElementById('toggle-hidden-transaction');
+    const slider = toggleButton.querySelector('.slider');
+
+    slider.classList.toggle('active');
+    showOrHideTransaction = !showOrHideTransaction;
+
+    const displayStyle = showOrHideTransaction ? 'table-row' : 'none';
+
+    const hiddenTransactions = document.querySelectorAll('.hidden_transaction');
+
+    hiddenTransactions.forEach(transactionRow => {
+        if (transactionRow) {
+            transactionRow.style.display = displayStyle;
+        }
+    });
+}
+
+// Row button handlers
+function removeContract(index) {
+    handleTransactionOperation(
+        `/bank/transaction/remove_contract/${filteredData[index].transaction.id}`,
+        'remove contract'
+    ).then(success => {
+        if (success) {
+            // Update data
+            filteredData[index].contract = null;
+            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = null;
+
+            // Update UI
+            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
+            const contractName = row.cells[5];
+            const contractAmount = row.cells[6];
+            const contractActionButton = row.querySelector('.remove-contract-btn');
+
+            // Clear contract information
+            contractName.innerHTML = '';
+            contractAmount.innerHTML = '';
+            contractActionButton.classList.remove('remove-contract-btn');
+            contractActionButton.classList.add('add-contract-btn');
+            contractActionButton.textContent = 'Add Contract';
+        }
+    });
+}
+
+function handleHideTransaction(index) {
+    handleTransactionOperation(
+        `/bank/transaction/hide/${filteredData[index].transaction.id}`,
+        'hide transaction'
+    ).then(success => {
+        if (success) {
+            // Update data
+            filteredData[index].transaction.is_hidden = true;
+            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).transaction.is_hidden = true;
+
+            // Update UI
+            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
+            row.style.display = showOrHideTransaction ? 'table-row' : 'none';
+            row.classList.add('hidden_transaction');
+
+            const hideButton = row.querySelector('.hide-btn');
+            hideButton.classList.remove('hide-btn');
+            hideButton.classList.add('show-btn');
+            hideButton.textContent = 'Display';
+        }
+    });
+}
+
+function handleShowTransaction(index) {
+    handleTransactionOperation(
+        `/bank/transaction/show/${filteredData[index].transaction.id}`,
+        'show transaction'
+    ).then(success => {
+        if (success) {
+            // Update data
+            filteredData[index].transaction.is_hidden = false;
+            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).transaction.is_hidden = false;
+
+            // Update UI
+            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
+            row.style.display = 'table-row';
+            row.classList.remove('hidden_transaction');
+
+            const showButton = row.querySelector('.show-btn');
+            showButton.classList.remove('show-btn');
+            showButton.classList.add('hide-btn');
+            showButton.textContent = 'Hide';
+        }
+    });
+}
+
+function handleAllowContract(index) {
+    handleTransactionOperation(
+        `/bank/transaction/allow_contract/${filteredData[index].transaction.id}`,
+        'allow contract'
+    ).then(success => {
+        if (success) {
+            // Update data
+            filteredData[index].transaction.contract_not_allowed = false;
+            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).transaction.contract_not_allowed = false;
+
+            // Update UI
+            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
+            const allowButton = row.querySelector('.allow-contract-btn');
+            allowButton.classList.remove('allow-contract-btn');
+            allowButton.classList.add('not-allow-contract');
+            allowButton.textContent = 'Not allow Contract';
+        }
+    });
+}
+
+function handleNotAllowContract(index) {
+    handleTransactionOperation(
+        `/bank/transaction/not_allow_contract/${filteredData[index].transaction.id}`,
+        'not allow contract'
+    ).then(success => {
+        if (success) {
+            // Update data
+            filteredData[index].transaction.contract_not_allowed = true;
+            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).transaction.contract_not_allowed = true;
+
+            // Update UI
+            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
+            const notAllowButton = row.querySelector('.not-allow-contract');
+            notAllowButton.classList.remove('not-allow-contract');
+            notAllowButton.classList.add('allow-contract-btn');
+            notAllowButton.textContent = 'Allow Contract';
+
+            // Optional: Re-render the row or update the table
+            updateTransactionTable();
+        }
+    });
 }
 
 function handleAddContract(index) {
@@ -361,42 +562,37 @@ function handleAddContract(index) {
 }
 
 function addSelectedContract(index) {
-    const selectedContract = document.getElementById('contractSelect');
+    const selectedContractId = document.getElementById('contractSelect').value;
 
-    if (selectedContract && selectedContract.value) {
-        const selectedContractId = parseInt(selectedContract.value);
+    handleTransactionOperation(
+        `/bank/transaction/add_contract/${filteredData[index].transaction.id}/${selectedContractId}`,
+        'add contract',
+        { contract_id: selectedContractId }
+    ).then(success => {
+        if (success) {
+            // Find the selected contract
+            const selectedContract = contracts.find(contract => contract.id == selectedContractId);
 
-        const url = `/bank/transaction/add_contract/${filteredData[index].transaction.id}/${selectedContractId}`;
-        fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-            .then(async response => {
-                if (response.ok) {
-                    updateTransactionTable();
+            // Update data
+            filteredData[index].contract = selectedContract;
+            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = selectedContract;
 
-                    const json = await response.json();
+            // Update UI
+            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
+            const contractName = row.cells[5];
+            contractName.textContent = selectedContract.name;
+            const contractAmount = row.cells[6];
+            contractAmount.innerHTML = `<span class="${selectedContract.current_amount < 0 ? 'negative' : 'positive'}">$${selectedContract.current_amount.toFixed(2)}</span>`;
 
-                    if (json.success) {
-                        filteredData[index].contract = contracts.find(c => c.id === selectedContractId);
-                        transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = filteredData[index].contract;
-                        updateTransactionTable();
+            const contractActionButton = row.querySelector('.add-contract-btn');
+            contractActionButton.classList.remove('add-contract-btn');
+            contractActionButton.classList.add('remove-contract-btn');
+            contractActionButton.textContent = 'Remove Contract';
 
-                        displayCustomAlert('success', json.header, json.success, 'Close');
-                    } else if (json.error) {
-                        displayCustomAlert('error', json.header, json.error, 'Close');
-                    }
-                } else {
-                    error(`Error ${errorMessage}:`, url, response);
-                    displayCustomAlert('error', `Error ${errorMessage}.`, `An error occurred while trying to ${errorMessage}.`, 'Close');
-                }
-            })
-            .catch(err => error(`Error while trying to ${errorMessage}:`, url, err));
-
-        closeModal();
-    }
+            // Close the modal after adding the contract
+            closeModal();
+        }
+    });
 }
 
 function closeModal() {
@@ -404,117 +600,4 @@ function closeModal() {
     if (modal) {
         modal.remove();
     }
-}
-
-function removeContract(index) {
-    handleTransactionOperation(
-        `/bank/transaction/remove_contract/${filteredData[index].transaction.id}`,
-        'remove contract'
-    ).then(success => {
-        if (success) {
-            filteredData[index].contract = null;
-            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = null;
-
-            updateTransactionTable();
-        }
-    });
-}
-
-function handleHideTransaction(index) {
-    handleTransactionOperation(
-        `/bank/transaction/hide/${filteredData[index].transaction.id}`,
-        'hide transaction'
-    ).then(success => {
-        if (success) {
-            filteredData[index].transaction.is_hidden = true;
-            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).transaction.is_hidden = true;
-
-            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
-            row.style.display = showOrHideTransaction ? 'table-row' : 'none';
-            row.classList.add('hidden_transaction');
-
-            const hiddenButton = row.querySelector('.hide-btn');
-            hiddenButton.classList.remove('hide-btn');
-            hiddenButton.classList.add('show-btn');
-            hiddenButton.textContent = 'Display';
-        }
-    });
-}
-
-function handleShowTransaction(index) {
-    handleTransactionOperation(
-        `/bank/transaction/show/${filteredData[index].transaction.id}`,
-        'show transaction'
-    ).then(success => {
-        if (success) {
-            filteredData[index].transaction.is_hidden = false;
-            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).transaction.is_hidden = false;
-
-            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
-            row.style.display = 'table-row';
-            row.classList.remove('hidden_transaction');
-
-            const hiddenButton = row.querySelector('.show-btn');
-            hiddenButton.classList.remove('show-btn');
-            hiddenButton.classList.add('hide-btn');
-            hiddenButton.textContent = 'Hide';
-        }
-    });
-}
-
-function handleAllowContract(index) {
-    handleTransactionOperation(
-        `/bank/transaction/allow_contract/${filteredData[index].transaction.id}`,
-        'allow contract'
-    ).then(success => {
-        if (success) {
-            filteredData[index].transaction.contract_not_allowed = false;
-            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).transaction.contract_not_allowed = false;
-
-            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
-            const allowButton = row.querySelector('.allow-contract-btn');
-            allowButton.classList.remove('allow-contract-btn');
-            allowButton.classList.add('not-allow-contract');
-            allowButton.textContent = 'Not allow Contract';
-        }
-    });
-}
-
-function handleNotAllowContract(index) {
-    handleTransactionOperation(
-        `/bank/transaction/not_allow_contract/${filteredData[index].transaction.id}`,
-        'not allow contract'
-    ).then(success => {
-        if (success) {
-            // Only update the UI and data if the operation was successful
-            filteredData[index].transaction.contract_not_allowed = true;
-            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).transaction.contract_not_allowed = true;
-
-            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
-            const notAllowButton = row.querySelector('.not-allow-contract');
-            notAllowButton.classList.remove('not-allow-contract');
-            notAllowButton.classList.add('allow-contract-btn');
-            notAllowButton.textContent = 'Allow Contract';
-
-            updateTransactionTable();
-        }
-    });
-}
-
-function showHiddenTransactions() {
-    const toggleButton = document.getElementById('toggle-hidden-transaction');
-    const slider = toggleButton.querySelector('.slider');
-
-    slider.classList.toggle('active');
-    showOrHideTransaction = !showOrHideTransaction;
-
-    const displayStyle = showOrHideTransaction ? 'table-row' : 'none';
-
-    const hiddenTransactions = document.querySelectorAll('.hidden_transaction');
-
-    hiddenTransactions.forEach(transactionRow => {
-        if (transactionRow) {
-            transactionRow.style.display = displayStyle;
-        }
-    });
 }

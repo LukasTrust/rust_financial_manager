@@ -401,9 +401,9 @@ label {
 }
 
 .table_button {
-    width: 100%;
-    align-self: center;
-    margin: 0px;
+    display: block;
+    width: auto;
+    margin: 5px;
 }
 
 .toggle-button {
@@ -527,4 +527,29 @@ label {
 .alert-icon {
     margin-right: 10px;
     font-size: 20px;
+}
+
+.transaction-row {
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.3s ease;
+}
+
+.selected-row {
+    background-color: #f0f8ff;
+}
+
+.dropdown-content {
+    position: absolute;
+    background-color: #f0f8ff;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    margin-top: 20px;
+    margin-left: 5%;
+    z-index: 1;
+    padding: 10px;
+    border-radius: 5px;
+    display: none;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
 }
