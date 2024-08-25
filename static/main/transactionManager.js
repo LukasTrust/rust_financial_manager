@@ -1,5 +1,5 @@
 import { formatDate, displayCustomAlert } from './utils.js';
-import { error, log } from './main.js';
+import { error } from './main.js';
 
 let filteredData = [];
 let transactionsData = [];
@@ -308,7 +308,7 @@ function filterTransactions() {
 // Generalized function to handle transaction operations
 function handleTransactionOperation(url, errorMessage) {
     return fetch(url, {
-        method: 'GET',
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -318,17 +318,17 @@ function handleTransactionOperation(url, errorMessage) {
                 const json = await response.json();
 
                 if (json.success) {
-                    displayCustomAlert('success', json.header, json.success, 'Close');
+                    displayCustomAlert('success', json.header, json.success);
                     return true;
                 } else if (json.error) {
-                    displayCustomAlert('error', json.header, json.error, 'Close');
+                    displayCustomAlert('error', json.header, json.error);
                     return false;
                 }
 
                 return false;
             } else {
                 error(`Error ${errorMessage}:`, url, response);
-                displayCustomAlert('error', `Error ${errorMessage}.`, `An error occurred while trying to ${errorMessage}.`, 'Close');
+                displayCustomAlert('error', `Error ${errorMessage}.`, `An error occurred while trying to ${errorMessage}.`);
                 return false;
             }
         })

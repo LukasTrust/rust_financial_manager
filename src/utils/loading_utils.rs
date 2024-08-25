@@ -265,28 +265,22 @@ pub async fn load_contracts_of_bank_without_end_date(
     Ok(contracts_result)
 }
 
-pub async fn load_contract_from_id(
-    contract_id_for_loading: i32,
+pub async fn load_contracts_from_ids(
+    contract_ids_for_loading: Vec<i32>,
     db: &mut Connection<DbConn>,
-) -> Result<Option<Contract>, String> {
+) -> Result<Vec<Contract>, String> {
     use crate::schema::contracts as contracts_without_dsl;
     use crate::schema::contracts::dsl::*;
 
-    let contract_result = contracts_without_dsl::table
-        .filter(id.eq(contract_id_for_loading))
-        .first::<Contract>(db)
-        .await;
+    let contracts_result = contracts_without_dsl::table
+        .filter(id.eq_any(contract_ids_for_loading))
+        .load::<Contract>(db)
+        .await
+        .map_err(|_| "Error loading contracts")?;
 
-    match contract_result {
-        Ok(contract) => {
-            info!("Contract loaded: {:?}", contract);
-            Ok(Some(contract))
-        }
-        Err(_) => {
-            info!("No contract found with ID {}", contract_id_for_loading);
-            Ok(None)
-        }
-    }
+    info!("Contracts count: {}", contracts_result.len());
+
+    Ok(contracts_result)
 }
 
 pub async fn load_contract_history(

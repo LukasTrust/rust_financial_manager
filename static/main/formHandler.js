@@ -38,9 +38,9 @@ async function handleFormSubmission(form) {
             }
 
             if (result.success) {
-                displayCustomAlert('success', result.header, result.success, 'Close');
+                displayCustomAlert('success', result.header, result.success);
             } else if (result.error) {
-                displayCustomAlert('error', result.header, result.error, 'Close');
+                displayCustomAlert('error', result.header, result.error);
             }
 
             if (!result.error) form.reset();

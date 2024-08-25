@@ -11,7 +11,7 @@ export function formatDate(dateString) {
     return `${day}.${month}.${year}`;
 }
 
-export function displayCustomAlert(type, header_text, body_text, button_text) {
+export function displayCustomAlert(type, header_text, body_text, button_text = 'Close') {
     log('Displaying custom alert:', 'displayCustomAlert', type, header_text, body_text, button_text);
 
     // Create the backdrop

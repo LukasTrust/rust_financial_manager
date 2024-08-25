@@ -26,6 +26,20 @@ pub async fn update_transactions_with_contract(
     Ok(())
 }
 
+pub async fn update_transactions_of_contract_to_new_contract(
+    new_contract_id: i32,
+    old_contract_ids: Vec<i32>,
+    db: &mut Connection<DbConn>,
+) -> Result<(), String> {
+    diesel::update(transactions::table.filter(transactions::contract_id.eq_any(old_contract_ids)))
+        .set(transactions::contract_id.eq(new_contract_id))
+        .execute(db)
+        .await
+        .map_err(|_| "Error updating transactions")?;
+
+    Ok(())
+}
+
 pub async fn update_transaction_with_hidden(
     transactions_id: i32,
     is_hidden_for_updating: bool,

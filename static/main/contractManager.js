@@ -1,4 +1,4 @@
-import { formatDate } from './utils.js';
+import { formatDate, displayCustomAlert } from './utils.js';
 
 // Main function to load contracts
 export function loadContracts() {
@@ -15,6 +15,8 @@ export function loadContracts() {
         if (contractsData.length === 0) {
             return;
         }
+
+        setupEventListeners();
 
         const openContractsWrapper = document.createElement('div');
         openContractsWrapper.classList.add('display-container');
@@ -55,10 +57,13 @@ export function loadContracts() {
             // Handle contract box clicks
             const contractElement = target.closest('.display');
             if (contractElement) {
-                const checkbox = contractElement.querySelector('.display-checkbox');
-                if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                    contractElement.classList.toggle('selected', checkbox.checked);
+                const isSelected = contractElement.classList.contains('selected');
+
+                if (isSelected) {
+                    contractElement.classList.remove('selected');
+                }
+                else {
+                    contractElement.classList.add('selected');
                 }
             }
         });
@@ -93,11 +98,8 @@ function generateContractHTML(contractWithHistory, index) {
     const dateValue = contract.end_date ? formatDate(contract.end_date) : formatDate(last_payment_date);
 
     return `
-        <div class="display">
-            <input type="checkbox" class="display-checkbox hidden" id="display-checkbox-${index}">
-            <label for="display-checkbox-${index}">
-                <h3>${contract.name}</h3>
-            </label>
+        <div class="display" id="display-${index}" data-id="${index}">
+            <h3>${contract.name}</h3>
             <p>Current amount: <span class="${currentAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
             <p>Total amount over time: <span class="${totalAmountClass}">$${total_amount_paid.toFixed(2)}</span></p>
             <p>Months between Payment: ${contract.months_between_payment}</p>
@@ -109,4 +111,46 @@ function generateContractHTML(contractWithHistory, index) {
             </div>
         </div>
     `;
+}
+
+function setupEventListeners() {
+    document.getElementById('merge-selected-btn').addEventListener('click', mergeSelectedContracts);
+    //document.getElementById('delete-selected-btn').addEventListener('click', deleteSelectedContracts);
+    //document.getElementById('scan-btn').addEventListener('click', editSelectedContracts);
+}
+
+async function mergeSelectedContracts() {
+    const selectedContracts = document.querySelectorAll('.selected');
+
+    if (selectedContracts.length < 2) {
+        displayCustomAlert('error', 'Merge contracts', 'Please select at least 2 contracts to merge.');
+        return;
+    }
+
+    // Extract contract IDs
+    const contractIDs = Array.from(selectedContracts).map((contract) => contract.getAttribute('data-id'));
+    const contractIDsAsIntegers = contractIDs.map(id => parseInt(id, 10));
+
+    const response = await fetch('/bank/contract/merge', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids: contractIDsAsIntegers }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to send IDs to the server');
+    }
+
+    console.log(response);
+
+    const data = await response.json();
+
+    console.log(data);
+
+    if (data.error) {
+        displayCustomAlert('error', data.header, data.error);
+        return;
+    }
 }

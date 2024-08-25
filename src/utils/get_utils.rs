@@ -133,7 +133,7 @@ pub async fn get_total_amount_paid_of_contract(
 
 pub async fn get_contracts_with_history(
     bank_id: i32,
-    mut db: Connection<DbConn>,
+    mut db: &mut Connection<DbConn>,
 ) -> Result<String, String> {
     let mut contracts_with_history: Vec<ContractWithHistory> = Vec::new();
 

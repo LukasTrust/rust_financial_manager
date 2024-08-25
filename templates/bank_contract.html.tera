@@ -6,9 +6,20 @@
         <div class="container-without-border">
             <h1>Contracts</h1>
             <div class="container-without-border-horizontally-header">
-                <button style="width: auto">Merge selected contracts</button>
-                <button style="width: auto">Delete selected contracts</button>
-                <button style="width: auto">Scan for new contracts / contract changes</button>
+                <button id="merge-selected-btn" style="width: auto">Merge selected contracts</button>
+                <button id="delete-selected-btn" style="width: auto">Delete selected contracts</button>
+                <button id="scan-btn" style="width: auto">Scan for new contracts / contract changes</button>
+                <div class="container-without-border-horizontally"
+                        style="width: auto">
+                        <button id="toggle-closed-contracts"
+                            class="toggle-button">
+                            <div class="slider"></div>
+                        </button>
+                        <div class="container-without-border">
+                            <span>Show only open contracts</span>
+                            <span>Show closed contracts</span>
+                        </div>
+                    </div>
             </div> 
             <div id="display-container">
                 <!-- Contracts will be dynamically inserted here -->
