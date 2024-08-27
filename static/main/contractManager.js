@@ -5,19 +5,41 @@ const openContractsWrapper = document.createElement('div');
 
 export function loadContracts() {
     try {
-        const contractsDataScript = document.getElementById('contracts-data');
-        if (!contractsDataScript) throw new Error('Contracts data script element not found.');
-
-        const contractsData = JSON.parse(contractsDataScript.textContent);
-        if (!Array.isArray(contractsData)) throw new Error('Unexpected data format.');
-
         closedContractsWrapper.classList.add('display-container');
         openContractsWrapper.classList.add('display-container');
 
-        updateContractsView(contractsData);
+        get_contract_data();
+
         setupEventListeners();
     } catch (err) {
         displayCustomAlert('error', 'Loading Error', err.message);
+    }
+}
+
+async function get_contract_data() {
+    try {
+        const response = await fetch('/bank/contract/data', {
+            method: 'GET',
+        });
+
+        if (!response.ok) throw new Error('Failed to send request to the server');
+
+        const contractsData = await response.json();
+
+
+        if (contractsData.error) {
+            displayCustomAlert('error', contractsData.header, contractsData.error);
+            return;
+        }
+
+        if (contractsData.contracts) {
+            const contractJSON = JSON.parse(contractsData.contracts);
+            updateContractsView(contractJSON);
+        }
+
+    }
+    catch (err) {
+        displayCustomAlert('error', 'Failed to load contracts', err.message);
     }
 }
 
@@ -30,7 +52,6 @@ function updateContractsView(contractsData) {
 
     // Populate the wrappers with updated contracts
     contractsData.forEach((contractWithHistory, index) => {
-        const contractId = contractWithHistory.contract.id;
         const contractHTML = generateContractHTML(contractWithHistory, index);
         const wrapper = contractWithHistory.contract.end_date ? closedContractsWrapper : openContractsWrapper;
         wrapper.insertAdjacentHTML('beforeend', contractHTML);
@@ -86,6 +107,32 @@ function attachContractEventListeners() {
 function setupEventListeners() {
     document.getElementById('merge-selected-btn').addEventListener('click', mergeSelectedContracts);
     document.getElementById('delete-selected-btn').addEventListener('click', deleteSelectedContracts);
+    document.getElementById('scan-btn').addEventListener('click', scanContracts);
+}
+
+async function scanContracts() {
+    try {
+        const response = await fetch('/bank/contract/scan', {
+            method: 'GET',
+        });
+
+        if (!response.ok) throw new Error('Failed to send request to the server');
+
+        const result = await response.json();
+
+        if (result.error) {
+            displayCustomAlert('error', result.header, result.error);
+            return;
+        }
+
+        if (result.success) {
+            get_contract_data();
+            displayCustomAlert('success', result.header, result.success);
+        }
+
+    } catch (err) {
+        displayCustomAlert('error', 'Scan Failed', err.message);
+    }
 }
 
 async function deleteSelectedContracts() {
@@ -109,14 +156,14 @@ async function deleteSelectedContracts() {
 
         if (!response.ok) throw new Error('Failed to send IDs to the server');
 
-        const updatedContractsData = await response.json();
+        const result = await response.json();
 
-        if (updatedContractsData.error) {
-            displayCustomAlert('error', updatedContractsData.header, updatedContractsData.error);
+        if (result.error) {
+            displayCustomAlert('error', result.header, result.error);
             return;
         }
 
-        if (updatedContractsData.success) {
+        if (result.success) {
             const selectedContracts = document.querySelectorAll('.selected');
 
             console.log(selectedContracts);
@@ -126,7 +173,7 @@ async function deleteSelectedContracts() {
             }
             );
 
-            displayCustomAlert('success', updatedContractsData.header, updatedContractsData.success);
+            displayCustomAlert('success', result.header, result.success);
         }
 
     } catch (err) {
@@ -162,9 +209,7 @@ async function mergeSelectedContracts() {
             return;
         }
 
-        const dateJSON = JSON.parse(updatedContractsData);
-
-        updateContractsView(dateJSON);
+        get_contract_data();
 
         displayCustomAlert('success', 'Merge Successful', 'Contracts have been successfully merged.');
 

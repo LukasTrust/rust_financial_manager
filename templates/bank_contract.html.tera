@@ -1,6 +1,3 @@
-<script id="contracts-data" type="application/json">
-    {{ contracts | safe }}
-</script>
 <body>
     <div class="scroll-container">
         <div class="container-without-border">

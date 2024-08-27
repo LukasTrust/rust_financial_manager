@@ -1,7 +1,6 @@
 use log::warn;
-use rocket::serde::json::{json, Json};
+use rocket::serde::json::Json;
 use rocket_db_pools::Connection;
-use serde_json::Value;
 use std::vec;
 
 use crate::database::db_connector::DbConn;
@@ -11,38 +10,43 @@ use crate::utils::loading_utils::load_contract_history;
 use crate::utils::structs::ResponseData;
 use crate::utils::update_utils::update_transactions_of_contract_to_new_contract;
 
-use super::get_utils::get_contracts_with_history;
 use super::insert_utiles::insert_contract_histories;
 use super::loading_utils::load_last_transaction_data_of_contract;
 
 pub async fn handle_all_closed_contracts(
     contracts: Vec<Contract>,
     db: &mut Connection<DbConn>,
-) -> Result<Json<Value>, Json<ResponseData>> {
+) -> Json<ResponseData> {
     let contracts_clone = contracts.clone();
     let contract_head = contracts_clone
         .iter()
         .min_by_key(|contract| contract.end_date)
         .unwrap();
 
-    let result = process_contracts(contract_head, contracts, db).await?;
+    let result = process_contracts(contract_head, contracts, db).await;
 
-    Ok(Json(result))
+    result
 }
 
 pub async fn handle_open_and_closed_contracts(
     open_contracts: Vec<Contract>,
     closed_contracts: Vec<Contract>,
     db: &mut Connection<DbConn>,
-) -> Result<Json<Value>, Json<ResponseData>> {
-    let contract_head = get_contract_head(&open_contracts, db).await?;
+) -> Json<ResponseData> {
+    let contract_head = get_contract_head(&open_contracts, db).await;
+
+    if let Err(error) = contract_head {
+        return error;
+    }
+
+    let contract_head = contract_head.unwrap();
 
     let mut combined_contracts = open_contracts.clone();
     combined_contracts.extend(closed_contracts.clone());
 
-    let result = process_contracts(contract_head, combined_contracts, db).await?;
+    let result = process_contracts(contract_head, combined_contracts, db).await;
 
-    Ok(Json(result))
+    result
 }
 
 async fn get_contract_head<'a>(
@@ -91,7 +95,7 @@ async fn process_contracts(
     contract_head: &Contract,
     contracts: Vec<Contract>,
     db: &mut Connection<DbConn>,
-) -> Result<Value, Json<ResponseData>> {
+) -> Json<ResponseData> {
     let other_contracts = contracts
         .iter()
         .filter(|contract| contract.id != contract_head.id)
@@ -108,11 +112,11 @@ async fn process_contracts(
     );
 
     if let Err(error) = header_contract_history {
-        return Err(Json(ResponseData {
+        return Json(ResponseData {
             success: None,
             error: Some("There was an internal error while loading the contract history.".into()),
             header: Some(error),
-        }));
+        });
     }
 
     let mut merged_histories = header_contract_history.unwrap();
@@ -122,13 +126,13 @@ async fn process_contracts(
         let contract_histories = load_contract_history(contract.bank_id, db).await;
 
         if let Err(error) = contract_histories {
-            return Err(Json(ResponseData {
+            return Json(ResponseData {
                 success: None,
                 error: Some(
                     "There was an internal error while loading the contract history.".into(),
                 ),
                 header: Some(error),
-            }));
+            });
         }
 
         let mut histories = contract_histories.unwrap();
@@ -202,13 +206,13 @@ async fn process_contracts(
     );
 
     if let Err(error) = insert_result {
-        return Err(Json(ResponseData {
+        return Json(ResponseData {
             success: None,
             error: Some(
                 "There was an internal error while inserting the contract histories.".into(),
             ),
             header: Some(error),
-        }));
+        });
     }
 
     time = std::time::SystemTime::now();
@@ -221,11 +225,11 @@ async fn process_contracts(
     warn!("Time to update transactions: {:?}", time.elapsed().unwrap());
 
     if let Err(error) = result {
-        return Err(Json(ResponseData {
+        return Json(ResponseData {
             success: None,
             error: Some("There was an internal error while updating the transactions.".into()),
             header: Some(error),
-        }));
+        });
     }
 
     time = std::time::SystemTime::now();
@@ -233,26 +237,16 @@ async fn process_contracts(
     warn!("Time to delete contracts: {:?}", time.elapsed().unwrap());
 
     if let Err(error) = delete_result {
-        return Err(Json(ResponseData {
+        return Json(ResponseData {
             success: None,
             error: Some("There was an internal error while deleting the contracts.".into()),
             header: Some(error),
-        }));
+        });
     }
 
-    time = std::time::SystemTime::now();
-    let result = get_contracts_with_history(contract_head.bank_id, db).await;
-    warn!("Time to load contracts: {:?}", time.elapsed().unwrap());
-
-    if let Err(error) = result {
-        return Err(Json(ResponseData {
-            success: None,
-            error: Some("There was an internal error while loading the contracts.".into()),
-            header: Some(error),
-        }));
-    }
-
-    let contract_string = result.unwrap();
-
-    Ok(json!(contract_string))
+    Json(ResponseData {
+        success: Some("The contracts were successfully merged.".into()),
+        error: None,
+        header: Some("Contracts merged successfully.".into()),
+    })
 }

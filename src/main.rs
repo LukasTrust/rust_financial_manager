@@ -13,7 +13,10 @@ use std::sync::Arc;
 use database::db_connector::DbConn;
 use routes::add_bank::{add_bank, add_bank_form};
 use routes::bank::bank_view;
-use routes::bank_contract::{bank_contract, bank_contract_delete, bank_contract_merge};
+use routes::bank_contract::{
+    bank_contact_display, bank_contract, bank_contract_delete, bank_contract_merge,
+    scan_for_new_contracts,
+};
 use routes::bank_transaction::{
     bank_transaction, transaction_add, transaction_allow_contract, transaction_hide,
     transaction_not_allow_contract, transaction_remove, transaction_show,
@@ -70,8 +73,10 @@ fn rocket() -> _ {
                 update_date_range,
                 // Bank Contract
                 bank_contract,
+                bank_contact_display,
                 bank_contract_merge,
                 bank_contract_delete,
+                scan_for_new_contracts,
                 // Bank Transaction
                 bank_transaction,
                 transaction_remove,

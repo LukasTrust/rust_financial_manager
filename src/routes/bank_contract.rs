@@ -10,6 +10,7 @@ use serde_json::Value;
 
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
+use crate::utils::create_contract::create_contract_from_transactions;
 use crate::utils::delete_utils::delete_contracts_with_ids;
 use crate::utils::get_utils::{get_contracts_with_history, get_user_id};
 use crate::utils::loading_utils::load_contracts_from_ids;
@@ -19,26 +20,28 @@ use crate::utils::merge_contracts::{
 use crate::utils::structs::ResponseData;
 
 #[get("/bank/contract")]
-pub async fn bank_contract(
+pub async fn bank_contract() -> Result<Template, Redirect> {
+    Ok(Template::render("bank_contract", json!({})))
+}
+
+#[get("/bank/contract/data")]
+pub async fn bank_contact_display(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Redirect> {
+) -> Result<Json<Value>, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
 
     let current_bank = state.get_current_bank(cookie_user_id).await;
 
     if current_bank.is_none() {
-        return Ok(Template::render(
-            "bank_contract",
-            json!(ResponseData {
-                success: None,
-                error: Some(
-                    "There was an internal error while loading the bank. Please try again.".into()
-                ),
-                header: Some("No bank selected".into()),
-            }),
-        ));
+        return Ok(Json(json!(ResponseData {
+            success: None,
+            error: Some(
+                "There was an internal error while loading the bank. Please try again.".into(),
+            ),
+            header: Some("No bank selected".into()),
+        })));
     }
 
     let current_bank = current_bank.unwrap();
@@ -72,7 +75,7 @@ pub async fn bank_contract(
 
     result["contracts"] = json!(contract_string);
 
-    Ok(Template::render("bank_contract", json!(result)))
+    Ok(Json(result))
 }
 
 #[derive(Deserialize)]
@@ -84,18 +87,18 @@ pub struct ContractIds {
 pub async fn bank_contract_merge(
     ids: Json<ContractIds>,
     mut db: Connection<DbConn>,
-) -> Result<Json<Value>, Json<ResponseData>> {
+) -> Json<ResponseData> {
     let time = std::time::SystemTime::now();
     let contract_id_for_loading = ids.ids.clone();
 
     let contracts = load_contracts_from_ids(contract_id_for_loading.clone(), &mut db).await;
 
     if let Err(error) = contracts {
-        return Err(Json(ResponseData {
+        return Json(ResponseData {
             success: None,
             error: Some("There was an internal error while loading the contracts.".into()),
             header: Some(error),
-        }));
+        });
     }
 
     let contracts = contracts.unwrap();
@@ -169,4 +172,45 @@ pub async fn bank_contract_delete(
         error: None,
         header: Some("Deleted contracts".into()),
     })
+}
+
+#[get("/bank/contract/scan")]
+pub async fn scan_for_new_contracts(
+    cookies: &CookieJar<'_>,
+    state: &State<AppState>,
+    mut db: Connection<DbConn>,
+) -> Result<Json<ResponseData>, Redirect> {
+    let cookie_user_id = get_user_id(cookies)?;
+
+    let current_bank = state.get_current_bank(cookie_user_id).await;
+
+    if current_bank.is_none() {
+        return Ok(Json(ResponseData {
+            success: None,
+            error: Some(
+                "There was an internal error while loading the bank. Please try again.".into(),
+            ),
+            header: Some("No bank selected".into()),
+        }));
+    }
+
+    let current_bank = current_bank.unwrap();
+
+    let result = create_contract_from_transactions(current_bank.id, &mut db).await;
+
+    if let Err(error) = result {
+        return Ok(Json(ResponseData {
+            success: None,
+            error: Some("There was an internal error while scanning for new contracts.".into()),
+            header: Some(error),
+        }));
+    }
+
+    let result = result.unwrap();
+
+    Ok(Json(ResponseData {
+        success: Some(result),
+        error: None,
+        header: Some("Scanned for new contracts".into()),
+    }))
 }
