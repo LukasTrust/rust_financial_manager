@@ -272,13 +272,17 @@ pub async fn load_contracts_from_ids(
     use crate::schema::contracts as contracts_without_dsl;
     use crate::schema::contracts::dsl::*;
 
+    info!("Loading contracts: {:?}", contract_ids_for_loading);
+
     let contracts_result = contracts_without_dsl::table
-        .filter(id.eq_any(contract_ids_for_loading))
+        .filter(id.eq_any(contract_ids_for_loading.clone()))
         .load::<Contract>(db)
         .await
         .map_err(|_| "Error loading contracts")?;
 
     info!("Contracts count: {}", contracts_result.len());
+
+    assert!(contracts_result.len() == contract_ids_for_loading.len());
 
     Ok(contracts_result)
 }

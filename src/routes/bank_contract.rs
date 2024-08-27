@@ -87,7 +87,7 @@ pub async fn bank_contract_merge(
     let time = std::time::SystemTime::now();
     let contract_id_for_loading = ids.ids.clone();
 
-    let contracts = load_contracts_from_ids(contract_id_for_loading, &mut db).await;
+    let contracts = load_contracts_from_ids(contract_id_for_loading.clone(), &mut db).await;
 
     if let Err(error) = contracts {
         return Err(Json(ResponseData {

@@ -1,4 +1,3 @@
-use chrono::NaiveDate;
 use log::warn;
 use rocket::serde::json::{json, Json};
 use rocket_db_pools::Connection;
@@ -134,18 +133,44 @@ async fn process_contracts(
 
         let mut histories = contract_histories.unwrap();
 
+        let last_transaction_date = load_last_transaction_data_of_contract(contract.id, db)
+            .await
+            .unwrap()
+            .unwrap()
+            .date;
+
         if let Some(latest_history) = histories.last() {
-            if latest_history.new_amount != contract.current_amount {
-                histories.push(ContractHistory {
+            let changed_at = if let Some(end_date) = contract.end_date {
+                end_date
+            } else {
+                last_transaction_date
+            };
+
+            histories.push(ContractHistory {
+                id: 0,
+                contract_id: contract.id,
+                old_amount: latest_history.new_amount,
+                new_amount: contract.current_amount,
+                changed_at,
+            });
+
+            if contract.current_amount != contract_head.current_amount {
+                merged_histories.push(ContractHistory {
                     id: 0,
-                    contract_id: contract.id,
-                    old_amount: latest_history.new_amount,
-                    new_amount: contract.current_amount,
-                    changed_at: contract
-                        .end_date
-                        .unwrap_or_else(|| NaiveDate::from_ymd_opt(9999, 12, 31).unwrap()),
+                    contract_id: contract_head_id,
+                    new_amount: contract_head.current_amount,
+                    old_amount: contract.current_amount,
+                    changed_at,
                 });
             }
+        } else if contract.current_amount != contract_head.current_amount {
+            merged_histories.push(ContractHistory {
+                id: 0,
+                contract_id: contract_head_id,
+                new_amount: contract_head.current_amount,
+                old_amount: contract.current_amount,
+                changed_at: last_transaction_date,
+            });
         }
 
         merged_histories.extend(histories);

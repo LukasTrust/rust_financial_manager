@@ -21,7 +21,7 @@
                         </div>
                     </div>
             </div> 
-            <div id="display-container">
+            <div id="contract-container">
                 <!-- Contracts will be dynamically inserted here -->
             </div>
         </div>
