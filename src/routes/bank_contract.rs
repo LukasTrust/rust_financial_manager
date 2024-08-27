@@ -10,6 +10,7 @@ use serde_json::Value;
 
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
+use crate::utils::delete_utils::delete_contracts_with_ids;
 use crate::utils::get_utils::{get_contracts_with_history, get_user_id};
 use crate::utils::loading_utils::load_contracts_from_ids;
 use crate::utils::merge_contracts::{
@@ -126,4 +127,46 @@ pub async fn bank_contract_merge(
 
     warn!("Time to load contracts: {:?}", time.elapsed().unwrap());
     return handle_open_and_closed_contracts(open_contracts, closed_contracts, &mut db).await;
+}
+
+#[post("/bank/contract/delete", format = "json", data = "<ids>")]
+pub async fn bank_contract_delete(
+    ids: Json<ContractIds>,
+    mut db: Connection<DbConn>,
+) -> Json<ResponseData> {
+    let contract_ids = ids.ids.clone();
+
+    let contracts = load_contracts_from_ids(contract_ids.clone(), &mut db).await;
+
+    if let Err(error) = contracts {
+        return Json(ResponseData {
+            success: None,
+            error: Some("There was an internal error while loading the contracts.".into()),
+            header: Some(error),
+        });
+    }
+
+    let contracts = contracts.unwrap();
+
+    let result = delete_contracts_with_ids(contract_ids, &mut db).await;
+
+    if let Err(error) = result {
+        return Json(ResponseData {
+            success: None,
+            error: Some("There was an internal error while deleting the contracts.".into()),
+            header: Some(error),
+        });
+    }
+
+    let mut succes = String::new();
+
+    for contract in contracts.iter() {
+        succes += &format!("Successfully deleted contract '{}'.\n", contract.name);
+    }
+
+    Json(ResponseData {
+        success: Some(succes),
+        error: None,
+        header: Some("Deleted contracts".into()),
+    })
 }

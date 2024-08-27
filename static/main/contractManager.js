@@ -85,7 +85,53 @@ function attachContractEventListeners() {
 
 function setupEventListeners() {
     document.getElementById('merge-selected-btn').addEventListener('click', mergeSelectedContracts);
-    // Additional event listeners...
+    document.getElementById('delete-selected-btn').addEventListener('click', deleteSelectedContracts);
+}
+
+async function deleteSelectedContracts() {
+    const selectedContracts = document.querySelectorAll('.selected');
+
+    if (selectedContracts.length === 0) {
+        displayCustomAlert('error', 'Delete contracts', 'Please select at least 1 contract to delete.');
+        return;
+    }
+
+    const contractIDs = Array.from(selectedContracts).map(contract => parseInt(contract.getAttribute('data-id'), 10));
+
+    try {
+        const response = await fetch('/bank/contract/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids: contractIDs }),
+        });
+
+        if (!response.ok) throw new Error('Failed to send IDs to the server');
+
+        const updatedContractsData = await response.json();
+
+        if (updatedContractsData.error) {
+            displayCustomAlert('error', updatedContractsData.header, updatedContractsData.error);
+            return;
+        }
+
+        if (updatedContractsData.success) {
+            const selectedContracts = document.querySelectorAll('.selected');
+
+            console.log(selectedContracts);
+
+            selectedContracts.forEach(contract => {
+                contract.remove();
+            }
+            );
+
+            displayCustomAlert('success', updatedContractsData.header, updatedContractsData.success);
+        }
+
+    } catch (err) {
+        displayCustomAlert('error', 'Delete Failed', err.message);
+    }
 }
 
 async function mergeSelectedContracts() {
