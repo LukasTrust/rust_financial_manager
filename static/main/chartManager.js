@@ -1,7 +1,7 @@
 import { update_performance } from './performanceUpdater.js';
 
-export function initializeChartAndDatePicker() {
-    update_graph();
+export function initializeChartAndDatePicker(plotData) {
+    update_graph(plotData);
 
     setTimeout(() => {
         flatpickr("#dateRange", {
@@ -22,8 +22,7 @@ export function initializeChartAndDatePicker() {
                             }
 
                             if (data.graph_data) {
-                                window.plotData = JSON.parse(data.graph_data);
-                                update_graph();
+                                update_graph(data.graph_data);
                             }
                         })
                         .catch(err => error('Error updating date range:', 'initializeChartAndDatePicker', err));
@@ -33,7 +32,9 @@ export function initializeChartAndDatePicker() {
     }, 0);
 }
 
-function update_graph() {
+function update_graph(plotData) {
+    const data = JSON.parse(plotData);
+
     const layout = {
         title: 'Bank Account Balances',
         xaxis: { title: 'Date', type: 'date' },
@@ -54,9 +55,5 @@ function update_graph() {
         modeBarButtons: [['toImage', 'resetViews']]
     };
 
-    // Initialize Plotly chart if data is available
-    if (window.plotData && window.plotData.length) {
-        Plotly.newPlot('balance_graph', window.plotData, layout, config);
-    } else {
-    }
+    Plotly.newPlot('balance_graph', data, layout, config);
 }

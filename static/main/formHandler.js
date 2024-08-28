@@ -1,8 +1,5 @@
-import { error, log } from './main.js';
+import { error, log, loadContent, handlePageWithGraphData } from './main.js';
 import { displayCustomAlert, parseJsonResponse } from './utils.js';
-import { loadContent } from './main.js';
-import { initializeChartAndDatePicker } from './chartManager.js';
-import { update_performance } from './performanceUpdater.js';
 
 // Main form submission handler
 async function handleFormSubmission(form) {
@@ -27,17 +24,11 @@ async function handleFormSubmission(form) {
                 updateBankList(result.banks);
             }
 
-            if (result.graph_data) {
-                window.plotData = JSON.parse(result.graph_data);
-                log('Form submitted successfully. Reinitializing chart with new data:', 'handleFormSubmission', window.plotData);
-                initializeChartAndDatePicker();
-            }
-
-            if (result.performance_value) {
-                update_performance(result.performance_value);
-            }
-
             if (result.success) {
+                if (result.header === 'Succesfully parsed the CSV file') {
+                    await handlePageWithGraphData();
+                }
+
                 displayCustomAlert('success', result.header, result.success);
             } else if (result.error) {
                 displayCustomAlert('error', result.header, result.error);

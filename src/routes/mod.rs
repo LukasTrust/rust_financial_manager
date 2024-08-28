@@ -5,6 +5,7 @@ pub mod bank_transaction;
 pub mod base;
 pub mod delete_user;
 pub mod error_page;
+pub mod get_graph_data;
 pub mod login;
 pub mod register;
 pub mod update_csv;

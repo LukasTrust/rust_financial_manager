@@ -11,7 +11,7 @@ use crate::database::db_connector::DbConn;
 use crate::routes::error_page::show_error_page;
 use crate::schema::users::{self, first_name, last_name};
 use crate::utils::appstate::AppState;
-use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
+use crate::utils::get_utils::get_user_id;
 use crate::utils::loading_utils::load_banks;
 use crate::utils::structs::ResponseData;
 
@@ -83,50 +83,14 @@ pub async fn dashboard(
 
     state.set_current_bank(cookie_user_id, None).await;
 
-    let banks = load_banks(cookie_user_id, &mut db).await;
-
-    if let Err(error) = banks {
-        return Ok(Template::render(
-            "dashboard",
-            json!(ResponseData {
-                success: None,
-                error: Some(
-                    "There was an internal error trying to load the banks of the profile".into()
-                ),
-                header: Some(error),
-            }),
-        ));
-    }
-
-    let banks = banks.unwrap();
-
-    let result = get_performance_value_and_graph_data(&banks, None, None, db).await;
-
-    if let Err(error) = result {
-        return Ok(Template::render(
-            "bank",
-            json!(ResponseData {
-                success: None,
-                error: Some(
-                    "There was an internal error while loading the bank. Please try again.".into()
-                ),
-                header: Some(error),
-            }),
-        ));
-    };
-
-    let (performance_value, graph_data) = result.unwrap();
-
-    let mut result = json!(ResponseData {
-        success: Some(format!("Welcome, {} {}!", user_first_name, user_last_name)),
-        error: None,
-        header: None,
-    });
-
-    result["graph_data"] = json!(graph_data);
-    result["performance_value"] = json!(performance_value);
-
-    Ok(Template::render("dashboard", json!(result)))
+    Ok(Template::render(
+        "dashboard",
+        json!(ResponseData {
+            success: Some(format!("Welcome, {} {}!", user_first_name, user_last_name)),
+            error: None,
+            header: None,
+        }),
+    ))
 }
 
 /// Display the settings page.

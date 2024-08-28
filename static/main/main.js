@@ -1,5 +1,5 @@
 import { initializeFormHandling } from './formHandler.js';
-import { formatAndColorNumbers } from './performanceUpdater.js';
+import { update_performance } from './performanceUpdater.js';
 import { initializeChartAndDatePicker } from './chartManager.js';
 import { loadContracts } from './contractManager.js';
 import { loadTransactions } from './transactionManager.js';
@@ -46,8 +46,6 @@ export async function loadContent(url) {
         // Set the main content to the fetched HTML
         document.getElementById('main-content').innerHTML = html;
 
-        parseGraphData();
-
         if (/^\/bank\/\d+$/.test(url)) {
             handleBankPage(url);
         } else {
@@ -56,7 +54,8 @@ export async function loadContent(url) {
             }
 
             if (url === '/dashboard' || /^\/bank\/\d+$/.test(url)) {
-                handleDashboard();
+                initializeFormHandling();
+                handlePageWithGraphData();
             } else if (url === '/bank/contract') {
                 loadContracts();
             } else if (url === '/bank/transaction') {
@@ -75,26 +74,11 @@ export async function loadContent(url) {
 
 // Function to fetch content from a URL
 async function fetchContent(url) {
-    document.getElementById('main-content').innerHTML = '<p>Loading...</p>';
-
     const response = await fetch(url);
 
     if (!response.ok) throw new Error('Network response was not ok');
 
     return response.text();
-}
-
-function handleDashboard() {
-    const success_data = document.getElementById('response-data');
-
-    if (success_data) {
-        const success = document.getElementById('header-success');
-        success.innerHTML = success_data.textContent;
-    }
-
-    initializeFormHandling();
-    formatAndColorNumbers();
-    initializeChartAndDatePicker();
 }
 
 // Function to handle login validation errors
@@ -126,8 +110,7 @@ function handleBankPage(url) {
     subButtons.style.display = 'block';
 
     initializeFormHandling();
-    formatAndColorNumbers();
-    initializeChartAndDatePicker();
+    handlePageWithGraphData();
 }
 
 // Function to hide all sub-buttons when not on a bank page
@@ -137,16 +120,17 @@ function hideAllSubButtons() {
     });
 }
 
+async function featchGraphData() {
+    const response = await fetch('/get/graph/data');
 
-// Function to parse and handle graph data
-function parseGraphData() {
-    const graphDataElement = document.getElementById('graph-data');
-    if (graphDataElement) {
-        try {
-            const jsonText = graphDataElement.textContent.trim();
-            window.plotData = JSON.parse(jsonText);
-        } catch (e) {
-            error('Error parsing graph data:', 'loadContent', e);
-        }
-    }
+    const json = await response.json();
+
+    return json;
+}
+
+export async function handlePageWithGraphData() {
+    const data = await featchGraphData();
+
+    initializeChartAndDatePicker(data.graph_data);
+    update_performance(data.performance_value);
 }

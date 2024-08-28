@@ -7,14 +7,13 @@ use rocket::response::Redirect;
 use rocket::serde::json::Json;
 use rocket::{post, State};
 use rocket_db_pools::Connection;
-use serde_json::{json, Value};
 use std::io::Cursor;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewTransaction};
 use crate::utils::appstate::AppState;
 use crate::utils::create_contract::create_contract_from_transactions;
-use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
+use crate::utils::get_utils::get_user_id;
 use crate::utils::insert_utiles::insert_transactions;
 use crate::utils::loading_utils::{load_csv_converter_of_bank, load_transactions_of_bank};
 use crate::utils::structs::{Bank, ResponseData, Transaction};
@@ -25,18 +24,18 @@ pub async fn upload_csv(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<Value>, Redirect> {
+) -> Result<Json<ResponseData>, Redirect> {
     let cookie_user_id = get_user_id(cookies)?;
     let current_bank = state.get_current_bank(cookie_user_id).await;
 
     if current_bank.is_none() {
-        return Ok(Json(json!(ResponseData {
+        return Ok(Json(ResponseData {
             success: None,
             error: Some(
-                "There was an internal error while loading the bank. Please try again.".into()
+                "There was an internal error while loading the bank. Please try again.".into(),
             ),
             header: Some("No bank selected".into()),
-        })));
+        }));
     }
 
     let current_bank = current_bank.unwrap();
@@ -48,11 +47,11 @@ pub async fn upload_csv(
         Ok(bytes) => bytes,
         Err(_) => {
             error!("Failed to read CSV file");
-            return Ok(Json(json!(ResponseData {
+            return Ok(Json(ResponseData {
                 success: None,
                 error: Some("There was an internal error while trying to read the CSV file".into()),
                 header: Some("Failed to read CSV file".into()),
-            })));
+            }));
         }
     };
 
@@ -73,43 +72,20 @@ pub async fn upload_csv(
     .await;
 
     match result {
-        Ok(result_string) => {
-            let result =
-                get_performance_value_and_graph_data(&vec![current_bank], None, None, db).await;
-
-            if let Err(error) = result {
-                return Ok(Json(json!(ResponseData {
-                    success: None,
-                    error: Some(
-                        "There was an internal error while loading the bank. Please try again."
-                            .into()
-                    ),
-                    header: Some(error),
-                })));
-            }
-
-            let (performance_value, graph_data) = result.unwrap();
-
-            let mut result = json!(ResponseData {
-                success: Some(result_string),
-                error: None,
-                header: Some("Succesfully parsed the CSV file".to_string()),
-            });
-
-            result["graph_data"] = json!(graph_data);
-            result["performance_value"] = json!(performance_value);
-
-            Ok(Json(result))
-        }
+        Ok(result_string) => Ok(Json(ResponseData {
+            success: Some(result_string),
+            error: None,
+            header: Some("Succesfully parsed the CSV file".to_string()),
+        })),
         Err(e) => {
             error!("Failed to insert records: {}", e);
-            return Ok(Json(json!(ResponseData {
+            return Ok(Json(ResponseData {
                 success: None,
                 error: Some(
-                    "There was an internal error while trying to insert the records".into()
+                    "There was an internal error while trying to insert the records".into(),
                 ),
                 header: Some(e),
-            })));
+            }));
         }
     }
 }

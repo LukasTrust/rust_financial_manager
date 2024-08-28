@@ -6,7 +6,6 @@ use rocket::fs::{relative, FileServer};
 use rocket::tokio::sync::RwLock;
 use rocket_db_pools::Database;
 use rocket_dyn_templates::Template;
-use rust_financial_manager::utils::appstate::AppState;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -29,6 +28,8 @@ use routes::register::{register_form, register_user};
 use routes::update_csv::update_csv;
 use routes::update_date_range::update_date_range;
 use routes::upload_csv::upload_csv;
+use rust_financial_manager::routes::get_graph_data::get_graph_data;
+use rust_financial_manager::utils::appstate::AppState;
 use rust_financial_manager::{database, routes};
 
 #[launch]
@@ -71,6 +72,8 @@ fn rocket() -> _ {
                 error_page,
                 // Update date range
                 update_date_range,
+                // Get graph data
+                get_graph_data,
                 // Bank Contract
                 bank_contract,
                 bank_contact_display,

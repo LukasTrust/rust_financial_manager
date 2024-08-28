@@ -30,7 +30,6 @@
                 </div>
             </div>
             <div class="main-content" id="main-content">
-                <p>Loading...</p>
             </div>
             <div class="sidebar-right">
                 <button url="/settings">Settings</button>
