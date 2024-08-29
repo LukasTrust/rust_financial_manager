@@ -1,4 +1,5 @@
 use ::diesel::ExpressionMethods;
+use chrono::NaiveDate;
 use diesel::QueryDsl;
 use log::info;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
@@ -126,7 +127,7 @@ pub async fn update_contract_with_new_name(
 
 pub async fn update_contract_with_end_date(
     contract_id: i32,
-    end_date_for_update: chrono::NaiveDate,
+    end_date_for_update: Option<NaiveDate>,
     db: &mut Connection<DbConn>,
 ) -> Result<(), String> {
     use crate::schema::contracts::*;

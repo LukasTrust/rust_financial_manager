@@ -1,3 +1,4 @@
+pub mod add_to_contract;
 pub mod appstate;
 pub mod create_contract;
 pub mod delete_utils;

@@ -41,7 +41,9 @@ function fillContractFilter() {
 
         const contract = transactionsData.find(t => t.contract?.name === name).contract;
 
-        contracts.push(contract);
+        if (!contracts.find(c => c.id === contract.id)) {
+            contracts.push(contract);
+        }
     });
 }
 
@@ -299,7 +301,7 @@ function filterTransactions() {
 // Generalized function to handle transaction operations
 function handleTransactionOperation(url, errorMessage) {
     return fetch(url, {
-        method: 'POST',
+        method: 'GET',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -576,9 +578,14 @@ function addSelectedContract(index) {
             contractAmount.innerHTML = `<span class="${selectedContract.current_amount < 0 ? 'negative' : 'positive'}">$${selectedContract.current_amount.toFixed(2)}</span>`;
 
             const contractActionButton = row.querySelector('.add-contract-btn');
+            console.log(contractActionButton);
+
             contractActionButton.classList.remove('add-contract-btn');
             contractActionButton.classList.add('remove-contract-btn');
             contractActionButton.textContent = 'Remove Contract';
+
+            const iconCell = row.cells[0];
+            iconCell.textContent = '📄';
 
             // Close the modal after adding the contract
             closeModal();
@@ -589,6 +596,7 @@ function addSelectedContract(index) {
 function closeModal() {
     const modal = document.getElementById('contractModal');
     if (modal) {
+        console.log('closing modal');
         modal.remove();
     }
 }

@@ -402,7 +402,7 @@ async fn check_if_contract_should_be_closed(
 
         if let Some(months) = months_between {
             if months > contract.months_between_payment * 2 {
-                update_contract_with_end_date(contract.id, last_transaction_of_contract, db)
+                update_contract_with_end_date(contract.id, Some(last_transaction_of_contract), db)
                     .await?;
 
                 closed_contracts += 1;

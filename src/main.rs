@@ -17,7 +17,7 @@ use routes::bank_contract::{
     bank_contract_name_changed, bank_scan_for_new_contracts,
 };
 use routes::bank_transaction::{
-    bank_transaction, transaction_add, transaction_allow_contract, transaction_hide,
+    bank_transaction, transaction_add_to_contract, transaction_allow_contract, transaction_hide,
     transaction_not_allow_contract, transaction_remove, transaction_show,
 };
 use routes::base::{base, dashboard, logout, settings};
@@ -84,7 +84,7 @@ fn rocket() -> _ {
                 // Bank Transaction
                 bank_transaction,
                 transaction_remove,
-                transaction_add,
+                transaction_add_to_contract,
                 transaction_hide,
                 transaction_show,
                 transaction_not_allow_contract,
