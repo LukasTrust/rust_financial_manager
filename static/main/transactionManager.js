@@ -24,7 +24,6 @@ export const loadTransactions = () => {
         filteredData = transactionsData;
 
         fillContractFilter();
-        setupToggleButtons();
         setupEventListeners();
         filterTransactions();
     } catch (err) {
@@ -44,14 +43,6 @@ function fillContractFilter() {
 
         contracts.push(contract);
     });
-}
-
-function setupToggleButtons() {
-    let toggleButton = document.getElementById('toggle-hidden-transaction');
-    let slider = toggleButton.querySelector('.slider');
-
-    slider.classList.toggle('active');
-    slider.classList.toggle('active');
 }
 
 function generateTransactionHTML({ transaction, contract }, index) {

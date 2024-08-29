@@ -68,6 +68,7 @@ pub struct NewCSVConverter {
 pub struct NewContract {
     pub bank_id: i32,
     pub name: String,
+    pub parse_name: String,
     pub current_amount: f64,
     pub months_between_payment: i32,
 }
@@ -78,6 +79,7 @@ pub struct Contract {
     pub id: i32,
     pub bank_id: i32,
     pub name: String,
+    pub parse_name: String,
     pub current_amount: f64,
     pub months_between_payment: i32,
     pub end_date: Option<NaiveDate>,

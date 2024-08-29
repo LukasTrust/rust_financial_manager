@@ -27,6 +27,8 @@ diesel::table! {
         bank_id -> Int4,
         #[max_length = 200]
         name -> Varchar,
+        #[max_length = 200]
+        parse_name -> Varchar,
         current_amount -> Float8,
         months_between_payment -> Int4,
         end_date -> Nullable<Date>,

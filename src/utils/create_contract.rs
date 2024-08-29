@@ -132,7 +132,7 @@ fn filter_transactions_matching_to_existing_contract(
     for transaction in transactions.into_iter() {
         if let Some(contract) = existing_contracts.iter().find(|contract| {
             transaction.amount == contract.current_amount
-                && transaction.counterparty == contract.name
+                && transaction.counterparty == contract.parse_name
         }) {
             contract_transactions
                 .entry(contract.id)
@@ -152,7 +152,7 @@ fn filter_transactions_matching_changed_contract(
 
     for transaction in transactions.into_iter() {
         if let Some(contract) = existing_contracts.iter().find(|contract| {
-            if transaction.counterparty == contract.name {
+            if transaction.counterparty == contract.parse_name {
                 let threshold_percentage = 0.15;
                 let diff = (transaction.amount as f64 - contract.current_amount as f64).abs();
                 let allowed_change = contract.current_amount as f64 * threshold_percentage;
@@ -324,6 +324,7 @@ async fn create_contracts_from_transactions(
                         let contract = NewContract {
                             bank_id,
                             name: counterparty.clone(),
+                            parse_name: counterparty.clone(),
                             current_amount: amount_key as f64 / 100.0,
                             months_between_payment: months,
                         };

@@ -6,11 +6,13 @@ const openContractsWrapper = document.createElement('div');
 export function loadContracts() {
     try {
         closedContractsWrapper.classList.add('display-container');
+        closedContractsWrapper.style.display = 'none';
         openContractsWrapper.classList.add('display-container');
 
         get_contract_data();
 
         setupEventListeners();
+        document.getElementById('toggle-closed-contracts').addEventListener('click', showClosedContracts);
     } catch (err) {
         displayCustomAlert('error', 'Loading Error', err.message);
     }
@@ -66,6 +68,8 @@ function updateContractsView(contractsData) {
     container.appendChild(openContractsWrapper);
 
     const closedContractsTitle = document.createElement('h3');
+    closedContractsTitle.id = 'closed-contracts-title';
+    closedContractsTitle.style.display = 'none';
     closedContractsTitle.textContent = 'Closed Contracts';
     container.appendChild(closedContractsTitle);
     container.appendChild(closedContractsWrapper);
@@ -100,7 +104,18 @@ function attachContractEventListeners() {
                     contractElement.classList.add('selected');
                 }
             }
-        })
+        });
+
+        // Add an input event listener to update the contract name
+        const contractNameInput = contractElement.querySelector('.contract-name');
+        contractNameInput.addEventListener('input', (event) => {
+            const newName = event.target.value;
+
+            // Assuming `contractsData` is your array of contract objects
+            contractsData[index].contract.name = newName;
+
+            // Optionally, persist the change or update other parts of your UI or data
+        });
     });
 }
 
@@ -229,7 +244,7 @@ function generateContractHTML(contractWithHistory, index) {
 
     return `
         <div class="display" id="display-${index}" data-id="${contract.id}">
-            <h3>${contract.name}</h3>
+            <input type="text" class="contract-name" value="${contract.name}" data-index="${index}" style="font-size: 1.5em; font-weight: bold; border: none; background: none; width: 100%;" />
             <p>Current amount: <span class="${currentAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
             <p>Total amount over time: <span class="${totalAmountClass}">$${total_amount_paid.toFixed(2)}</span></p>
             <p>Months between Payment: ${contract.months_between_payment}</p>
@@ -255,4 +270,16 @@ function generateHistoryHTML(contractHistory) {
             <p>Changed At: ${formatDate(changed_at)}</p>
         </li>
     `).join('');
+}
+
+function showClosedContracts() {
+    const toggleButton = document.getElementById('toggle-closed-contracts');
+    const slider = toggleButton.querySelector('.slider');
+
+    slider.classList.toggle('active');
+
+    const closedContractsTitle = document.getElementById('closed-contracts-title');
+    closedContractsTitle.style.display = closedContractsTitle.style.display === 'none' ? 'block' : 'none';
+
+    closedContractsWrapper.style.display = closedContractsWrapper.style.display === 'none' ? 'flex' : 'none';
 }
