@@ -1,5 +1,5 @@
 import { formatDate, displayCustomAlert } from './utils.js';
-import { error } from './main.js';
+import { log, error } from './main.js';
 
 let filteredData = [];
 let transactionsData = [];
@@ -9,6 +9,7 @@ let showOrHideTransaction = false;
 let contracts = [];
 
 export const loadTransactions = () => {
+    const start = performance.now();
     try {
         const transactionsDataScript = document.getElementById('transactions-data');
         if (!transactionsDataScript) {
@@ -27,6 +28,10 @@ export const loadTransactions = () => {
         setupEventListeners();
         filterTransactions();
     } catch (err) {
+        error('An error occurred during loadTransactions', 'loadTransactions', err);
+    } finally {
+        const end = performance.now();
+        log(`loadTransactions execution time: ${(end - start).toFixed(2)}ms`, 'loadTransactions');
     }
 };
 
@@ -90,7 +95,7 @@ function generateTransactionHTML({ transaction, contract }, index) {
         emptyCellIcon = '🚫';
     }
 
-    return `
+    const html = `
         <tr class="transaction-row ${rowClass}" style="display: ${displayStyle}" data-index="${index}">
             <td>
                 <div class="dropdown">
@@ -106,10 +111,13 @@ function generateTransactionHTML({ transaction, contract }, index) {
             <td>${contractAmount}</td>
         </tr>
     `;
+
+    return html;
 }
 
 
 function setupEventListeners() {
+    const start = performance.now();
     document.getElementById('transaction-search').addEventListener('input', filterTransactions);
     document.getElementById('contract-filter').addEventListener('change', filterTransactions);
 
@@ -155,6 +163,8 @@ function setupEventListeners() {
     });
 
     updateTransactionTable();
+    const end = performance.now();
+    log(`setupEventListeners execution time: ${(end - start).toFixed(2)}ms`, 'setupEventListeners');
 };
 
 function updateTransactionTable() {
@@ -200,14 +210,18 @@ function updateTransactionTable() {
 }
 
 function sortColumn(key) {
+    const start = performance.now();
     sortConfig.ascending = (sortConfig.key === key) ? !sortConfig.ascending : true;
     sortConfig.key = key;
 
     sortData();
     updateSortIcons();
+    const end = performance.now();
+    log(`sortColumn execution time: ${(end - start).toFixed(2)}ms`, 'sortColumn');
 };
 
 function sortData() {
+    const start = performance.now();
     if (!sortConfig.key) return;
 
     // Helper function to get the value based on sortConfig.key
@@ -256,6 +270,8 @@ function sortData() {
     }
 
     updateTransactionTable();
+    const end = performance.now();
+    log(`sortData execution time: ${(end - start).toFixed(2)}ms`, 'sortData');
 }
 
 function updateSortIcons() {
@@ -584,9 +600,11 @@ function addSelectedContract(index) {
             contractActionButton.classList.add('remove-contract-btn');
             contractActionButton.textContent = 'Remove Contract';
 
+            // Set the 📄 icon
             const iconCell = row.cells[0];
-            iconCell.textContent = '📄';
-
+            iconCell.innerHTML = '📄<div class="dropdown-content" style="display:none;">' +
+                iconCell.querySelector('.dropdown-content').innerHTML +
+                '</div>';
             // Close the modal after adding the contract
             closeModal();
         }

@@ -20,7 +20,7 @@ pub async fn handle_contract_update(
 
     if transaction.amount == contract.current_amount {
         info!("Amount is the same, no need to update contract.");
-        return Ok("".into());
+        return Ok("Added transaction to contract".into());
     }
 
     match contract.end_date {
@@ -139,9 +139,10 @@ async fn handle_new_date_logic(
 
     if is_closed {
         let days_to_add = contract.months_between_payment * 30;
-        let new_end_date = contract.end_date.unwrap() + chrono::Duration::days(days_to_add as i64);
+        let new_end_date = transaction.date + chrono::Duration::days(days_to_add as i64);
+        let now = NaiveDate::from(Local::now().naive_local());
 
-        if new_end_date > NaiveDate::from(Local::now().naive_local()) {
+        if new_end_date > now {
             result = update_contract_with_end_date(contract.id, None, db).await;
             if let Err(e) = result {
                 error!("Failed to update contract end date: {}", e);
