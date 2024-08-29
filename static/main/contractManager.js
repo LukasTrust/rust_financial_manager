@@ -108,14 +108,27 @@ function attachContractEventListeners() {
 
         // Add an input event listener to update the contract name
         const contractNameInput = contractElement.querySelector('.contract-name');
-        contractNameInput.addEventListener('input', (event) => {
-            const newName = event.target.value;
-
-            // Assuming `contractsData` is your array of contract objects
-            contractsData[index].contract.name = newName;
-
-            // Optionally, persist the change or update other parts of your UI or data
+        contractNameInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                handleContractNameChange(event);
+                contractNameInput.blur();
+            }
         });
+
+        contractNameInput.addEventListener('blur', (event) => {
+            handleContractNameChange(event);
+        });
+    });
+}
+
+function handleContractNameChange(event) {
+    const index = event.target.getAttribute('data-index');
+    const contractElement = document.getElementById(`display-${index}`);
+    const contractID = contractElement.getAttribute('data-id');
+    const contractName = event.target.value;
+
+    fetch(`/bank/contract/nameChanged/${contractID}/${contractName}`, {
+        method: 'GET',
     });
 }
 
@@ -244,7 +257,10 @@ function generateContractHTML(contractWithHistory, index) {
 
     return `
         <div class="display" id="display-${index}" data-id="${contract.id}">
-            <input type="text" class="contract-name" value="${contract.name}" data-index="${index}" style="font-size: 1.5em; font-weight: bold; border: none; background: none; width: 100%;" />
+            <div class="container-without-border-horizontally-header">
+                <p>✏️</p>
+                <input type="text" class="contract-name" value="${contract.name}" data-index="${index}" />
+            </div>
             <p>Current amount: <span class="${currentAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
             <p>Total amount over time: <span class="${totalAmountClass}">$${total_amount_paid.toFixed(2)}</span></p>
             <p>Months between Payment: ${contract.months_between_payment}</p>

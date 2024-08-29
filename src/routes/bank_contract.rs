@@ -18,6 +18,7 @@ use crate::utils::merge_contracts::{
     handle_all_closed_contracts, handle_open_and_closed_contracts,
 };
 use crate::utils::structs::ResponseData;
+use crate::utils::update_utils::update_contract_with_new_name;
 
 #[get("/bank/contract")]
 pub async fn bank_contract() -> Result<Template, Redirect> {
@@ -175,7 +176,7 @@ pub async fn bank_contract_delete(
 }
 
 #[get("/bank/contract/scan")]
-pub async fn scan_for_new_contracts(
+pub async fn bank_scan_for_new_contracts(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
@@ -213,4 +214,27 @@ pub async fn scan_for_new_contracts(
         error: None,
         header: Some("Scanned for new contracts".into()),
     }))
+}
+
+#[get("/bank/contract/nameChanged/<id>/<name>")]
+pub async fn bank_contract_name_changed(
+    id: i32,
+    name: &str,
+    mut db: Connection<DbConn>,
+) -> Json<ResponseData> {
+    let result = update_contract_with_new_name(id, name.to_string(), &mut db).await;
+
+    if let Err(error) = result {
+        return Json(ResponseData {
+            success: None,
+            error: Some("There was an internal error while updating the contract name.".into()),
+            header: Some(error),
+        });
+    }
+
+    Json(ResponseData {
+        success: Some("Successfully updated the contract name.".into()),
+        error: None,
+        header: Some("Updated contract name".into()),
+    })
 }

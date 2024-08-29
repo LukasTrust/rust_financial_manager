@@ -103,6 +103,27 @@ pub async fn update_contract_with_new_amount(
     Ok(())
 }
 
+pub async fn update_contract_with_new_name(
+    contract_id: i32,
+    new_name: String,
+    db: &mut Connection<DbConn>,
+) -> Result<(), String> {
+    use crate::schema::contracts::*;
+
+    diesel::update(contracts::table.find(contract_id))
+        .set(name.eq(new_name.clone()))
+        .execute(db)
+        .await
+        .map_err(|_| "Error updating contract")?;
+
+    info!(
+        "Contract ID {} updated with new name {}.",
+        contract_id, new_name
+    );
+
+    Ok(())
+}
+
 pub async fn update_contract_with_end_date(
     contract_id: i32,
     end_date_for_update: chrono::NaiveDate,
