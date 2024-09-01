@@ -107,10 +107,7 @@ pub async fn load_last_transaction_data_of_bank(
         .await;
 
     match transaction_result {
-        Ok(transaction) => {
-            info!("Last transaction loaded: {:?}", transaction);
-            Ok(Some(transaction))
-        }
+        Ok(transaction) => Ok(Some(transaction)),
         Err(_) => {
             info!("No transaction found for bank {}", bank_id_for_loading);
             Ok(None)
@@ -207,10 +204,7 @@ pub async fn load_last_transaction_data_of_contract(
         .await;
 
     match transaction_result {
-        Ok(transaction) => {
-            info!("Last transaction loaded: {:?}", transaction);
-            Ok(Some(transaction))
-        }
+        Ok(transaction) => Ok(Some(transaction)),
         Err(_) => {
             info!(
                 "No transaction found for contract {}",

@@ -1,5 +1,5 @@
-pub mod add_to_contract;
 pub mod appstate;
+pub mod contract_utils;
 pub mod create_contract;
 pub mod delete_utils;
 pub mod display_utils;

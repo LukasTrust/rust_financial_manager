@@ -5,8 +5,8 @@ use log::info;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::CSVConverter;
-use crate::schema::{contracts, csv_converters, transactions};
+use crate::database::models::{CSVConverter, ContractHistory};
+use crate::schema::{contract_history, contracts, csv_converters, transactions};
 
 pub async fn update_transactions_with_contract(
     transaction_ids: Vec<i32>,
@@ -159,6 +159,26 @@ pub async fn update_csv_converter(
         .map_err(|_| "Error updating CSV converter")?;
 
     info!("CSV converter updated: {:?}", csv_converter);
+
+    Ok(())
+}
+
+pub async fn update_contract_history(
+    contract_history: ContractHistory,
+    db: &mut Connection<DbConn>,
+) -> Result<(), String> {
+    diesel::update(contract_history::table.find(contract_history.id))
+        .set((
+            contract_history::contract_id.eq(contract_history.contract_id),
+            contract_history::old_amount.eq(contract_history.old_amount),
+            contract_history::new_amount.eq(contract_history.new_amount),
+            contract_history::changed_at.eq(contract_history.changed_at),
+        ))
+        .execute(db)
+        .await
+        .map_err(|_| "Error updating contract history")?;
+
+    info!("Contract history updated: {:?}", contract_history);
 
     Ok(())
 }

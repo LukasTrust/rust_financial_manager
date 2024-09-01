@@ -20,3 +20,19 @@ pub async fn delete_contracts_with_ids(
 
     Ok(())
 }
+
+pub async fn delete_contract_history_with_ids(
+    contract_history_ids: Vec<i32>,
+    db: &mut Connection<DbConn>,
+) -> Result<(), String> {
+    use crate::schema::contract_history::dsl::*;
+
+    diesel::delete(contract_history.filter(id.eq_any(contract_history_ids.clone())))
+        .execute(db)
+        .await
+        .map_err(|_| "Error deleting contract histories")?;
+
+    info!("Contract history IDs {:?} deleted.", contract_history_ids);
+
+    Ok(())
+}

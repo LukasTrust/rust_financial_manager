@@ -8,8 +8,8 @@ use rocket_dyn_templates::Template;
 use std::time::Instant;
 
 use crate::database::db_connector::DbConn;
-use crate::utils::add_to_contract::handle_contract_update;
 use crate::utils::appstate::AppState;
+use crate::utils::contract_utils::{handle_add_update, handle_remove_contract};
 use crate::utils::get_utils::{get_transactions_with_contract, get_user_id};
 use crate::utils::loading_utils::{load_contracts_from_ids, load_transaction_by_id};
 use crate::utils::structs::ResponseData;
@@ -89,8 +89,7 @@ pub async fn transaction_remove(
 ) -> Json<ResponseData> {
     let start_time = Instant::now();
 
-    let result =
-        update_transactions_with_contract(vec![transaction_id], None::<i32>, &mut db).await;
+    let result = handle_remove_contract(transaction_id, &mut db).await;
 
     if let Err(error) = result {
         error!(
@@ -99,7 +98,7 @@ pub async fn transaction_remove(
         );
         return Json(ResponseData {
             success: None,
-            error: Some("There was an internal error while removing the contract from the transactions. Please try again.".into()),
+            error: Some("There was an internal error while trying to remove the contract from the transactions. Please try again.".into()),
             header: Some(error),
         });
     }
@@ -156,9 +155,7 @@ pub async fn transaction_add_to_contract(
 
     let contract = contract[0].clone();
 
-    let result_of_contract_update = match handle_contract_update(transaction, contract, &mut db)
-        .await
-    {
+    let result_of_contract_update = match handle_add_update(transaction, contract, &mut db).await {
         Ok(res) => res,
         Err(error) => {
             error!("Error updating contract: {}", error);
