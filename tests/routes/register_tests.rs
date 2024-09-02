@@ -1,112 +1,113 @@
 #[cfg(test)]
 mod tests {
-    use rocket::http::Status;
+    use rocket::{http::ContentType, http::Status, tokio};
+    use rust_financial_manager::routes::register::{is_strong_password, is_valid_email};
 
-    use rust_financial_manager::database::models::NewUser;
+    use crate::test_help_functions::get_test_client;
 
-    use crate::test_help_functions::{test_client, user_register};
+    #[tokio::test]
+    async fn test_register_view() {
+        let client = get_test_client().await;
 
-    #[rocket::async_test]
-    async fn test_login_form_from_register() {
-        let client = test_client().await;
-        let response = client.get("/login?message=TestMessage").dispatch().await;
-
-        assert_eq!(response.status(), Status::Ok);
-        let body = response.into_string().await.unwrap();
-        assert!(body.contains("TestMessage"));
-    }
-
-    #[rocket::async_test]
-    async fn test_register_form() {
-        let client = test_client().await;
         let response = client.get("/register").dispatch().await;
 
         assert_eq!(response.status(), Status::Ok);
     }
 
-    #[rocket::async_test]
-    async fn test_register_and_delete_user_success() {
-        let client = test_client().await;
+    #[tokio::test]
+    async fn test_register_user_success() {
+        let client = get_test_client().await;
 
-        let email_for_test = "john.doe@example.com";
+        let new_user =
+            "first_name=John&last_name=Doe&email=john.doe@mail.com&password=Password123%21";
 
-        // Prepare a new user registration form
-        let form = NewUser {
-            first_name: "John".into(),
-            last_name: "Doe".into(),
-            email: email_for_test.into(),
-            password: "Str0ngP@ssw0rd".into(),
-        };
-
-        let response = user_register(&client, form).await;
-
-        assert_eq!(response.status(), Status::SeeOther);
-
-        // Prepare a delete request to remove the user
-        let delete_response = client
-            .delete(format!("/delete_user/{}", email_for_test))
+        let response = client
+            .post("/register")
+            .header(ContentType::Form)
+            .body(new_user)
             .dispatch()
             .await;
 
-        // Assert that the delete response status is a redirect (See Other)
-        assert_eq!(delete_response.status(), Status::SeeOther);
+        assert_eq!(response.status(), Status::Ok);
+        assert!(response
+            .into_string()
+            .await
+            .unwrap()
+            .contains("Registration successful. Please log in."));
     }
 
-    #[rocket::async_test]
-    async fn test_register_user_existing_email() {
-        let client = test_client().await;
+    #[tokio::test]
+    async fn test_register_user_failed_copy_user() {
+        let client = get_test_client().await;
 
-        let email_for_test = "unique.email@example.com";
+        let new_user =
+            "first_name=John&last_name=Doe&email=copy_email@mail.com&password=Password123%21";
 
-        let form = NewUser {
-            first_name: "Jane".into(),
-            last_name: "Doe".into(),
-            email: email_for_test.into(),
-            password: "InitialP@ssw0rd".into(),
-        };
-
-        let response = user_register(&client, form).await;
-
-        assert_eq!(response.status(), Status::SeeOther);
-
-        let duplicate_form = NewUser {
-            first_name: "Jane".into(),
-            last_name: "Doe".into(),
-            email: email_for_test.into(),
-            password: "AnotherP@ssw0rd".into(),
-        };
-
-        let response = user_register(&client, duplicate_form).await;
-
-        let body = response.into_string().await.unwrap();
-        assert!(body.contains("Email already exists"));
-
-        // Prepare a delete request to remove the user
-        let delete_response = client
-            .delete(format!("/delete_user/{}", email_for_test))
+        let response = client
+            .post("/register")
+            .header(ContentType::Form)
+            .body(new_user)
             .dispatch()
             .await;
 
-        // Assert that the delete response status is a redirect (See Other)
-        assert_eq!(delete_response.status(), Status::SeeOther);
+        assert_eq!(response.status(), Status::Ok);
+        assert!(response
+            .into_string()
+            .await
+            .unwrap()
+            .contains("Email already exists. Please use a different email."));
     }
 
-    #[rocket::async_test]
-    async fn test_register_user_weak_password() {
-        let client = test_client().await;
+    #[tokio::test]
+    async fn test_register_user_failded_internal_error() {
+        let client = get_test_client().await;
 
-        let email_for_test = "weak.email@example.com";
+        let new_user =
+            "first_name=John&last_name=Doe&email=internal_error@mail.com&password=Password123%21";
 
-        let form = NewUser {
-            first_name: "Jane".into(),
-            last_name: "Doe".into(),
-            email: email_for_test.into(),
-            password: "weak".into(),
-        };
+        let response = client
+            .post("/register")
+            .header(ContentType::Form)
+            .body(new_user)
+            .dispatch()
+            .await;
 
-        let response = user_register(&client, form).await;
+        assert_eq!(response.status(), Status::Ok);
+        assert!(response
+            .into_string()
+            .await
+            .unwrap()
+            .contains("Internal server error. Please try again later."));
+    }
 
-        let body = response.into_string().await.unwrap();
-        assert!(body.contains("Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character"));
+    #[test]
+    fn test_is_valid_email() {
+        // Positive cases
+        assert!(is_valid_email("test@example.com"));
+        assert!(is_valid_email("user.name+tag+sorting@example.com"));
+        assert!(is_valid_email("user.name@example.co.uk"));
+        assert!(is_valid_email("user_name@domain.com"));
+
+        // Negative cases
+        assert!(!is_valid_email("plainaddress"));
+        assert!(!is_valid_email("@missingusername.com"));
+        assert!(!is_valid_email("username@domain..com"));
+        assert!(!is_valid_email("username@domain.c"));
+        assert!(!is_valid_email("username@domain,com"));
+    }
+
+    #[test]
+    fn test_is_strong_password() {
+        // Positive cases
+        assert!(is_strong_password("Str0ngP@ssw0rd!"));
+        assert!(is_strong_password("Another$trongP4ss"));
+        assert!(is_strong_password("P@ssw0rd12345"));
+
+        // Negative cases
+        assert!(!is_strong_password("short1A!"));
+        assert!(!is_strong_password("alllowercase123!"));
+        assert!(!is_strong_password("ALLUPPERCASE123!"));
+        assert!(!is_strong_password("NoDigits!@#"));
+        assert!(!is_strong_password("NoSpecialChars123"));
     }
 }

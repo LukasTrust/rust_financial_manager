@@ -1,13 +1,26 @@
+use diesel::result::Error as DieselError;
 use log::info;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
 use crate::database::models::{
     CSVConverter, Contract, ContractHistory, NewCSVConverter, NewContract, NewContractHistory,
-    NewTransaction,
+    NewTransaction, NewUser,
 };
 use crate::database::{db_connector::DbConn, models::NewBank};
 
 use super::structs::{Bank, Transaction};
+
+pub async fn insert_user(
+    new_user: NewUser,
+    db: &mut Connection<DbConn>,
+) -> Result<usize, DieselError> {
+    use crate::schema::users;
+
+    diesel::insert_into(users::table)
+        .values(&new_user)
+        .execute(db)
+        .await
+}
 
 pub async fn insert_bank(new_bank: NewBank, db: &mut Connection<DbConn>) -> Result<Bank, String> {
     use crate::schema::banks;

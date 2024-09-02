@@ -7,12 +7,14 @@ use super::structs::Bank;
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub current_bank: Arc<RwLock<HashMap<i32, Bank>>>,
+    pub use_mocking: bool,
 }
 
 impl AppState {
-    pub fn new() -> AppState {
+    pub fn new(use_mocking: bool) -> AppState {
         AppState {
             current_bank: Arc::new(RwLock::new(HashMap::new())),
+            use_mocking: use_mocking,
         }
     }
 

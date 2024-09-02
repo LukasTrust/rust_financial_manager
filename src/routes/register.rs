@@ -4,14 +4,15 @@ use log::{error, info};
 use regex::Regex;
 use rocket::form::Form;
 use rocket::serde::json::Json;
-use rocket::{get, post};
-use rocket_db_pools::diesel::prelude::RunQueryDsl;
+use rocket::{get, post, State};
 use rocket_db_pools::{diesel, Connection};
 use rocket_dyn_templates::{context, Template};
 
 use crate::database::db_connector::DbConn;
+use crate::database::db_mocking::insert_user_mocking;
 use crate::database::models::NewUser;
-use crate::schema::users;
+use crate::utils::appstate::AppState;
+use crate::utils::insert_utiles::insert_user;
 use crate::utils::structs::ResponseData;
 
 /// Display the registration form.
@@ -31,10 +32,12 @@ pub fn register_form() -> Template {
 /// If there is an internal server error, an error message is displayed.
 #[post("/register", data = "<user_form>")]
 pub async fn register_user(
+    state: &State<AppState>,
     mut db: Connection<DbConn>,
     user_form: Form<NewUser>,
 ) -> Json<ResponseData> {
     if !is_valid_email(&user_form.email) {
+        error!("Invalid email format.");
         return Json(ResponseData {
             success: None,
             error: Some("Invalid email format. Please use a valid email.".into()),
@@ -43,6 +46,7 @@ pub async fn register_user(
     }
 
     if !is_strong_password(&user_form.password) {
+        error!("Weak password.");
         return Json(ResponseData {
             success: None,
             error: Some("Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character".into()),
@@ -53,6 +57,7 @@ pub async fn register_user(
     let hashed_password = match hash(user_form.password.clone(), DEFAULT_COST) {
         Ok(h) => h,
         Err(_) => {
+            info!("Hashing password failed.");
             return Json(ResponseData {
                 success: None,
                 error: Some("Internal server error. Please try again later.".into()),
@@ -68,10 +73,10 @@ pub async fn register_user(
         password: hashed_password,
     };
 
-    let result = diesel::insert_into(users::table)
-        .values(&new_user)
-        .execute(&mut db)
-        .await;
+    let result = match state.use_mocking{
+        true => insert_user_mocking(new_user),
+        false => insert_user(new_user, &mut db).await,
+    };
 
     match result {
         Ok(_) => Json(ResponseData {
@@ -80,6 +85,7 @@ pub async fn register_user(
             header: None,
         }),
         Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
+            info!("Registration failed, email already exists.");
             Json(ResponseData {
                 error: Some("Email already exists. Please use a different email.".into()),
                 success: None,
