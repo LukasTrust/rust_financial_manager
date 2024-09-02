@@ -28,7 +28,7 @@ pub async fn update_csv(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Redirect> {
+) -> Result<Json<ResponseData>, Box<Redirect>> {
     let cookie_user_id = get_user_id(cookies)?;
 
     let current_bank = state.get_current_bank(cookie_user_id).await;

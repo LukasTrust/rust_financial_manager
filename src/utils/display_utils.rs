@@ -3,7 +3,7 @@ use log::info;
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
-use crate::database::models::Contract;
+use crate::{database::models::Contract, utils::structs::DataMap};
 
 use super::structs::{Bank, Discrepancy, PerformanceData, Transaction};
 
@@ -13,14 +13,14 @@ use super::structs::{Bank, Discrepancy, PerformanceData, Transaction};
 /// The balance graph data is returned as a JSON value.
 pub async fn generate_graph_data(
     banks: &[Bank],
-    transactions: &Vec<Transaction>,
-    discrepancies: &Vec<Discrepancy>,
+    transactions: &[Transaction],
+    discrepancies: &[Discrepancy],
     start_date: &NaiveDate,
     end_date: &NaiveDate,
 ) -> String {
     // Convert the transactions_with_discrepancy into a HashMap for quick lookup
     let discrepancy_map: HashMap<i32, f64> = discrepancies
-        .into_iter()
+        .iter()
         .map(|d| (d.transaction_id, d.discrepancy_amount))
         .collect();
 
@@ -37,7 +37,7 @@ pub async fn generate_graph_data(
             .collect::<Vec<Transaction>>();
 
         // Use a BTreeMap to maintain order and store multiple transactions per day
-        let mut data: BTreeMap<NaiveDate, Vec<(f64, String, f64, Option<f64>)>> = BTreeMap::new();
+        let mut data: DataMap = BTreeMap::new();
 
         // Filter transactions within the date range
         let filtered_transactions: Vec<&Transaction> = bank_transactions
@@ -49,7 +49,7 @@ pub async fn generate_graph_data(
             // Check if the transaction is in the discrepancy map
             let discrepancy_amount = discrepancy_map.get(&transaction.id).cloned();
 
-            data.entry(transaction.date).or_insert_with(Vec::new).push((
+            data.entry(transaction.date).or_default().push((
                 transaction.bank_balance_after,
                 transaction.counterparty.clone(),
                 transaction.amount,
@@ -72,7 +72,7 @@ pub async fn generate_graph_data(
                     format!(
                             "{}<br>Date:{}<br>Amount: {} €<br>New balance: {} €<br>Discrepancy Amount: {} €",
                             counterparty,
-                            date.format("%d.%m.%Y").to_string(),
+                            date.format("%d.%m.%Y"),
                             amount,
                             balance,
                             discrepancy_amount
@@ -81,7 +81,7 @@ pub async fn generate_graph_data(
                     format!(
                         "{}<br>Date:{}<br>Amount: {} €<br>New balance: {} €",
                         counterparty,
-                        date.format("%d.%m.%Y").to_string(),
+                        date.format("%d.%m.%Y"),
                         amount,
                         balance
                     )
@@ -114,8 +114,8 @@ pub async fn generate_graph_data(
 
 pub fn generate_performance_value(
     banks: &[Bank],
-    transactions: &Vec<Transaction>,
-    contracts: &Vec<Contract>,
+    transactions: &[Transaction],
+    contracts: &[Contract],
     start_date: &NaiveDate,
     end_date: &NaiveDate,
 ) -> (PerformanceData, Vec<Discrepancy>) {
@@ -200,7 +200,7 @@ pub fn generate_performance_value(
             if index > 0 && index < transactions_for_start_end.len() - 1 {
                 let discrepancy =
                     previous_balance - (transaction.bank_balance_after - transaction.amount);
-                if discrepancy > 0.01 || discrepancy < -0.01 {
+                if !(-0.01..=0.01).contains(&discrepancy) {
                     info!(
                         "Discrepancy found in transaction: {} with amount: {}",
                         transaction.id, discrepancy

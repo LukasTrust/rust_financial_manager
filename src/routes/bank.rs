@@ -17,7 +17,7 @@ pub async fn bank_view(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Redirect> {
+) -> Result<Template, Box<Redirect>> {
     let cookie_user_id = get_user_id(cookies)?;
 
     let current_bank = load_bank_of_user(cookie_user_id, bank_id, &mut db).await;
@@ -56,5 +56,5 @@ pub async fn bank_view(
         .set_current_bank(cookie_user_id, Some(current_bank.clone()))
         .await;
 
-    return Ok(Template::render("bank", context! { bank: current_bank }));
+    Ok(Template::render("bank", context! { bank: current_bank }))
 }

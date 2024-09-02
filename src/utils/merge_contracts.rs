@@ -23,9 +23,7 @@ pub async fn handle_all_closed_contracts(
         .min_by_key(|contract| contract.end_date)
         .unwrap();
 
-    let result = process_contracts(contract_head, contracts, db).await;
-
-    result
+    process_contracts(contract_head, contracts, db).await
 }
 
 pub async fn handle_open_and_closed_contracts(
@@ -44,13 +42,11 @@ pub async fn handle_open_and_closed_contracts(
     let mut combined_contracts = open_contracts.clone();
     combined_contracts.extend(closed_contracts.clone());
 
-    let result = process_contracts(contract_head, combined_contracts, db).await;
-
-    result
+    process_contracts(contract_head, combined_contracts, db).await
 }
 
 async fn get_contract_head<'a>(
-    contracts: &'a Vec<Contract>,
+    contracts: &'a [Contract],
     db: &mut Connection<DbConn>,
 ) -> Result<&'a Contract, Json<ResponseData>> {
     let mut last_transaction_datas = vec![];

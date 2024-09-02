@@ -24,7 +24,7 @@ pub async fn bank_transaction(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     db: Connection<DbConn>,
-) -> Result<Template, Redirect> {
+) -> Result<Template, Box<Redirect>> {
     let start_time = Instant::now();
 
     let cookie_user_id = get_user_id(cookies)?;
@@ -58,8 +58,8 @@ pub async fn bank_transaction(
         None
     };
 
-    let transaction_string = if result.is_ok() {
-        result.unwrap()
+    let transaction_string = if let Ok(transactions) = result {
+        transactions
     } else {
         String::new()
     };

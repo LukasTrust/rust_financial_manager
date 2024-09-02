@@ -20,13 +20,13 @@ pub async fn update_date_range(
     end_date: &str,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<Value>, Redirect> {
+) -> Result<Json<Value>, Box<Redirect>> {
     info!("Updating date range to {} - {}", start_date, end_date);
 
     let cookie_user_id = get_user_id(cookies)?;
 
-    let first_date = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d").unwrap();
-    let last_date = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d").unwrap();
+    let first_date = NaiveDate::parse_from_str(start_date, "%Y-%m-%d").unwrap();
+    let last_date = NaiveDate::parse_from_str(end_date, "%Y-%m-%d").unwrap();
 
     let current_bank = state.get_current_bank(cookie_user_id).await;
 

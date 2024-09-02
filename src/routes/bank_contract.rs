@@ -30,7 +30,7 @@ pub async fn bank_contact_display(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<Value>, Redirect> {
+) -> Result<Json<Value>, Box<Redirect>> {
     let cookie_user_id = get_user_id(cookies)?;
 
     let current_bank = state.get_current_bank(cookie_user_id).await;
@@ -55,8 +55,8 @@ pub async fn bank_contact_display(
         None
     };
 
-    let contract_string = if result.is_ok() {
-        result.unwrap()
+    let contract_string = if let Ok(contracts) = result {
+        contracts
     } else {
         String::new()
     };
@@ -130,7 +130,7 @@ pub async fn bank_contract_merge(
     }
 
     warn!("Time to load contracts: {:?}", time.elapsed().unwrap());
-    return handle_open_and_closed_contracts(open_contracts, closed_contracts, &mut db).await;
+    handle_open_and_closed_contracts(open_contracts, closed_contracts, &mut db).await
 }
 
 #[post("/bank/contract/delete", format = "json", data = "<ids>")]
@@ -180,7 +180,7 @@ pub async fn bank_scan_for_new_contracts(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Redirect> {
+) -> Result<Json<ResponseData>, Box<Redirect>> {
     let cookie_user_id = get_user_id(cookies)?;
 
     let current_bank = state.get_current_bank(cookie_user_id).await;

@@ -42,7 +42,7 @@ pub async fn handle_add_update(
             info!("Transaction date is before end date, handling as open contract.");
             let result = handle_old_date_logic(contract, transaction, db).await;
             warn!("Handled open contract in {:?}", start_time.elapsed());
-            return result;
+            result
         }
         None => {
             info!(
@@ -67,7 +67,7 @@ pub async fn handle_add_update(
             info!("Transaction date is before last transaction, handling as closed contract.");
             let result = handle_old_date_logic(contract, transaction, db).await;
             warn!("Handled closed contract in {:?}", start_time.elapsed());
-            return result;
+            result
         }
     }
 }
@@ -87,19 +87,16 @@ async fn handle_old_date_logic(
     }
 
     let contract_histories = existing_contract_histories.unwrap();
-    let new_contract_history;
-
-    if contract_histories.is_empty() {
-        new_contract_history = NewContractHistory {
+    let new_contract_history = if contract_histories.is_empty() {
+        NewContractHistory {
             contract_id: contract.id,
             old_amount: transaction.amount,
             new_amount: transaction.amount,
             changed_at: transaction.date,
-        };
+        }
     } else {
-        new_contract_history =
-            process_contract_histories(&contract_histories, contract, transaction, db).await;
-    }
+        process_contract_histories(&contract_histories, contract, transaction, db).await
+    };
 
     let result = insert_contract_histories(&vec![new_contract_history], db).await;
     if let Err(e) = result {
@@ -180,7 +177,7 @@ async fn handle_new_date_logic(
 }
 
 async fn process_contract_histories(
-    contract_histories: &Vec<ContractHistory>,
+    contract_histories: &[ContractHistory],
     contract: Contract,
     transaction: Transaction,
     db: &mut Connection<DbConn>,

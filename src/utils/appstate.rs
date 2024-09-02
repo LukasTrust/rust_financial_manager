@@ -14,16 +14,13 @@ impl AppState {
     pub fn new(use_mocking: bool) -> AppState {
         AppState {
             current_bank: Arc::new(RwLock::new(HashMap::new())),
-            use_mocking: use_mocking,
+            use_mocking,
         }
     }
 
     pub async fn get_current_bank(&self, cookie_user_id: i32) -> Option<Bank> {
         let current_bank_state = self.current_bank.read().await;
-        match current_bank_state.get(&cookie_user_id) {
-            Some(bank) => Some(bank.clone()),
-            None => None,
-        }
+        current_bank_state.get(&cookie_user_id).cloned()
     }
 
     pub async fn set_current_bank(&self, cookie_user_id: i32, current_bank: Option<Bank>) {

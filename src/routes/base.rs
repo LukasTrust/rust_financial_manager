@@ -24,7 +24,7 @@ pub async fn base(
     mut db: Connection<DbConn>,
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-) -> Result<Template, Redirect> {
+) -> Result<Template, Box<Redirect>> {
     let cookie_user_id = get_user_id(cookies)?;
 
     info!("User is logged in: {}", cookie_user_id);
@@ -65,7 +65,7 @@ pub async fn dashboard(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Redirect> {
+) -> Result<Template, Box<Redirect>> {
     let cookie_user_id = get_user_id(cookies)?;
 
     let (user_first_name, user_last_name) = users::table
@@ -100,7 +100,7 @@ pub async fn dashboard(
 pub async fn settings(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-) -> Result<Template, Redirect> {
+) -> Result<Template, Box<Redirect>> {
     let cookie_user_id = get_user_id(cookies)?;
 
     state.set_current_bank(cookie_user_id, None).await;
@@ -111,7 +111,7 @@ pub async fn settings(
 /// Display the login page.
 /// Remove the user_id cookie to log the user out.
 #[get("/logout")]
-pub fn logout(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
+pub fn logout(cookies: &CookieJar<'_>) -> Result<Template, Box<Redirect>> {
     info!("User logged out.");
     let cookie = cookies.get_private("user_id");
 

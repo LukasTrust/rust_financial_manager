@@ -1,150 +1,101 @@
-name: Rust CI
+name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
-  setup:
-    runs-on: ubuntu-latest
-    container:
-      image: rust:latest
-    outputs:
-      cargo-cache-path: ~/.cargo/registry
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Rust
-        run: rustup default stable
-
   build:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Cache cargo registry
-        uses: actions/cache@v2
+      - uses: actions/checkout@v3
+      - name: Cache cargo builds
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-registry-
+            ${{ runner.os }}-cargo-
+      - name: Set up Rust
+        run: rustc --version && cargo --version
       - name: Build
         run: cargo build --release
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: build-artifacts
-          path: |
-            target/release
-            target/.fingerprint
+          name: build
+          path: target/release
 
   test:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
-    needs: [setup, build]
+    needs: build
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download Build Artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
-          name: build-artifacts
-          path: target/release
+          name: build
       - name: Run Tests
         run: cargo test --release
 
-  lint:
+  lint_format:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
-    needs: [setup, build]
     steps:
-      - uses: actions/checkout@v2
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: build-artifacts
-          path: target/release
-      - name: Lint
+      - uses: actions/checkout@v3
+      - name: Install Clippy and Rustfmt
+        run: rustup component add clippy rustfmt
+      - name: Lint Code
         run: cargo clippy -- -D warnings
-
-  format:
-    runs-on: ubuntu-latest
-    container:
-      image: rust:latest
-    needs: [setup, build]
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: build-artifacts
-          path: target/release
-      - name: Check Format
+      - name: Check Formatting
         run: cargo fmt --check
-
-  doc:
-    runs-on: ubuntu-latest
-    container:
-      image: rust:latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v2
-      - name: Generate Documentation
-        run: cargo doc --no-deps
-      - name: Upload Documentation
-        uses: actions/upload-artifact@v2
-        with:
-          name: documentation
-          path: target/doc
-
-  benchmark:
-    runs-on: ubuntu-latest
-    container:
-      image: rust:latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: build-artifacts
-          path: target/release
-      - name: Benchmark
-        run: cargo bench
-
-  audit:
-    runs-on: ubuntu-latest
-    container:
-      image: rust:latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Cargo Audit
-        run: cargo install cargo-audit
-      - name: Audit
-        run: cargo audit --json > gl-dependency-scanning-report.json
-      - name: Upload Audit Report
-        uses: actions/upload-artifact@v2
-        with:
-          name: dependency-scanning-report
-          path: gl-dependency-scanning-report.json
 
   coverage:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
-    needs: test
+    needs: build
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Cargo Tarpaulin
+      - uses: actions/checkout@v3
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+      - name: Install cargo-tarpaulin
         run: cargo install cargo-tarpaulin
-      - name: Generate Coverage
-        run: cargo tarpaulin --engine llvm --ignore-tests --out Xml --output cobertura.xml
-      - name: Upload Coverage Report
-        uses: actions/upload-artifact@v2
+      - name: Run Coverage
+        run: cargo tarpaulin --engine llvm --ignore-tests --out Xml
+      - name: Upload Coverage
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-report
           path: cobertura.xml
+
+  docs_benchmark_audit:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Generate Documentation
+        run: cargo doc --no-deps
+      - name: Run Benchmarks
+        run: cargo bench
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      - name: Run Security Audit
+        run: cargo audit --json > gl-dependency-scanning-report.json
+      - name: Upload Audit Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-scanning-report
+          path: gl-dependency-scanning-report.json

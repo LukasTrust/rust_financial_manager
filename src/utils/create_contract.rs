@@ -18,6 +18,8 @@ use crate::utils::update_utils::{
     update_transactions_with_contract,
 };
 
+use super::structs::CounterpartyMap;
+
 type Result<T> = std::result::Result<T, String>;
 
 pub async fn create_contract_from_transactions(
@@ -136,7 +138,7 @@ fn filter_transactions_matching_to_existing_contract(
         }) {
             contract_transactions
                 .entry(contract.id)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(transaction);
         }
     }
@@ -154,8 +156,8 @@ fn filter_transactions_matching_changed_contract(
         if let Some(contract) = existing_contracts.iter().find(|contract| {
             if transaction.counterparty == contract.parse_name {
                 let threshold_percentage = 0.15;
-                let diff = (transaction.amount as f64 - contract.current_amount as f64).abs();
-                let allowed_change = contract.current_amount as f64 * threshold_percentage;
+                let diff = (transaction.amount - contract.current_amount).abs();
+                let allowed_change = contract.current_amount * threshold_percentage;
                 diff <= allowed_change
             } else {
                 false
@@ -163,7 +165,7 @@ fn filter_transactions_matching_changed_contract(
         }) {
             contract_transactions
                 .entry(contract.id)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(transaction);
         }
     }
@@ -205,7 +207,7 @@ async fn create_contract_history(
             .find(|contract| contract.id == contract_id)
         {
             Some(contract) => contract,
-            None => return Err(format!("Contract with ID {} not found", contract_id).into()),
+            None => return Err(format!("Contract with ID {} not found", contract_id)),
         };
 
         transactions.sort_by_key(|transaction| transaction.date);
@@ -222,7 +224,7 @@ async fn create_contract_history(
             processed_pairs.insert(pair);
 
             let contract_history = NewContractHistory {
-                contract_id: contract_id,
+                contract_id,
                 old_amount: contract.current_amount,
                 new_amount: transaction.amount,
                 changed_at: transaction.date,
@@ -237,14 +239,14 @@ async fn create_contract_history(
     insert_contract_histories(&new_contract_histories, db).await?;
 
     update_transactions_with_contract_id_local(contracts_with_transactions, db).await?;
+
     Ok(())
 }
 
 fn group_transactions_by_counterparty_and_amount(
     transactions: Vec<Transaction>,
-) -> HashMap<String, HashMap<i64, Vec<(f64, NaiveDate, i32)>>> {
-    let mut counterparty_map: HashMap<String, HashMap<i64, Vec<(f64, NaiveDate, i32)>>> =
-        HashMap::new();
+) -> CounterpartyMap {
+    let mut counterparty_map: CounterpartyMap = HashMap::new();
 
     for transaction in transactions {
         let counterparty = transaction.counterparty.clone();
@@ -252,13 +254,11 @@ fn group_transactions_by_counterparty_and_amount(
         let date = transaction.date;
         let amount_key = (amount * 100.0) as i64;
 
-        let inner_map = counterparty_map
-            .entry(counterparty.clone())
-            .or_insert_with(HashMap::new);
+        let inner_map = counterparty_map.entry(counterparty.clone()).or_default();
 
         inner_map
             .entry(amount_key)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push((amount, date, transaction.id));
     }
 
@@ -272,7 +272,7 @@ fn group_transactions_by_counterparty_and_amount(
 
 async fn create_contracts_from_transactions(
     bank_id: i32,
-    grouped_transactions: HashMap<String, HashMap<i64, Vec<(f64, NaiveDate, i32)>>>,
+    grouped_transactions: CounterpartyMap,
     db: &mut Connection<DbConn>,
 ) -> Result<Vec<Contract>> {
     let mut created_contracts = HashSet::new();
@@ -393,7 +393,7 @@ async fn check_if_contract_should_be_closed(
             load_last_transaction_data_of_contract(contract.id, db).await?;
 
         if last_transaction_of_contract.is_none() {
-            return Err(format!("No transaction found for contract {}", contract.id).into());
+            return Err(format!("No transaction found for contract {}", contract.id));
         }
 
         let last_transaction_of_contract = last_transaction_of_contract.unwrap().date;

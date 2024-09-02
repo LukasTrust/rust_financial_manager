@@ -15,15 +15,15 @@ pub fn error_page(error_title: String, error_message: String) -> Template {
 #[catch(404)]
 pub fn not_found(req: &Request<'_>) -> Redirect {
     info!("404 error: {:?}", req);
-    show_error_page(
+    *show_error_page(
         "404 Not Found".to_string(),
         "The page you are looking for does not exist.".to_string(),
     )
 }
 
-pub fn show_error_page(error_title: String, error_message: String) -> Redirect {
-    Redirect::to(uri!(error_page(
+pub fn show_error_page(error_title: String, error_message: String) -> Box<Redirect> {
+    Box::new(Redirect::to(uri!(error_page(
         error_title = error_title,
         error_message = error_message
-    )))
+    ))))
 }

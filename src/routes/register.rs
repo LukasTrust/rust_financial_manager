@@ -50,7 +50,7 @@ pub async fn register_user(
         return Json(ResponseData {
             success: None,
             error: Some("Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character".into()),
-            header: None,        
+            header: None,
         });
     }
 
@@ -73,7 +73,7 @@ pub async fn register_user(
         password: hashed_password,
     };
 
-    let result = match state.use_mocking{
+    let result = match state.use_mocking {
         true => insert_user_mocking(new_user),
         false => insert_user(new_user, &mut db).await,
     };

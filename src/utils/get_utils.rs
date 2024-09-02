@@ -17,7 +17,7 @@ use super::{
 /// Extract the user ID from the user ID cookie.
 /// If the user ID cookie is not found or cannot be parsed, an error page is displayed.
 /// The user ID is returned if the user ID cookie is found and parsed successfully.
-pub fn get_user_id(cookies: &CookieJar<'_>) -> Result<i32, Redirect> {
+pub fn get_user_id(cookies: &CookieJar<'_>) -> Result<i32, Box<Redirect>> {
     if let Some(cookie_user_id) = cookies.get_private("user_id") {
         info!("User ID cookie found: {:?}", cookie_user_id.value());
 
@@ -72,23 +72,11 @@ pub async fn get_performance_value_and_graph_data(
     let mut all_contracts = Vec::new();
 
     for bank in banks {
-        let transactions = load_transactions_of_bank(bank.id, &mut db).await;
-
-        if let Err(e) = transactions {
-            return Err(e);
-        }
-
-        let transactions = transactions.unwrap();
+        let transactions = load_transactions_of_bank(bank.id, &mut db).await?;
 
         all_transactions.extend(transactions);
 
-        let contracts = load_contracts_of_bank(bank.id, &mut db).await;
-
-        if let Err(e) = contracts {
-            return Err(e);
-        }
-
-        let contracts = contracts.unwrap();
+        let contracts = load_contracts_of_bank(bank.id, &mut db).await?;
 
         all_contracts.extend(contracts);
     }
@@ -133,26 +121,25 @@ pub async fn get_total_amount_paid_of_contract(
 
 pub async fn get_contracts_with_history(
     bank_id: i32,
-    mut db: &mut Connection<DbConn>,
+    db: &mut Connection<DbConn>,
 ) -> Result<String, String> {
     let mut contracts_with_history: Vec<ContractWithHistory> = Vec::new();
 
-    let contracts = load_contracts_of_bank(bank_id, &mut db).await;
+    let contracts = load_contracts_of_bank(bank_id, db).await;
 
     match contracts {
         Ok(contracts) => {
             for contract in contracts.iter() {
-                let contract_history = load_contract_history(contract.id, &mut db).await;
+                let contract_history = load_contract_history(contract.id, db).await;
 
                 if contract_history.is_err() {
                     return Err("Error loading contract history.".to_string());
                 }
 
-                let total_amount_paid =
-                    get_total_amount_paid_of_contract(contract.id, &mut db).await?;
+                let total_amount_paid = get_total_amount_paid_of_contract(contract.id, db).await?;
 
                 let last_payment_date =
-                    load_last_transaction_data_of_contract(contract.id, &mut db).await?;
+                    load_last_transaction_data_of_contract(contract.id, db).await?;
 
                 if last_payment_date.is_none() {
                     return Err("Error loading last payment date.".to_string());
@@ -186,15 +173,13 @@ pub async fn get_transactions_with_contract(
     let contracts = load_contracts_of_bank(bank_id, &mut db).await?;
 
     for transaction in transactions.iter() {
-        let contract;
-
-        if transaction.contract_id.is_some() {
-            contract = contracts
+        let contract = if transaction.contract_id.is_some() {
+            contracts
                 .iter()
-                .find(|c| c.id == transaction.contract_id.unwrap());
+                .find(|c| c.id == transaction.contract_id.unwrap())
         } else {
-            contract = None;
-        }
+            None
+        };
 
         let transaction_with_contract = TransactionWithContract {
             transaction: transaction.clone(),

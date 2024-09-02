@@ -15,7 +15,7 @@ use crate::utils::loading_utils::load_banks;
 use crate::utils::structs::{FormBank, ResponseData};
 
 #[get("/add-bank")]
-pub async fn add_bank(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
+pub async fn add_bank(cookies: &CookieJar<'_>) -> Result<Template, Box<Redirect>> {
     get_user_id(cookies)?; // Ensure user is authenticated
     Ok(Template::render("add_bank", json!({})))
 }
@@ -25,7 +25,7 @@ pub async fn add_bank_form(
     bank_form: Form<FormBank>,
     cookies: &CookieJar<'_>,
     mut db: Connection<DbConn>,
-) -> Result<Json<Value>, Redirect> {
+) -> Result<Json<Value>, Box<Redirect>> {
     let cookie_user_id = get_user_id(cookies)?;
 
     // Create a new bank instance
@@ -54,7 +54,7 @@ pub async fn add_bank_form(
                         return Ok(Json(json!( ResponseData {
                             success: None,
                             error: Some("There was an internal error trying to load the banks. Please login again and retry.".into()),
-                            header: Some(e.into()),
+                            header: Some(e),
                         })));
                     }
 
@@ -70,26 +70,24 @@ pub async fn add_bank_form(
                     });
                     result["banks"] = json!(banks);
 
-                    return Ok(Json(result));
+                    Ok(Json(result))
                 }
                 Err(e) => {
-                    return Ok(Json(json!(ResponseData {
+                    Ok(Json(json!(ResponseData {
                         success: None,
                         error: Some("There was an internal error trying to add the csv converter of the new bank. The bank was added but the csv converter was not.".into()),
                         header: Some(e.to_string()),
-                    })));
+                    })))
                 }
             }
         }
-        Err(e) => {
-            return Ok(Json(json!(ResponseData {
-                success: None,
-                error: Some(format!(
-                    "The bank '{}' could not be added because it already exists in your profile.",
-                    new_bank.name
-                )),
-                header: Some(e.to_string()),
-            })));
-        }
-    };
+        Err(e) => Ok(Json(json!(ResponseData {
+            success: None,
+            error: Some(format!(
+                "The bank '{}' could not be added because it already exists in your profile.",
+                new_bank.name
+            )),
+            header: Some(e.to_string()),
+        }))),
+    }
 }

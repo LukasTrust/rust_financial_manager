@@ -16,7 +16,7 @@ pub async fn get_graph_data(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<Value>, Redirect> {
+) -> Result<Json<Value>, Box<Redirect>> {
     let cookie_user_id = get_user_id(cookies)?;
 
     let current_bank = state.get_current_bank(cookie_user_id).await;
