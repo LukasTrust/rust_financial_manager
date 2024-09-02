@@ -3,13 +3,10 @@ name: Rust CI
 on: [push, pull_request]
 
 jobs:
-  build-test:
+  build:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
-    strategy:
-      matrix:
-        toolchain: [stable, nightly]
     steps:
       - uses: actions/checkout@v2
       - name: Cache cargo registry
@@ -18,58 +15,75 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-cargo-registry-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-registry-${{ matrix.toolchain }}-
+            ${{ runner.os }}-cargo-registry-
       - name: Set up Rust
-        run: rustup default ${{ matrix.toolchain }}
+        run: rustup default stable
       - name: Build
         run: cargo build --release
-      - name: Test
-        run: cargo test
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: build-artifacts
-          path: target/release
+          path: |
+            target/release
+            target/.fingerprint
 
-  lint-code:
+  test:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
-    needs: build-test
+    needs: build
     steps:
       - uses: actions/checkout@v2
       - name: Download Build Artifacts
         uses: actions/download-artifact@v2
         with:
           name: build-artifacts
+          path: target/release
+      - name: Run Tests
+        run: cargo test --release
+
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: build-artifacts
+          path: target/release
       - name: Set up Rust
         run: rustup component add clippy
       - name: Lint
         run: cargo clippy -- -D warnings
 
-  format-code:
+  format:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
-    needs: build-test
+    needs: build
     steps:
       - uses: actions/checkout@v2
       - name: Download Build Artifacts
         uses: actions/download-artifact@v2
         with:
           name: build-artifacts
+          path: target/release
       - name: Set up Rust
         run: rustup component add rustfmt
       - name: Check Format
         run: cargo fmt --check
 
-  doc-code:
+  doc:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
-    needs: build-test
+    needs: build
     steps:
       - uses: actions/checkout@v2
       - name: Generate Documentation
@@ -80,26 +94,27 @@ jobs:
           name: documentation
           path: target/doc
 
-  benchmark-code:
+  benchmark:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build-test
+    needs: build
     steps:
       - uses: actions/checkout@v2
       - name: Download Build Artifacts
         uses: actions/download-artifact@v2
         with:
           name: build-artifacts
+          path: target/release
       - name: Benchmark
         run: cargo bench
 
-  audit-code:
+  audit:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
-    needs: build-test
+    needs: build
     steps:
       - uses: actions/checkout@v2
       - name: Cache cargo registry
@@ -121,11 +136,11 @@ jobs:
           name: dependency-scanning-report
           path: gl-dependency-scanning-report.json
 
-  coverage-code:
+  coverage:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
-    needs: build-test
+    needs: test
     steps:
       - uses: actions/checkout@v2
       - name: Set up Cargo Tarpaulin
