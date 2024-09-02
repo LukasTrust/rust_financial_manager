@@ -1,16 +1,17 @@
-use ::diesel::{ExpressionMethods, QueryDsl};
 use bcrypt::verify;
 use log::{error, info};
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar};
 use rocket::serde::json::Json;
-use rocket::{get, post};
-use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
+use rocket::{get, post, State};
+use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::User;
-use crate::schema::users::dsl::*;
+use crate::database::db_mocking::load_user_by_email_mocking;
+
+use crate::utils::appstate::AppState;
+use crate::utils::loading_utils::load_user_by_email;
 use crate::utils::structs::{FormUser, ResponseData};
 
 /// Display the login form.
@@ -35,16 +36,17 @@ pub fn login_from_register(success: String) -> Template {
 #[post("/login", data = "<user_form>")]
 pub async fn login_user(
     user_form: Form<FormUser>,
+    state: &State<AppState>,
     cookies: &CookieJar<'_>,
     mut db: Connection<DbConn>,
 ) -> Json<ResponseData> {
     let email_of_user = &user_form.email.to_lowercase();
     let password_of_user = &user_form.password;
 
-    let result = users
-        .filter(email.eq(email_of_user))
-        .first::<User>(&mut db)
-        .await;
+    let result = match state.use_mocking {
+        true => load_user_by_email_mocking(email_of_user),
+        false => load_user_by_email(email_of_user, &mut db).await,
+    };
 
     info!("Login attempt for user with email: {}", email_of_user);
 
@@ -61,8 +63,8 @@ pub async fn login_user(
             }
             Ok(false) => {
                 info!(
-                    "Login failed for user with email, password did not match: {}",
-                    email_of_user
+                    "Login failed for user with email, password did not match: {} {}",
+                    email_of_user, password_of_user
                 );
                 Json(ResponseData {
                     success: None,

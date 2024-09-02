@@ -1,13 +1,24 @@
-use ::diesel::ExpressionMethods;
-use diesel::BoolExpressionMethods;
-use diesel::QueryDsl;
+use diesel::{result::Error, BoolExpressionMethods, ExpressionMethods, QueryDsl};
 use log::{error, info};
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{CSVConverter, Contract, ContractHistory};
+use crate::database::models::{CSVConverter, Contract, ContractHistory, User};
 
 use super::structs::{Bank, Transaction};
+
+pub async fn load_user_by_email(
+    email_for_loading: &str,
+    db: &mut Connection<DbConn>,
+) -> Result<User, Error> {
+    use crate::schema::users as users_without_dsl;
+    use crate::schema::users::dsl::*;
+
+    users_without_dsl::table
+        .filter(email.eq(email_for_loading))
+        .first::<User>(db)
+        .await
+}
 
 pub async fn load_bank_of_user(
     cookie_user_id: i32,

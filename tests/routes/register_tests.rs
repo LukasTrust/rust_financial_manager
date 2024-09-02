@@ -18,8 +18,7 @@ mod tests {
     async fn test_register_user_success() {
         let client = get_test_client().await;
 
-        let new_user =
-            "first_name=John&last_name=Doe&email=john.doe@mail.com&password=Password123%21";
+        let new_user = "first_name=John&last_name=Doe&email=john.doe@mail.com&password=Password123";
 
         let response = client
             .post("/register")
@@ -41,7 +40,7 @@ mod tests {
         let client = get_test_client().await;
 
         let new_user =
-            "first_name=John&last_name=Doe&email=copy_email@mail.com&password=Password123%21";
+            "first_name=John&last_name=Doe&email=copy_email@mail.com&password=Password123";
 
         let response = client
             .post("/register")
@@ -63,7 +62,7 @@ mod tests {
         let client = get_test_client().await;
 
         let new_user =
-            "first_name=John&last_name=Doe&email=internal_error@mail.com&password=Password123%21";
+            "first_name=John&last_name=Doe&email=internal_error@mail.com&password=Password123";
 
         let response = client
             .post("/register")
