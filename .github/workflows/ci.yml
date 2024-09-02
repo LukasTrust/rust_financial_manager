@@ -44,7 +44,7 @@ jobs:
         with:
           name: build
       - name: Run Tests
-        run: cargo test --release
+        run: cargo test
 
   lint_format:
     runs-on: ubuntu-latest
