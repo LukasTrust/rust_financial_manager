@@ -18,7 +18,8 @@ mod tests {
     async fn test_register_user_success() {
         let client = get_test_client().await;
 
-        let new_user = "first_name=John&last_name=Doe&email=john.doe@mail.com&password=Password123";
+        let new_user =
+            "first_name=John&last_name=Doe&email=john.doe@mail.com&password=S3cureP@ssw0rd!";
 
         let response = client
             .post("/register")
@@ -40,7 +41,7 @@ mod tests {
         let client = get_test_client().await;
 
         let new_user =
-            "first_name=John&last_name=Doe&email=copy_email@mail.com&password=Password123";
+            "first_name=John&last_name=Doe&email=copy_email@mail.com&password=S3cureP@ssw0rd!";
 
         let response = client
             .post("/register")
@@ -58,11 +59,32 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_register_user_failded_internal_error() {
+    async fn test_register_user_failed_invalid_email() {
+        let client = get_test_client().await;
+
+        let new_user = "first_name=John&last_name=Doe&email=invalid_email&password=S3cureP@ssw0rd!";
+
+        let response = client
+            .post("/register")
+            .header(ContentType::Form)
+            .body(new_user)
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::Ok);
+        assert!(response
+            .into_string()
+            .await
+            .unwrap()
+            .contains("Invalid email format. Please use a valid email."));
+    }
+
+    #[tokio::test]
+    async fn test_register_user_failed_internal_error() {
         let client = get_test_client().await;
 
         let new_user =
-            "first_name=John&last_name=Doe&email=internal_error@mail.com&password=Password123";
+            "first_name=John&last_name=Doe&email=internal_error@mail.com&password=S3cureP@ssw0rd!";
 
         let response = client
             .post("/register")
