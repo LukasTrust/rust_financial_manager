@@ -36,13 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
-    needs: build
     steps:
       - uses: actions/checkout@v3
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: build
+      - name: Set up Rust
+        run: rustc --version && cargo --version
       - name: Run Tests
         run: cargo test
 
@@ -63,13 +60,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
-    needs: build
+    needs: test
     steps:
       - uses: actions/checkout@v3
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: build
       - name: Install cargo-tarpaulin
         run: cargo install cargo-tarpaulin
       - name: Run Coverage
