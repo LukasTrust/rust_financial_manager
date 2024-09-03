@@ -1,5 +1,8 @@
 use bcrypt::{hash, DEFAULT_COST};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
+use rocket::response::Redirect;
+
+use crate::routes::error_page::show_error_page;
 
 use super::models::{NewUser, User};
 
@@ -61,4 +64,15 @@ pub fn load_user_by_email_mocking(user_email: &str) -> Result<User, DieselError>
         email: user_email.to_string(),
         password: hashed_password,
     })
+}
+
+pub fn load_user_by_id_mocking(user_id: i32) -> Result<(String, String), Box<Redirect>> {
+    if user_id == 0 {
+        return Ok(("John".to_string(), "Doe".to_string()));
+    }
+
+    Err(show_error_page(
+        "User not found!".to_string(),
+        "Please login again.".to_string(),
+    ))
 }

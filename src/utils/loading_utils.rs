@@ -1,9 +1,11 @@
 use diesel::{result::Error, BoolExpressionMethods, ExpressionMethods, QueryDsl};
 use log::{error, info};
+use rocket::response::Redirect;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, Contract, ContractHistory, User};
+use crate::routes::error_page::show_error_page;
 
 use super::structs::{Bank, Transaction};
 
@@ -18,6 +20,26 @@ pub async fn load_user_by_email(
         .filter(email.eq(email_for_loading))
         .first::<User>(db)
         .await
+}
+
+pub async fn load_user_by_id(
+    user_id_for_loading: i32,
+    db: &mut Connection<DbConn>,
+) -> Result<(String, String), Box<Redirect>> {
+    use crate::schema::users as users_without_dsl;
+    use crate::schema::users::dsl::*;
+
+    users_without_dsl::table
+        .filter(id.eq(user_id_for_loading))
+        .select((first_name, last_name))
+        .first::<(String, String)>(db)
+        .await
+        .map_err(|_| {
+            show_error_page(
+                "User not found!".to_string(),
+                "Please login again.".to_string(),
+            )
+        })
 }
 
 pub async fn load_bank_of_user(

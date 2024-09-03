@@ -1,18 +1,17 @@
-use ::diesel::{ExpressionMethods, QueryDsl};
 use log::info;
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::serde::json::json;
 use rocket::{get, State};
-use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
+use rocket_db_pools::Connection;
 use rocket_dyn_templates::Template;
 
 use crate::database::db_connector::DbConn;
+use crate::database::db_mocking::load_user_by_id_mocking;
 use crate::routes::error_page::show_error_page;
-use crate::schema::users::{self, first_name, last_name};
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::get_user_id;
-use crate::utils::loading_utils::load_banks;
+use crate::utils::loading_utils::{load_banks, load_user_by_id};
 use crate::utils::structs::ResponseData;
 
 /// Display the base page.
@@ -68,18 +67,10 @@ pub async fn dashboard(
 ) -> Result<Template, Box<Redirect>> {
     let cookie_user_id = get_user_id(cookies)?;
 
-    let (user_first_name, user_last_name) = users::table
-        .filter(users::id.eq(cookie_user_id))
-        .select((first_name, last_name))
-        .first::<(String, String)>(&mut db)
-        .await
-        .map_err(|_| {
-            info!("User not found: {}", cookie_user_id);
-            show_error_page(
-                "User not found!".to_string(),
-                "Please login again.".to_string(),
-            )
-        })?;
+    let (user_first_name, user_last_name) = match state.use_mocking {
+        true => load_user_by_id_mocking(cookie_user_id)?,
+        false => load_user_by_id(cookie_user_id, &mut db).await?,
+    };
 
     state.set_current_bank(cookie_user_id, None).await;
 
