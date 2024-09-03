@@ -38,7 +38,7 @@ fn rocket() -> _ {
 
     let app_state = AppState {
         current_bank: Arc::new(RwLock::new(HashMap::new())),
-        use_mocking: false,
+        use_mocking: true,
     };
 
     rocket::build()
