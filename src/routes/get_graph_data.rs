@@ -8,7 +8,7 @@ use serde_json::{json, Value};
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id};
-use crate::utils::loading_utils::load_banks;
+use crate::utils::loading_utils::load_banks_of_user;
 use crate::utils::structs::ResponseData;
 
 #[get("/get/graph/data")]
@@ -38,7 +38,7 @@ pub async fn get_graph_data(
             })))
         }
         None => {
-            let banks = load_banks(cookie_user_id, &mut db).await;
+            let banks = load_banks_of_user(cookie_user_id, &mut db).await;
 
             if let Err(error) = banks {
                 return Ok(Json(json!(ResponseData {

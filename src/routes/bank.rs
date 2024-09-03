@@ -8,7 +8,7 @@ use rocket_dyn_templates::{context, Template};
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::get_user_id;
-use crate::utils::loading_utils::load_bank_of_user;
+use crate::utils::loading_utils::load_current_bank_of_user;
 use crate::utils::structs::ResponseData;
 
 #[get("/bank/<bank_id>")]
@@ -20,7 +20,7 @@ pub async fn bank_view(
 ) -> Result<Template, Box<Redirect>> {
     let cookie_user_id = get_user_id(cookies)?;
 
-    let current_bank = load_bank_of_user(cookie_user_id, bank_id, &mut db).await;
+    let current_bank = load_current_bank_of_user(cookie_user_id, bank_id, &mut db).await;
 
     if let Err(error) = current_bank {
         return Ok(Template::render(

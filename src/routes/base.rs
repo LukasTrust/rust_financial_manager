@@ -11,7 +11,7 @@ use crate::database::db_mocking::load_user_by_id_mocking;
 use crate::routes::error_page::show_error_page;
 use crate::utils::appstate::AppState;
 use crate::utils::get_utils::get_user_id;
-use crate::utils::loading_utils::{load_banks, load_user_by_id};
+use crate::utils::loading_utils::{load_banks_of_user, load_user_by_id};
 use crate::utils::structs::ResponseData;
 
 /// Display the base page.
@@ -28,7 +28,7 @@ pub async fn base(
 
     info!("User is logged in: {}", cookie_user_id);
 
-    let banks = load_banks(cookie_user_id, &mut db).await;
+    let banks = load_banks_of_user(cookie_user_id, &mut db).await;
 
     if let Err(error) = banks {
         return Ok(Template::render(

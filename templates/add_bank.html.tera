@@ -1,6 +1,6 @@
 <body>
 <div class="container-without-border">
-<h1>Add Bank</h1>
+<h1>Add bank</h1>
 <form id="add_bankForm" action="/add-bank" method="post">
     <div class="form-group">
         <label for="name">Name</label>

@@ -42,8 +42,8 @@ pub async fn load_user_by_id(
         })
 }
 
-pub async fn load_bank_of_user(
-    cookie_user_id: i32,
+pub async fn load_current_bank_of_user(
+    user_id_for_loading: i32,
     bank_id_for_loading: i32,
     db: &mut Connection<DbConn>,
 ) -> Result<Option<Bank>, String> {
@@ -52,7 +52,7 @@ pub async fn load_bank_of_user(
 
     let bank_result = banks_without_dsl::table
         .filter(id.eq(bank_id_for_loading))
-        .filter(user_id.eq(cookie_user_id))
+        .filter(user_id.eq(user_id_for_loading))
         .first::<Bank>(db)
         .await
         .map_err(|e| {
@@ -62,13 +62,13 @@ pub async fn load_bank_of_user(
 
     match bank_result {
         Ok(bank) => {
-            info!("Bank loaded for user {}: {:?}", cookie_user_id, bank);
+            info!("Bank loaded for user {}: {:?}", user_id_for_loading, bank);
             Ok(Some(bank))
         }
         Err(_) => {
             info!(
                 "No bank found for user {} with ID {}",
-                cookie_user_id, bank_id_for_loading
+                user_id_for_loading, bank_id_for_loading
             );
             Ok(None)
         }
@@ -79,22 +79,22 @@ pub async fn load_bank_of_user(
 /// The banks are loaded from the database using the user ID.
 /// The banks are returned as a vector of banks.
 /// If the banks cannot be loaded, an error page is displayed.
-pub async fn load_banks(
-    cookie_user_id: i32,
+pub async fn load_banks_of_user(
+    user_id_for_loading: i32,
     db: &mut Connection<DbConn>,
 ) -> Result<Vec<Bank>, String> {
     use crate::schema::banks as banks_without_dsl;
     use crate::schema::banks::dsl::*;
 
     let banks_result = banks_without_dsl::table
-        .filter(user_id.eq(cookie_user_id))
+        .filter(user_id.eq(user_id_for_loading))
         .load::<Bank>(db)
         .await
         .map_err(|_| "Error loading banks")?;
 
     info!(
         "Banks count for user {}: {}",
-        cookie_user_id,
+        user_id_for_loading,
         banks_result.len()
     );
 

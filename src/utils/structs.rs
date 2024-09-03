@@ -25,10 +25,10 @@ pub struct FormUser {
 pub struct FormBank {
     pub name: String,
     pub link: Option<String>,
-    pub date_column: Option<i32>,
     pub counterparty_column: Option<i32>,
     pub amount_column: Option<i32>,
     pub bank_balance_after_column: Option<i32>,
+    pub date_column: Option<i32>,
 }
 
 #[derive(Debug, Queryable, Serialize, Clone)]

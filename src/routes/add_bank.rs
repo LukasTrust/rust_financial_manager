@@ -2,27 +2,32 @@ use rocket::form::Form;
 use rocket::http::CookieJar;
 use rocket::response::Redirect;
 use rocket::serde::json::{json, Json};
-use rocket::{get, post};
+use rocket::{get, post, State};
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::Template;
 use serde_json::Value;
 
 use crate::database::db_connector::DbConn;
+use crate::database::db_mocking::{
+    insert_bank_mocking, insert_csv_converter_mocking, load_banks_of_user_mocking,
+};
 use crate::database::models::{NewBank, NewCSVConverter};
+use crate::utils::appstate::AppState;
 use crate::utils::get_utils::get_user_id;
 use crate::utils::insert_utiles::{insert_bank, insert_csv_converter};
-use crate::utils::loading_utils::load_banks;
+use crate::utils::loading_utils::load_banks_of_user;
 use crate::utils::structs::{FormBank, ResponseData};
 
 #[get("/add-bank")]
 pub async fn add_bank(cookies: &CookieJar<'_>) -> Result<Template, Box<Redirect>> {
-    get_user_id(cookies)?; // Ensure user is authenticated
+    get_user_id(cookies)?;
     Ok(Template::render("add_bank", json!({})))
 }
 
 #[post("/add-bank", data = "<bank_form>")]
 pub async fn add_bank_form(
     bank_form: Form<FormBank>,
+    state: &State<AppState>,
     cookies: &CookieJar<'_>,
     mut db: Connection<DbConn>,
 ) -> Result<Json<Value>, Box<Redirect>> {
@@ -35,8 +40,12 @@ pub async fn add_bank_form(
         link: bank_form.link.clone(),
     };
 
-    // Insert the new bank into the database
-    match insert_bank(new_bank.clone(), &mut db).await {
+    let insert_bank_result = match state.use_mocking {
+        true => insert_bank_mocking(new_bank.clone()),
+        false => insert_bank(new_bank.clone(), &mut db).await,
+    };
+
+    match insert_bank_result {
         Ok(bank) => {
             let new_csv_converter = NewCSVConverter {
                 bank_id: bank.id,
@@ -46,9 +55,17 @@ pub async fn add_bank_form(
                 date_column: bank_form.date_column,
             };
 
-            match insert_csv_converter(new_csv_converter, &mut db).await {
+            let insert_csv_converter_result = match state.use_mocking {
+                true => insert_csv_converter_mocking(new_csv_converter),
+                false => insert_csv_converter(new_csv_converter, &mut db).await,
+            };
+
+            match insert_csv_converter_result {
                 Ok(_) => {
-                    let banks_result = load_banks(cookie_user_id, &mut db).await;
+                    let banks_result = match state.use_mocking {
+                        true => load_banks_of_user_mocking(cookie_user_id, Some(new_bank.clone())),
+                        false => load_banks_of_user(cookie_user_id, &mut db).await,
+                    };
 
                     if let Err(e) = banks_result {
                         return Ok(Json(json!( ResponseData {
