@@ -25,12 +25,12 @@ jobs:
       - name: Set up Rust
         run: rustc --version && cargo --version
       - name: Build
-        run: cargo build
+        run: cargo build  # Build in debug mode
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: build
-          path: target/release
+          path: target/debug  # Use debug build path
 
   test:
     runs-on: ubuntu-latest

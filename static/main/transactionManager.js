@@ -376,18 +376,7 @@ function removeContract(index) {
             filteredData[index].contract = null;
             transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = null;
 
-            // Update UI
-            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
-            const contractName = row.cells[5];
-            const contractAmount = row.cells[6];
-            const contractActionButton = row.querySelector('.remove-contract-btn');
-
-            // Clear contract information
-            contractName.innerHTML = '';
-            contractAmount.innerHTML = '';
-            contractActionButton.classList.remove('remove-contract-btn');
-            contractActionButton.classList.add('add-contract-btn');
-            contractActionButton.textContent = 'Add Contract';
+            updateTransactionTable();
         }
     });
 }
@@ -448,12 +437,7 @@ function handleAllowContract(index) {
             filteredData[index].transaction.contract_not_allowed = false;
             transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).transaction.contract_not_allowed = false;
 
-            // Update UI
-            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
-            const allowButton = row.querySelector('.allow-contract-btn');
-            allowButton.classList.remove('allow-contract-btn');
-            allowButton.classList.add('not-allow-contract');
-            allowButton.textContent = 'Not allow Contract';
+            updateTransactionTable();
         }
     });
 }
@@ -475,7 +459,6 @@ function handleNotAllowContract(index) {
             notAllowButton.classList.add('allow-contract-btn');
             notAllowButton.textContent = 'Allow Contract';
 
-            // Optional: Re-render the row or update the table
             updateTransactionTable();
         }
     });
@@ -586,25 +569,8 @@ function addSelectedContract(index) {
             filteredData[index].contract = selectedContract;
             transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = selectedContract;
 
-            // Update UI
-            const row = document.querySelector(`.transaction-row[data-index="${index}"]`);
-            const contractName = row.cells[5];
-            contractName.textContent = selectedContract.name;
-            const contractAmount = row.cells[6];
-            contractAmount.innerHTML = `<span class="${selectedContract.current_amount < 0 ? 'negative' : 'positive'}">$${selectedContract.current_amount.toFixed(2)}</span>`;
+            updateTransactionTable();
 
-            const contractActionButton = row.querySelector('.add-contract-btn');
-            console.log(contractActionButton);
-
-            contractActionButton.classList.remove('add-contract-btn');
-            contractActionButton.classList.add('remove-contract-btn');
-            contractActionButton.textContent = 'Remove Contract';
-
-            // Set the 📄 icon
-            const iconCell = row.cells[0];
-            iconCell.innerHTML = '📄<div class="dropdown-content" style="display:none;">' +
-                iconCell.querySelector('.dropdown-content').innerHTML +
-                '</div>';
             // Close the modal after adding the contract
             closeModal();
         }
