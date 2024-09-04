@@ -79,7 +79,7 @@ pub fn load_user_by_id_mocking(user_id: i32) -> Result<(String, String), Box<Red
 
 pub fn insert_bank_mocking(new_bank: NewBank) -> Result<Bank, String> {
     if new_bank.name == "copy_bank" {
-        return Err("Error inserting bank".into());
+        return Err("Bank already exists".into());
     }
 
     if new_bank.name == "csv_error" {

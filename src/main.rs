@@ -6,6 +6,9 @@ use rocket::fs::{relative, FileServer};
 use rocket::tokio::sync::RwLock;
 use rocket_db_pools::Database;
 use rocket_dyn_templates::Template;
+use rust_financial_manager::routes::bank_transaction::{
+    transaction_set_old_amount, transaction_update_contract_amount,
+};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -38,7 +41,7 @@ fn rocket() -> _ {
 
     let app_state = AppState {
         current_bank: Arc::new(RwLock::new(HashMap::new())),
-        use_mocking: true,
+        use_mocking: false,
     };
 
     rocket::build()
@@ -86,6 +89,8 @@ fn rocket() -> _ {
                 bank_transaction,
                 transaction_remove,
                 transaction_add_to_contract,
+                transaction_set_old_amount,
+                transaction_update_contract_amount,
                 transaction_hide,
                 transaction_show,
                 transaction_not_allow_contract,

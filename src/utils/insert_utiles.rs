@@ -29,7 +29,7 @@ pub async fn insert_bank(new_bank: NewBank, db: &mut Connection<DbConn>) -> Resu
         .values(&new_bank)
         .get_result::<Bank>(db)
         .await
-        .map_err(|_| "Error inserting bank".into())
+        .map_err(|_| "Error inserting bank".to_string())
 }
 
 pub async fn insert_csv_converter(
@@ -42,7 +42,7 @@ pub async fn insert_csv_converter(
         .values(&new_csv_converter)
         .get_result::<CSVConverter>(db)
         .await
-        .map_err(|_| "Error inserting csv converter".into())
+        .map_err(|_| "Error inserting csv converter".to_string())
 }
 
 pub async fn insert_contracts(

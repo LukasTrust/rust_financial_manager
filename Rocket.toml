@@ -2,3 +2,6 @@
 
 [default.databases.postgres_db]
 url = "postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@192.168.178.48/financial_manager"
+
+[default.databases.test_db]
+url = "postgres://postgres:postgres@localhost:5432/test_db"

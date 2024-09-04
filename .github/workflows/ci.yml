@@ -7,10 +7,22 @@ on:
   pull_request:
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Rust
+        run: rustc --version && cargo --version
+      - name: Install Clippy, Rustfmt, and Cargo tools
+        run: rustup component add clippy rustfmt && cargo install cargo-tarpaulin cargo-audit
+
   build:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
+    needs: setup
     steps:
       - uses: actions/checkout@v3
       - name: Cache cargo builds
@@ -22,35 +34,47 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
-      - name: Set up Rust
-        run: rustc --version && cargo --version
       - name: Build
-        run: cargo build  # Build in debug mode
+        run: cargo build --release
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: build
-          path: target/debug  # Use debug build path
+          path: target/release  # Corrected to use release build path
 
   test:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
+    needs: [setup, build]
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Rust
-        run: rustc --version && cargo --version
       - name: Run Tests
-        run: cargo test
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        run: cargo test --release
 
   lint_format:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
+    needs: setup
     steps:
       - uses: actions/checkout@v3
-      - name: Install Clippy and Rustfmt
-        run: rustup component add clippy rustfmt
       - name: Lint Code
         run: cargo clippy -- -D warnings
       - name: Check Formatting
@@ -63,8 +87,6 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v3
-      - name: Install cargo-tarpaulin
-        run: cargo install cargo-tarpaulin
       - name: Run Coverage
         run: cargo tarpaulin --engine llvm --ignore-tests --out Xml
       - name: Upload Coverage
@@ -77,14 +99,13 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
+    needs: [setup, test]
     steps:
       - uses: actions/checkout@v3
       - name: Generate Documentation
         run: cargo doc --no-deps
       - name: Run Benchmarks
         run: cargo bench
-      - name: Install cargo-audit
-        run: cargo install cargo-audit
       - name: Run Security Audit
         run: cargo audit
       - name: Upload Audit Report

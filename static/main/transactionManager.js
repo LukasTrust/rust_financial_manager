@@ -505,7 +505,6 @@ function handleAddContract(index) {
     const bodyText = document.createElement('p');
     bodyText.textContent = 'Please select a contract from the list below:';
 
-    // Create select dropdown
     const select = document.createElement('select');
     select.id = 'contractSelect';
     contracts.forEach(contract => {
@@ -515,11 +514,9 @@ function handleAddContract(index) {
         select.add(option);
     });
 
-    // Create buttons container with horizontal alignment
     const buttonContainer = document.createElement('div');
     buttonContainer.classList.add('container-without-border-horizontally-header');
 
-    // Create Add and Cancel buttons
     const addButton = document.createElement('button');
     addButton.textContent = 'Add';
     addButton.onclick = () => addSelectedContract(index);
@@ -528,11 +525,9 @@ function handleAddContract(index) {
     cancelButton.textContent = 'Cancel';
     cancelButton.onclick = closeModal;
 
-    // Append buttons to the buttonContainer
     buttonContainer.appendChild(addButton);
     buttonContainer.appendChild(cancelButton);
 
-    // Create the main container and append all elements
     const container = document.createElement('div');
     container.className = 'container-without-border';
     container.appendChild(horizontalContainer);
@@ -540,47 +535,143 @@ function handleAddContract(index) {
     container.appendChild(select);
     container.appendChild(buttonContainer);
 
-    // Append the main container to the modal
     modal.appendChild(container);
 
-    // Append modal to the backdrop
     backdrop.appendChild(modal);
 
-    // Append backdrop to the body
     document.body.appendChild(backdrop);
 
-    // Show the modal
     backdrop.style.display = 'flex';
 }
 
 function addSelectedContract(index) {
     const selectedContractId = document.getElementById('contractSelect').value;
+    const selectedContract = contracts.find(contract => contract.id == selectedContractId);
+    const transaction = filteredData[index].transaction;
 
-    handleTransactionOperation(
-        `/bank/transaction/add_contract/${filteredData[index].transaction.id}/${selectedContractId}`,
-        'add contract',
-        { contract_id: selectedContractId }
-    ).then(success => {
+    // Check if the contract amount matches the transaction amount
+    if (selectedContract && selectedContract.current_amount !== transaction.amount) {
+        // Create a modal for user choices
+        const modal = document.createElement('div');
+        modal.className = 'alert alert-info';
+        modal.classList.add('container-without-border');
+        modal.style.width = '700px';
+
+        const bodyText = document.createElement('p');
+        bodyText.textContent = 'The contract amount does not match the transaction amount. Please select an option:';
+
+        const radioContainer = document.createElement('div');
+        radioContainer.className = 'container-without-border-horizontally';
+
+        // Create radio button choices
+        const options = [
+            { id: 'new-contract-amount', label: 'Set a new contract amount<br>(updates current amount and bases new transactions on it)' },
+            { id: 'old-contract-amount', label: 'Mark as an old contract amount<br>(adds to contract history)' },
+            { id: 'just-add-to-contract', label: 'Add to the contract<br>(included in calculations, but not in history)' }
+        ];
+
+        options.forEach(option => {
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'contractAmountChoice';
+            radio.value = option.id;
+            radio.id = option.id;
+
+            const label = document.createElement('label');
+            label.htmlFor = option.id;
+            label.innerHTML = option.label;
+            label.style.textWrap = 'wrap';
+
+            const optionContainer = document.createElement('div');
+            optionContainer.classList.add('container-without-border-horizontally');
+            optionContainer.appendChild(radio);
+            optionContainer.appendChild(label);
+
+            radioContainer.appendChild(optionContainer);
+        });
+
+        // Add submit and cancel buttons
+        const buttonContainer = document.createElement('div');
+        buttonContainer.classList.add('container-without-border-horizontally');
+
+        const submitButton = document.createElement('button');
+        submitButton.textContent = 'Submit';
+        submitButton.onclick = () => {
+            const selectedOption = document.querySelector('input[name="contractAmountChoice"]:checked');
+            if (selectedOption) {
+                handleContractChoice(selectedOption.value, index, selectedContractId);
+            }
+        };
+
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = 'Cancel';
+        cancelButton.onclick = closeModal;
+
+        buttonContainer.appendChild(submitButton);
+        buttonContainer.appendChild(cancelButton);
+
+        modal.appendChild(bodyText);
+        modal.appendChild(radioContainer);
+        modal.appendChild(buttonContainer);
+
+        const backdrop = document.createElement('div');
+        backdrop.id = 'contractModal';
+        backdrop.className = 'alert-backdrop';
+        backdrop.appendChild(modal);
+
+        document.body.appendChild(backdrop);
+        backdrop.style.display = 'flex';
+    } else {
+        // If amounts match, just add the contract
+        handleTransactionOperation(
+            `/bank/transaction/add_contract/${transaction.id}/${selectedContractId}`,
+            'add contract'
+        ).then(success => {
+            if (success) {
+                filteredData[index].contract = selectedContract;
+                transactionsData.find(t => t.transaction.id === transaction.id).contract = selectedContract;
+
+                updateTransactionTable();
+                closeModal();
+            }
+        });
+    }
+}
+
+function handleContractChoice(choice, index, selectedContractId) {
+    const transaction = filteredData[index].transaction;
+    let url = '';
+    let errorMessage = '';
+
+    // Determine URL and error message based on user choice
+    switch (choice) {
+        case 'new-contract-amount':
+            url = `/bank/transaction/update_contract_amount/${transaction.id}/${selectedContractId}`;
+            errorMessage = 'update contract amount';
+            break;
+        case 'old-contract-amount':
+            url = `/bank/transaction/set_old_amount/${transaction.id}/${selectedContractId}`;
+            errorMessage = 'set old amount';
+            break;
+        case 'just-add-to-contract':
+            url = `/bank/transaction/add_contract/${transaction.id}/${selectedContractId}`;
+            errorMessage = 'add contract';
+            break;
+    }
+
+    handleTransactionOperation(url, errorMessage).then(success => {
         if (success) {
-            // Find the selected contract
             const selectedContract = contracts.find(contract => contract.id == selectedContractId);
-
-            // Update data
             filteredData[index].contract = selectedContract;
-            transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = selectedContract;
+            transactionsData.find(t => t.transaction.id === transaction.id).contract = selectedContract;
 
             updateTransactionTable();
-
-            // Close the modal after adding the contract
             closeModal();
         }
     });
 }
 
 function closeModal() {
-    const modal = document.getElementById('contractModal');
-    if (modal) {
-        console.log('closing modal');
-        modal.remove();
-    }
+    const modals = document.querySelectorAll('.alert-backdrop');
+    modals.forEach(modal => modal.remove());
 }

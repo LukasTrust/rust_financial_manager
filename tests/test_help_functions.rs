@@ -4,10 +4,13 @@ use rocket::local::asynchronous::Client;
 use rocket::tokio::sync::RwLock;
 use rocket_db_pools::Database;
 use rocket_dyn_templates::Template;
+use rust_financial_manager::database::db_connector::TestDbConn;
+use rust_financial_manager::routes::bank_transaction::{
+    transaction_set_old_amount, transaction_update_contract_amount,
+};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use database::db_connector::DbConn;
 use routes::add_bank::{add_bank, add_bank_form};
 use routes::bank::bank_view;
 use routes::bank_contract::{
@@ -26,9 +29,9 @@ use routes::register::{register_form, register_user};
 use routes::update_csv::update_csv;
 use routes::update_date_range::update_date_range;
 use routes::upload_csv::upload_csv;
+use rust_financial_manager::routes;
 use rust_financial_manager::routes::get_graph_data::get_graph_data;
 use rust_financial_manager::utils::appstate::AppState;
-use rust_financial_manager::{database, routes};
 
 pub async fn get_test_client() -> Client {
     let app_state = AppState {
@@ -38,7 +41,7 @@ pub async fn get_test_client() -> Client {
 
     let rocket = rocket::build()
         .manage(app_state)
-        .attach(DbConn::init())
+        .attach(TestDbConn::init())
         .attach(Template::fairing())
         .mount(
             "/",
@@ -81,6 +84,8 @@ pub async fn get_test_client() -> Client {
                 bank_transaction,
                 transaction_remove,
                 transaction_add_to_contract,
+                transaction_set_old_amount,
+                transaction_update_contract_amount,
                 transaction_hide,
                 transaction_show,
                 transaction_not_allow_contract,
