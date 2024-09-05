@@ -65,7 +65,7 @@ pub async fn bank_transaction(
             "Contracts loaded".to_string(),
             "The contracts were successfully loaded.",
         ));
-        result["contracts"] = json!(contract_history_string.unwrap());
+        result["transactions"] = json!(contract_history_string.unwrap());
     }
 
     warn!(
