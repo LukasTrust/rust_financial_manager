@@ -4,7 +4,7 @@ use rocket::local::asynchronous::Client;
 use rocket::tokio::sync::RwLock;
 use rocket_db_pools::Database;
 use rocket_dyn_templates::Template;
-use rust_financial_manager::database::db_connector::TestDbConn;
+use rust_financial_manager::database::db_connector::DbConn;
 use rust_financial_manager::routes::bank_transaction::{
     transaction_set_old_amount, transaction_update_contract_amount,
 };
@@ -41,7 +41,7 @@ pub async fn get_test_client() -> Client {
 
     let rocket = rocket::build()
         .manage(app_state)
-        .attach(TestDbConn::init())
+        .attach(DbConn::init())
         .attach(Template::fairing())
         .mount(
             "/",
