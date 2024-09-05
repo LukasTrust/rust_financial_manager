@@ -29,13 +29,10 @@ pub async fn upload_csv(
     let current_bank = state.get_current_bank(cookie_user_id).await;
 
     if current_bank.is_none() {
-        return Ok(Json(ResponseData {
-            success: None,
-            error: Some(
-                "There was an internal error while loading the bank. Please try again.".into(),
-            ),
-            header: Some("No bank selected".into()),
-        }));
+        return Ok(Json(ResponseData::new_error(
+            "No bank selected".to_string(),
+            "Please select a bank before trying to upload the CSV file",
+        )));
     }
 
     let current_bank = current_bank.unwrap();
@@ -47,11 +44,10 @@ pub async fn upload_csv(
         Ok(bytes) => bytes,
         Err(_) => {
             error!("Failed to read CSV file");
-            return Ok(Json(ResponseData {
-                success: None,
-                error: Some("There was an internal error while trying to read the CSV file".into()),
-                header: Some("Failed to read CSV file".into()),
-            }));
+            return Ok(Json(ResponseData::new_error(
+                "Failed to read CSV file".to_string(),
+                "There was an internal error while trying to read the CSV file",
+            )));
         }
     };
 
@@ -72,20 +68,16 @@ pub async fn upload_csv(
     .await;
 
     match result {
-        Ok(result_string) => Ok(Json(ResponseData {
-            success: Some(result_string),
-            error: None,
-            header: Some("Succesfully parsed the CSV file".to_string()),
-        })),
-        Err(e) => {
-            error!("Failed to insert records: {}", e);
-            Ok(Json(ResponseData {
-                success: None,
-                error: Some(
-                    "There was an internal error while trying to insert the records".into(),
-                ),
-                header: Some(e),
-            }))
+        Ok(result_string) => Ok(Json(ResponseData::new_success(
+            "Succesfully parsed the CSV file".to_string(),
+            &result_string,
+        ))),
+        Err(error) => {
+            error!("Failed to insert records: {}", error);
+            Ok(Json(ResponseData::new_error(
+                error,
+                "There was an internal error while trying to insert the records",
+            )))
         }
     }
 }

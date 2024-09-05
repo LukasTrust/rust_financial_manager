@@ -68,43 +68,27 @@ pub async fn add_bank_form(
                     };
 
                     if let Err(e) = banks_result {
-                        return Ok(Json(json!( ResponseData {
-                            success: None,
-                            error: Some("There was an internal error trying to load the banks. Please login again and retry.".into()),
-                            header: Some(e),
-                        })));
+                        return Ok(Json(json!( ResponseData::new_error(e, "There was an internal error trying to load the banks. Please login again and retry."))));
                     }
 
                     let banks = banks_result.unwrap();
 
-                    let mut result = json!(ResponseData {
-                        success: Some(format!(
-                            "The new bank '{}' has been added to your profile.",
-                            new_bank.name
-                        )),
-                        error: None,
-                        header: Some("New bank added".into()),
-                    });
+                    let mut result = json!(ResponseData::new_success("New bank added".to_string(), &format!("The new bank '{}' has been added to your profile.", new_bank.name)));
                     result["banks"] = json!(banks);
 
                     Ok(Json(result))
                 }
                 Err(e) => {
-                    Ok(Json(json!(ResponseData {
-                        success: None,
-                        error: Some("There was an internal error trying to add the csv converter of the new bank. The bank was added but the csv converter was not.".into()),
-                        header: Some(e.to_string()),
-                    })))
+                    Ok(Json(json!(ResponseData::new_error(e, "There was an internal error trying to add the csv converter of the new bank. The bank was added but the csv converter was not."))))
                 }
             }
         }
-        Err(e) => Ok(Json(json!(ResponseData {
-            success: None,
-            error: Some(format!(
+        Err(e) => Ok(Json(json!(ResponseData::new_error(
+            e,
+            &format!(
                 "The bank '{}' could not be added because it already exists in your profile.",
                 new_bank.name
-            )),
-            header: Some(e.to_string()),
-        }))),
+            )
+        )))),
     }
 }

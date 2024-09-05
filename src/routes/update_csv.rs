@@ -34,13 +34,10 @@ pub async fn update_csv(
     let current_bank = state.get_current_bank(cookie_user_id).await;
 
     if current_bank.is_none() {
-        return Ok(Json(ResponseData {
-            success: None,
-            error: Some(
-                "Please select a bank before tying to updated the CSV converters".to_string(),
-            ),
-            header: Some("No bank selected".to_string()),
-        }));
+        return Ok(Json(ResponseData::new_error(
+            "No bank selected".to_string(),
+            "Please select a bank before tying to updated the CSV converters",
+        )));
     }
 
     let current_bank = current_bank.unwrap();
@@ -48,11 +45,10 @@ pub async fn update_csv(
     let csv_converter_of_bank = load_csv_converter_of_bank(current_bank.id, &mut db).await;
 
     if let Err(error) = csv_converter_of_bank {
-        return Ok(Json(ResponseData {
-            success: None,
-            error: Some("There was an internal error loading the CSV converter".to_string()),
-            header: Some(error),
-        }));
+        return Ok(Json(ResponseData::new_error(
+            error,
+            "There was an internal error loading the CSV converter",
+        )));
     }
 
     let csv_converter_of_bank = csv_converter_of_bank.unwrap();
@@ -80,23 +76,17 @@ pub async fn update_csv(
             match result {
                 Ok(_) => {
                     info!("CSV converter updated");
-                    Ok(Json(ResponseData {
-                        success: Some(
-                            "The CSV converters have been successfully updated".to_string(),
-                        ),
-                        error: None,
-                        header: Some("CSV converters updated".to_string()),
-                    }))
+                    Ok(Json(ResponseData::new_success(
+                        "CSV converters updated".to_string(),
+                        "The CSV converters have been successfully updated.",
+                    )))
                 }
                 Err(error) => {
                     error!("Error updating CSV converter: {}", error);
-                    Ok(Json(ResponseData {
-                        success: None,
-                        error: Some(
-                            "There was an internal error updating the CSV converters".to_string(),
-                        ),
-                        header: Some(error),
-                    }))
+                    Ok(Json(ResponseData::new_error(
+                        error,
+                        "There was an internal error updating the CSV converters",
+                    )))
                 }
             }
         }
@@ -114,23 +104,17 @@ pub async fn update_csv(
             match result {
                 Ok(_) => {
                     info!("CSV converter updated");
-                    Ok(Json(ResponseData {
-                        success: Some(
-                            "The CSV converters have been successfully updated".to_string(),
-                        ),
-                        error: None,
-                        header: Some("CSV converters updated".to_string()),
-                    }))
+                    Ok(Json(ResponseData::new_success(
+                        "CSV converters updated".to_string(),
+                        "The CSV converters have been successfully updated.",
+                    )))
                 }
                 Err(error) => {
                     error!("Error adding CSV converter: {}", error);
-                    Ok(Json(ResponseData {
-                        success: None,
-                        error: Some(
-                            "There was an internal error adding the CSV converters".to_string(),
-                        ),
-                        header: Some(error),
-                    }))
+                    Ok(Json(ResponseData::new_error(
+                        error,
+                        "There was an internal error adding the CSV converters",
+                    )))
                 }
             }
         }

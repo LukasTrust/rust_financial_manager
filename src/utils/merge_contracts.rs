@@ -55,13 +55,10 @@ async fn get_contract_head<'a>(
         let last_transaction_data = load_last_transaction_data_of_contract(contract.id, db).await;
 
         if let Err(error) = last_transaction_data {
-            return Err(Json(ResponseData {
-                success: None,
-                error: Some(
-                    "There was an internal error while loading the transaction data.".into(),
-                ),
-                header: Some(error),
-            }));
+            return Err(Json(ResponseData::new_error(
+                error,
+                "There was an internal error while loading the transaction data.",
+            )));
         }
 
         last_transaction_datas.push(last_transaction_data.unwrap().unwrap());
@@ -108,11 +105,10 @@ async fn process_contracts(
     );
 
     if let Err(error) = header_contract_history {
-        return Json(ResponseData {
-            success: None,
-            error: Some("There was an internal error while loading the contract history.".into()),
-            header: Some(error),
-        });
+        return Json(ResponseData::new_error(
+            error,
+            "There was an internal error while loading the contract history.",
+        ));
     }
 
     let mut merged_histories = header_contract_history.unwrap();
@@ -122,13 +118,10 @@ async fn process_contracts(
         let contract_histories = load_contract_history(contract.bank_id, db).await;
 
         if let Err(error) = contract_histories {
-            return Json(ResponseData {
-                success: None,
-                error: Some(
-                    "There was an internal error while loading the contract history.".into(),
-                ),
-                header: Some(error),
-            });
+            return Json(ResponseData::new_error(
+                error,
+                "There was an internal error while loading the contract history.",
+            ));
         }
 
         let mut histories = contract_histories.unwrap();
@@ -202,13 +195,10 @@ async fn process_contracts(
     );
 
     if let Err(error) = insert_result {
-        return Json(ResponseData {
-            success: None,
-            error: Some(
-                "There was an internal error while inserting the contract histories.".into(),
-            ),
-            header: Some(error),
-        });
+        return Json(ResponseData::new_error(
+            error,
+            "There was an internal error while inserting the contract histories.",
+        ));
     }
 
     time = std::time::SystemTime::now();
@@ -221,11 +211,10 @@ async fn process_contracts(
     warn!("Time to update transactions: {:?}", time.elapsed().unwrap());
 
     if let Err(error) = result {
-        return Json(ResponseData {
-            success: None,
-            error: Some("There was an internal error while updating the transactions.".into()),
-            header: Some(error),
-        });
+        return Json(ResponseData::new_error(
+            error,
+            "There was an internal error while updating the transactions.",
+        ));
     }
 
     time = std::time::SystemTime::now();
@@ -233,16 +222,14 @@ async fn process_contracts(
     warn!("Time to delete contracts: {:?}", time.elapsed().unwrap());
 
     if let Err(error) = delete_result {
-        return Json(ResponseData {
-            success: None,
-            error: Some("There was an internal error while deleting the contracts.".into()),
-            header: Some(error),
-        });
+        return Json(ResponseData::new_error(
+            error,
+            "There was an internal error while deleting the contracts.",
+        ));
     }
 
-    Json(ResponseData {
-        success: Some("The contracts were successfully merged.".into()),
-        error: None,
-        header: Some("Contracts merged successfully.".into()),
-    })
+    Json(ResponseData::new_success(
+        "Contracts merged successfully".to_string(),
+        "The contracts were successfully merged.",
+    ))
 }

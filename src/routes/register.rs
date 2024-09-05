@@ -38,31 +38,25 @@ pub async fn register_user(
 ) -> Json<ResponseData> {
     if !is_valid_email(&user_form.email) {
         error!("Invalid email format.");
-        return Json(ResponseData {
-            success: None,
-            error: Some("Invalid email format. Please use a valid email.".into()),
-            header: None,
-        });
+        return Json(ResponseData::new_error(
+            String::new(),
+            "Invalid email format. Please use a valid email.",
+        ));
     }
 
     if !is_strong_password(&user_form.password) {
         error!("Weak password.");
-        return Json(ResponseData {
-            success: None,
-            error: Some("Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character".into()),
-            header: None,
-        });
+        return Json(ResponseData::new_error(String::new(), "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character."));
     }
 
     let hashed_password = match hash(user_form.password.clone(), DEFAULT_COST) {
         Ok(h) => h,
         Err(_) => {
             info!("Hashing password failed.");
-            return Json(ResponseData {
-                success: None,
-                error: Some("Internal server error. Please try again later.".into()),
-                header: None,
-            });
+            return Json(ResponseData::new_error(
+                String::new(),
+                "Internal server error. Please try again later.",
+            ));
         }
     };
 
@@ -79,26 +73,23 @@ pub async fn register_user(
     };
 
     match result {
-        Ok(_) => Json(ResponseData {
-            success: Some("Registration successful. Please log in.".into()),
-            error: None,
-            header: None,
-        }),
+        Ok(_) => Json(ResponseData::new_success(
+            String::new(),
+            "Registration successful. Please log in.",
+        )),
         Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
             info!("Registration failed, email already exists.");
-            Json(ResponseData {
-                error: Some("Email already exists. Please use a different email.".into()),
-                success: None,
-                header: None,
-            })
+            Json(ResponseData::new_error(
+                String::new(),
+                "Email already exists. Please use a different email.",
+            ))
         }
         Err(_) => {
             error!("Registration failed, database error.");
-            Json(ResponseData {
-                error: Some("Internal server error. Please try again later.".into()),
-                success: None,
-                header: None,
-            })
+            Json(ResponseData::new_error(
+                String::new(),
+                "Internal server error. Please try again later.",
+            ))
         }
     }
 }

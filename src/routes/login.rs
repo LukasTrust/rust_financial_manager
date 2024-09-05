@@ -55,39 +55,35 @@ pub async fn login_user(
             Ok(true) => {
                 info!("Login successful for user with email: {}", email_of_user);
                 cookies.add_private(Cookie::new("user_id", user.id.to_string()));
-                Json(ResponseData {
-                    success: Some("Login successful.".into()),
-                    error: None,
-                    header: None,
-                })
+                Json(ResponseData::new_success(
+                    String::new(),
+                    "Login successful. Redirecting...",
+                ))
             }
             Ok(false) => {
                 info!(
                     "Login failed for user with email, password did not match: {} {}",
                     email_of_user, password_of_user
                 );
-                Json(ResponseData {
-                    success: None,
-                    error: Some("Login failed. Either the email or password was incorrect.".into()),
-                    header: None,
-                })
+                Json(ResponseData::new_error(
+                    String::new(),
+                    "Login failed. Either the email or password was incorrect.",
+                ))
             }
             Err(err) => {
                 error!("Login failed, bcrypt error: {}", err);
-                Json(ResponseData {
-                    success: None,
-                    error: Some("Login failed. Please input both email and passowrd".into()),
-                    header: None,
-                })
+                Json(ResponseData::new_error(
+                    String::new(),
+                    "Login failed. Please input both email and passowrd.",
+                ))
             }
         },
         Err(err) => {
             error!("Login failed, database error {}", err);
-            Json(ResponseData {
-                error: Some("Login failed. Either the email or password was incorrect.".into()),
-                success: None,
-                header: None,
-            })
+            Json(ResponseData::new_error(
+                String::new(),
+                "Login failed. Either the email or password was incorrect.",
+            ))
         }
     }
 }

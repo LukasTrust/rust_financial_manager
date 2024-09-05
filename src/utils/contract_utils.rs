@@ -1,8 +1,11 @@
-use log::error;
+use log::{error, info};
+use rocket::serde::json::Json;
 use rocket_db_pools::Connection;
 
 use crate::database::db_connector::DbConn;
+use crate::database::models::NewContractHistory;
 use crate::utils::delete_utils::delete_contract_history_with_ids;
+use crate::utils::get_utils::get_transaction;
 use crate::utils::update_utils::{
     update_contract_history, update_contract_with_new_amount, update_transactions_with_contract,
 };
@@ -10,6 +13,7 @@ use crate::utils::update_utils::{
 use super::loading_utils::{
     load_contract_history, load_contracts_from_ids, load_transaction_by_id,
 };
+use super::structs::ResponseData;
 
 pub async fn handle_remove_contract(
     transaction_id: i32,
@@ -135,4 +139,196 @@ pub async fn handle_remove_contract(
         })?;
 
     Ok("Contract removed".into())
+}
+
+pub async fn handel_update_amount(
+    transaction_id: i32,
+    contract_id: i32,
+    mut db: Connection<DbConn>,
+) -> Result<String, Json<ResponseData>> {
+    let transaction = get_transaction(transaction_id, &mut db).await?;
+
+    let contract = load_contracts_from_ids(vec![contract_id], &mut db).await;
+
+    if let Err(error) = contract {
+        error!("Error loading contract {}: {}", contract_id, error);
+        return Err(Json(ResponseData::new_error(
+            error,
+            "There was an internal error while loading the contract. Please try again.",
+        )));
+    }
+
+    let contract = contract.unwrap();
+
+    if contract.is_empty() {
+        info!("Contract {} not found", contract_id);
+        return Err(Json(ResponseData::new_error(
+            "Contract not found".to_string(),
+            "The contract does not exist.",
+        )));
+    }
+
+    assert!(contract.len() == 1);
+
+    let mut contract = contract[0].clone();
+
+    contract.current_amount = transaction.amount;
+
+    let result = update_contract_with_new_amount(contract.id, transaction.amount, &mut db).await;
+
+    if let Err(error) = result {
+        error!(
+            "Error updating contract {} with new amount {}: {}",
+            contract.id, transaction.amount, error
+        );
+        return Err(Json(ResponseData::new_error(error, "There was an internal error while updating the contract with the new amount. Please try again.")));
+    }
+
+    Ok("Contract updated".into())
+}
+
+pub async fn handle_set_old_amount(
+    transaction_id: i32,
+    contract_id: i32,
+    mut db: Connection<DbConn>,
+) -> Json<ResponseData> {
+    let transaction = get_transaction(transaction_id, &mut db).await;
+
+    if let Err(error) = transaction {
+        return error;
+    }
+
+    let transaction = transaction.unwrap();
+
+    let contract_histories = load_contract_history(contract_id, &mut db).await;
+
+    if let Err(error) = contract_histories {
+        error!("Error loading contract history {}: {}", contract_id, error);
+        return Json(ResponseData::new_error(
+            error,
+            "There was an internal error while loading the contract history. Please try again.",
+        ));
+    }
+
+    let contract_histories = contract_histories.unwrap();
+
+    let contract = load_contracts_from_ids(vec![contract_id], &mut db).await;
+    if let Err(error) = contract {
+        error!("Error loading contract {}: {}", contract_id, error);
+        return Json(ResponseData::new_error(
+            error,
+            "There was an internal error while loading the contract. Please try again.",
+        ));
+    }
+
+    let contract = contract.unwrap();
+
+    assert!(contract.len() == 1);
+
+    let contract = contract[0].clone();
+
+    let history = NewContractHistory {
+        contract_id,
+        old_amount: transaction.amount,
+        new_amount: contract.current_amount,
+        changed_at: transaction.date,
+    };
+
+    let history_before = contract_histories
+        .iter()
+        .filter(|h| h.changed_at < history.changed_at)
+        .max_by_key(|h| h.changed_at);
+
+    let history_after = contract_histories
+        .iter()
+        .filter(|h| h.changed_at > history.changed_at)
+        .min_by_key(|h| h.changed_at);
+
+    match (history_before, history_after) {
+        (Some(before), Some(_)) => {
+            // Case 1: Both before and after history entries exist
+            let mut updated_before = before.clone();
+            updated_before.new_amount = history.new_amount;
+
+            let result = update_contract_history(updated_before, &mut db)
+                .await
+                .map_err(|e| {
+                    error!("Failed to update contract history: {}", e);
+                    e
+                });
+
+            if let Err(error) = result {
+                return Json(ResponseData::new_error(error, "There was an internal error while updating the contract history. Please try again."));
+            }
+
+            return Json(ResponseData::new_success(
+                "Contract history updated".to_string(),
+                "The contract history was updated.",
+            ));
+        }
+        (None, Some(after)) => {
+            // Case 2: Only after history entry exists
+            let mut updated_after = after.clone();
+
+            updated_after.old_amount = history.old_amount;
+
+            let result = update_contract_history(updated_after, &mut db)
+                .await
+                .map_err(|e| {
+                    error!("Failed to update contract history: {}", e);
+                    e
+                });
+
+            if let Err(error) = result {
+                return Json(ResponseData::new_error(error, "There was an internal error while updating the contract history. Please try again."));
+            }
+
+            return Json(ResponseData::new_success(
+                "Contract history updated".to_string(),
+                "The contract history was updated.",
+            ));
+        }
+        (Some(_), None) => {
+            // Case 3: Only before history entry exists
+            let result = update_contract_with_new_amount(contract.id, history.old_amount, &mut db)
+                .await
+                .map_err(|e| {
+                    error!("Failed to update contract: {}", e);
+                    e
+                });
+
+            if let Err(error) = result {
+                return Json(ResponseData::new_error(
+                    error,
+                    "There was an internal error while updating the contract. Please try again.",
+                ));
+            }
+
+            return Json(ResponseData::new_success(
+                "Contract history updated".to_string(),
+                "The contract history was updated.",
+            ));
+        }
+        (None, None) => {
+            // Case 4: No history entries exist
+            let result = update_contract_with_new_amount(contract.id, history.old_amount, &mut db)
+                .await
+                .map_err(|e| {
+                    error!("Failed to update contract: {}", e);
+                    e
+                });
+
+            if let Err(error) = result {
+                return Json(ResponseData::new_error(
+                    error,
+                    "There was an internal error while updating the contract. Please try again.",
+                ));
+            }
+
+            return Json(ResponseData::new_success(
+                "Contract history updated".to_string(),
+                "The contract history was updated.",
+            ));
+        }
+    }
 }

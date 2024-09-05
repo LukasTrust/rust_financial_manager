@@ -65,7 +65,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
         let response_string = response.into_string().await.unwrap();
 
-        assert!(response_string.contains("Error inserting bank"));
+        assert!(response_string.contains("Bank already exists"));
         assert!(response_string.contains(
             "The bank 'copy_bank' could not be added because it already exists in your profile."
         ));

@@ -36,45 +36,33 @@ pub async fn bank_contact_display(
     let current_bank = state.get_current_bank(cookie_user_id).await;
 
     if current_bank.is_none() {
-        return Ok(Json(json!(ResponseData {
-            success: None,
-            error: Some(
-                "There was an internal error while loading the bank. Please try again.".into(),
-            ),
-            header: Some("No bank selected".into()),
-        })));
+        return Ok(Json(json!(ResponseData::new_error(
+            "No bank selected".to_string(),
+            "There was an internal error while loading the bank. Please try again."
+        ))));
     }
 
     let current_bank = current_bank.unwrap();
 
-    let result = get_contracts_with_history(current_bank.id, &mut db).await;
+    let contract_history_string = get_contracts_with_history(current_bank.id, &mut db).await;
 
-    let error = if result.is_err() {
-        Some(result.clone().err().unwrap())
-    } else {
-        None
-    };
+    let mut result;
 
-    let contract_string = if let Ok(contracts) = result {
-        contracts
-    } else {
-        String::new()
-    };
-
-    let mut result = json!(ResponseData {
-        success: None,
-        error: if error.is_none() {
-            None
-        } else {
-            Some(format!(
+    if let Err(error) = contract_history_string {
+        result = json!(ResponseData::new_error(
+            error,
+            &format!(
                 "There was an internal error trying to load the contracts of '{}'.",
                 current_bank.name
-            ))
-        },
-        header: error,
-    });
-
-    result["contracts"] = json!(contract_string);
+            ),
+        ));
+    } else {
+        result = json!(ResponseData::new_success(
+            "Contracts loaded".to_string(),
+            "The contracts were successfully loaded.",
+        ));
+        result["contracts"] = json!(contract_history_string.unwrap());
+    }
 
     Ok(Json(result))
 }
@@ -95,11 +83,10 @@ pub async fn bank_contract_merge(
     let contracts = load_contracts_from_ids(contract_id_for_loading.clone(), &mut db).await;
 
     if let Err(error) = contracts {
-        return Json(ResponseData {
-            success: None,
-            error: Some("There was an internal error while loading the contracts.".into()),
-            header: Some(error),
-        });
+        return Json(ResponseData::new_error(
+            error,
+            "There was an internal error while loading the contracts.",
+        ));
     }
 
     let contracts = contracts.unwrap();
@@ -143,11 +130,10 @@ pub async fn bank_contract_delete(
     let contracts = load_contracts_from_ids(contract_ids.clone(), &mut db).await;
 
     if let Err(error) = contracts {
-        return Json(ResponseData {
-            success: None,
-            error: Some("There was an internal error while loading the contracts.".into()),
-            header: Some(error),
-        });
+        return Json(ResponseData::new_error(
+            error,
+            "There was an internal error while loading the contracts.",
+        ));
     }
 
     let contracts = contracts.unwrap();
@@ -155,24 +141,22 @@ pub async fn bank_contract_delete(
     let result = delete_contracts_with_ids(contract_ids, &mut db).await;
 
     if let Err(error) = result {
-        return Json(ResponseData {
-            success: None,
-            error: Some("There was an internal error while deleting the contracts.".into()),
-            header: Some(error),
-        });
+        return Json(ResponseData::new_error(
+            error,
+            "There was an internal error while deleting the contracts.",
+        ));
     }
 
-    let mut succes = String::new();
+    let mut success = String::new();
 
     for contract in contracts.iter() {
-        succes += &format!("Successfully deleted contract '{}'.\n", contract.name);
+        success += &format!("Successfully deleted contract '{}'.\n", contract.name);
     }
 
-    Json(ResponseData {
-        success: Some(succes),
-        error: None,
-        header: Some("Deleted contracts".into()),
-    })
+    Json(ResponseData::new_success(
+        "Deleted contracts".to_string(),
+        &success,
+    ))
 }
 
 #[get("/bank/contract/scan")]
@@ -186,13 +170,10 @@ pub async fn bank_scan_for_new_contracts(
     let current_bank = state.get_current_bank(cookie_user_id).await;
 
     if current_bank.is_none() {
-        return Ok(Json(ResponseData {
-            success: None,
-            error: Some(
-                "There was an internal error while loading the bank. Please try again.".into(),
-            ),
-            header: Some("No bank selected".into()),
-        }));
+        return Ok(Json(ResponseData::new_error(
+            "No bank selected".to_string(),
+            "There was an internal error while loading the bank. Please try again.",
+        )));
     }
 
     let current_bank = current_bank.unwrap();
@@ -200,20 +181,18 @@ pub async fn bank_scan_for_new_contracts(
     let result = create_contract_from_transactions(current_bank.id, &mut db).await;
 
     if let Err(error) = result {
-        return Ok(Json(ResponseData {
-            success: None,
-            error: Some("There was an internal error while scanning for new contracts.".into()),
-            header: Some(error),
-        }));
+        return Ok(Json(ResponseData::new_error(
+            error,
+            "There was an internal error while scanning for new contracts.",
+        )));
     }
 
     let result = result.unwrap();
 
-    Ok(Json(ResponseData {
-        success: Some(result),
-        error: None,
-        header: Some("Scanned for new contracts".into()),
-    }))
+    Ok(Json(ResponseData::new_success(
+        "Scanned for new contracts".to_string(),
+        &result,
+    )))
 }
 
 #[get("/bank/contract/nameChanged/<id>/<name>")]
@@ -225,16 +204,14 @@ pub async fn bank_contract_name_changed(
     let result = update_contract_with_new_name(id, name.to_string(), &mut db).await;
 
     if let Err(error) = result {
-        return Json(ResponseData {
-            success: None,
-            error: Some("There was an internal error while updating the contract name.".into()),
-            header: Some(error),
-        });
+        return Json(ResponseData::new_error(
+            error,
+            "There was an internal error while updating the contract name.",
+        ));
     }
 
-    Json(ResponseData {
-        success: Some("Successfully updated the contract name.".into()),
-        error: None,
-        header: Some("Updated contract name".into()),
-    })
+    Json(ResponseData::new_success(
+        "Updated contract name".to_string(),
+        "Successfully updated the contract name.",
+    ))
 }

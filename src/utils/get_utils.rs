@@ -1,9 +1,14 @@
+use std::time::Instant;
+
 use chrono::NaiveDate;
-use log::{error, info};
-use rocket::{http::CookieJar, response::Redirect};
+use log::{error, info, warn};
+use rocket::{http::CookieJar, response::Redirect, serde::json::Json};
 use rocket_db_pools::Connection;
 
-use crate::{database::db_connector::DbConn, routes::error_page::show_error_page};
+use crate::{
+    database::db_connector::DbConn, routes::error_page::show_error_page,
+    utils::loading_utils::load_transaction_by_id,
+};
 
 use super::{
     display_utils::{generate_graph_data, generate_performance_value},
@@ -11,7 +16,10 @@ use super::{
         load_contract_history, load_contracts_of_bank, load_last_transaction_data_of_contract,
         load_transactions_of_bank, load_transactions_of_contract,
     },
-    structs::{Bank, ContractWithHistory, PerformanceData, Transaction, TransactionWithContract},
+    structs::{
+        Bank, ContractWithHistory, PerformanceData, ResponseData, Transaction,
+        TransactionWithContract,
+    },
 };
 
 /// Extract the user ID from the user ID cookie.
@@ -190,4 +198,34 @@ pub async fn get_transactions_with_contract(
     }
 
     Ok(serde_json::to_string(&transactions_with_contract).unwrap())
+}
+
+pub async fn get_transaction(
+    transaction_id: i32,
+    db: &mut Connection<DbConn>,
+) -> Result<Transaction, Json<ResponseData>> {
+    let start_time = Instant::now();
+
+    let transaction = load_transaction_by_id(transaction_id, db).await;
+
+    if let Err(error) = transaction {
+        error!("Error loading transaction {}: {}", transaction_id, error);
+        return Err(Json(ResponseData::new_error(
+            error,
+            "There was an internal error while trying to load the transaction. Please try again.",
+        )));
+    }
+
+    let transaction = transaction.unwrap();
+
+    if transaction.is_none() {
+        info!("Transaction {} not found", transaction_id);
+        return Err(Json(ResponseData::new_error(
+            "Transaction not found".to_string(),
+            "The transaction does not exist.",
+        )));
+    }
+
+    warn!("Transaction loaded in {:?}", start_time.elapsed());
+    Ok(transaction.unwrap())
 }

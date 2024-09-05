@@ -33,13 +33,10 @@ pub async fn base(
     if let Err(error) = banks {
         return Ok(Template::render(
             "base",
-            json!(ResponseData {
-                success: None,
-                error: Some(
-                    "There was an internal error trying to load the banks of the profile".into()
-                ),
-                header: Some(error),
-            }),
+            json!(ResponseData::new_error(
+                error,
+                "There was an internal error trying to load the banks of the profile"
+            )),
         ));
     }
 
@@ -76,11 +73,10 @@ pub async fn dashboard(
 
     Ok(Template::render(
         "dashboard",
-        json!(ResponseData {
-            success: Some(format!("Welcome, {} {}!", user_first_name, user_last_name)),
-            error: None,
-            header: None,
-        }),
+        json!(ResponseData::new_success(
+            String::new(),
+            &format!("Welcome, {} {}!", user_first_name, user_last_name)
+        )),
     ))
 }
 
