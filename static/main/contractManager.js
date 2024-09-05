@@ -1,33 +1,41 @@
+// main.js
+import { log, error } from './main.js';
 import { formatDate, displayCustomAlert } from './utils.js';
 
 const closedContractsWrapper = document.createElement('div');
 const openContractsWrapper = document.createElement('div');
 
 export function loadContracts() {
+    const start = performance.now();
+    log('Loading contracts', 'loadContracts');
+
     try {
         closedContractsWrapper.classList.add('display-container');
         closedContractsWrapper.style.display = 'none';
         openContractsWrapper.classList.add('display-container');
 
         get_contract_data();
-
         setupEventListeners();
         document.getElementById('toggle-closed-contracts').addEventListener('click', showClosedContracts);
     } catch (err) {
+        error(`Error loading contracts: ${err.message}`, 'loadContracts');
         displayCustomAlert('error', 'Loading Error', err.message);
+    } finally {
+        const end = performance.now();
+        log(`Finished loading contracts in ${end - start}ms`, 'loadContracts');
     }
 }
 
 async function get_contract_data() {
+    const start = performance.now();
+    log('Fetching contract data', 'get_contract_data');
+
     try {
-        const response = await fetch('/bank/contract/data', {
-            method: 'GET',
-        });
+        const response = await fetch('/bank/contract/data', { method: 'GET' });
 
         if (!response.ok) throw new Error('Failed to send request to the server');
 
         const contractsData = await response.json();
-
 
         if (contractsData.error) {
             displayCustomAlert('error', contractsData.header, contractsData.error);
@@ -38,111 +46,155 @@ async function get_contract_data() {
             const contractJSON = JSON.parse(contractsData.contracts);
             updateContractsView(contractJSON);
         }
-
-    }
-    catch (err) {
+    } catch (err) {
+        error(`Error fetching contracts: ${err.message}`, 'get_contract_data');
         displayCustomAlert('error', 'Failed to load contracts', err.message);
+    } finally {
+        const end = performance.now();
+        log(`Fetched contract data in ${end - start}ms`, 'get_contract_data');
     }
 }
 
 function updateContractsView(contractsData) {
-    const container = document.getElementById('contract-container');
+    const start = performance.now();
+    log('Updating contracts view', 'updateContractsView');
 
-    // Clear the wrappers
-    closedContractsWrapper.innerHTML = '';
-    openContractsWrapper.innerHTML = '';
+    try {
+        const container = document.getElementById('contract-container');
 
-    // Populate the wrappers with updated contracts
-    contractsData.forEach((contractWithHistory, index) => {
-        const contractHTML = generateContractHTML(contractWithHistory, index);
-        const wrapper = contractWithHistory.contract.end_date ? closedContractsWrapper : openContractsWrapper;
-        wrapper.insertAdjacentHTML('beforeend', contractHTML);
-    });
+        closedContractsWrapper.innerHTML = '';
+        openContractsWrapper.innerHTML = '';
 
-    // Clear and re-append the updated contract sections to the container
-    container.innerHTML = '';
+        contractsData.forEach((contractWithHistory, index) => {
+            const contractHTML = generateContractHTML(contractWithHistory, index);
+            const wrapper = contractWithHistory.contract.end_date ? closedContractsWrapper : openContractsWrapper;
+            wrapper.insertAdjacentHTML('beforeend', contractHTML);
+        });
 
-    const openContractsTitle = document.createElement('h3');
-    openContractsTitle.textContent = 'Open Contracts';
-    container.appendChild(openContractsTitle);
-    container.appendChild(openContractsWrapper);
+        container.innerHTML = '';
 
-    const closedContractsTitle = document.createElement('h3');
-    closedContractsTitle.id = 'closed-contracts-title';
-    closedContractsTitle.style.display = 'none';
-    closedContractsTitle.textContent = 'Closed Contracts';
-    container.appendChild(closedContractsTitle);
-    container.appendChild(closedContractsWrapper);
+        let openContractsTitle = document.getElementById('open-contracts-title');
+        if (!openContractsTitle) {
+            openContractsTitle = document.createElement('h3');
+            openContractsTitle.id = 'open-contracts-title';
+            openContractsTitle.textContent = 'Open Contracts';
+        }
+        container.appendChild(openContractsTitle);
+        container.appendChild(openContractsWrapper);
 
-    attachContractEventListeners();
+        let closedContractsTitle = document.getElementById('closed-contracts-title');
+        if (!closedContractsTitle) {
+            closedContractsTitle = document.createElement('h3');
+            closedContractsTitle.id = 'closed-contracts-title';
+            closedContractsTitle.textContent = 'Closed Contracts';
+        }
+        const toggleButton = document.getElementById('toggle-closed-contracts');
+        const slider = toggleButton.querySelector('.slider');
+
+        const displayStyle = slider.classList.contains('active') ? 'flex' : 'none';
+
+        closedContractsTitle.style.display = displayStyle;
+        closedContractsTitle.textContent = 'Closed Contracts';
+        container.appendChild(closedContractsTitle);
+        container.appendChild(closedContractsWrapper);
+
+        attachContractEventListeners();
+    } finally {
+        const end = performance.now();
+        log(`Updated contracts view in ${end - start}ms`, 'updateContractsView');
+    }
 }
 
 function attachContractEventListeners() {
-    const container = document.querySelectorAll('.display');
+    const start = performance.now();
+    log('Attaching event listeners to contracts', 'attachContractEventListeners');
 
-    container.forEach((contractElement, index) => {
-        contractElement.addEventListener('click', (event) => {
-            const target = event.target;
+    try {
+        const container = document.querySelectorAll('.display');
 
-            if (target.classList.contains('toggle-history-btn')) {
-                event.stopPropagation();
-                const index = target.getAttribute('data-index');
-                const historyElement = document.getElementById(`contract-history-${index}`);
-                const isHidden = historyElement.classList.toggle('hidden');
-                target.textContent = isHidden ? 'Show History' : 'Hide History';
-                target.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
-                return;
-            }
+        container.forEach((contractElement, index) => {
+            contractElement.addEventListener('click', (event) => {
+                const target = event.target;
 
-            const contractElement = target.closest('.display');
-            if (contractElement) {
-                const isSelected = contractElement.classList.contains('selected');
-
-                if (isSelected) {
-                    contractElement.classList.remove('selected');
-                } else {
-                    contractElement.classList.add('selected');
+                if (target.classList.contains('toggle-history-btn')) {
+                    event.stopPropagation();
+                    const index = target.getAttribute('data-index');
+                    const historyElement = document.getElementById(`contract-history-${index}`);
+                    const isHidden = historyElement.classList.toggle('hidden');
+                    target.textContent = isHidden ? 'Show History' : 'Hide History';
+                    target.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
+                    return;
                 }
-            }
-        });
 
-        // Add an input event listener to update the contract name
-        const contractNameInput = contractElement.querySelector('.contract-name');
-        contractNameInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
+                const contractElement = target.closest('.display');
+                if (contractElement) {
+                    const isSelected = contractElement.classList.contains('selected');
+
+                    if (isSelected) {
+                        contractElement.classList.remove('selected');
+                    } else {
+                        contractElement.classList.add('selected');
+                    }
+                }
+            });
+
+            const contractNameInput = contractElement.querySelector('.contract-name');
+            contractNameInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    handleContractNameChange(event);
+                    contractNameInput.blur();
+                }
+            });
+
+            contractNameInput.addEventListener('blur', (event) => {
                 handleContractNameChange(event);
-                contractNameInput.blur();
-            }
+            });
         });
-
-        contractNameInput.addEventListener('blur', (event) => {
-            handleContractNameChange(event);
-        });
-    });
+    } finally {
+        const end = performance.now();
+        log(`Attached event listeners in ${end - start}ms`, 'attachContractEventListeners');
+    }
 }
 
 function handleContractNameChange(event) {
-    const index = event.target.getAttribute('data-index');
-    const contractElement = document.getElementById(`display-${index}`);
-    const contractID = contractElement.getAttribute('data-id');
-    const contractName = event.target.value;
+    const start = performance.now();
+    log('Handling contract name change', 'handleContractNameChange');
 
-    fetch(`/bank/contract/nameChanged/${contractID}/${contractName}`, {
-        method: 'GET',
-    });
+    try {
+        const index = event.target.getAttribute('data-index');
+        const contractElement = document.getElementById(`display-${index}`);
+        const contractID = contractElement.getAttribute('data-id');
+        const contractName = event.target.value;
+
+        fetch(`/bank/contract/nameChanged/${contractID}/${contractName}`, { method: 'GET' });
+    } catch (err) {
+        error(`Error handling contract name change: ${err.message}`, 'handleContractNameChange');
+    } finally {
+        const end = performance.now();
+        log(`Handled contract name change in ${end - start}ms`, 'handleContractNameChange');
+    }
 }
 
 function setupEventListeners() {
-    document.getElementById('merge-selected-btn').addEventListener('click', mergeSelectedContracts);
-    document.getElementById('delete-selected-btn').addEventListener('click', deleteSelectedContracts);
-    document.getElementById('scan-btn').addEventListener('click', scanContracts);
+    const start = performance.now();
+    log('Setting up event listeners', 'setupEventListeners');
+
+    try {
+        document.getElementById('merge-selected-btn').addEventListener('click', mergeSelectedContracts);
+        document.getElementById('delete-selected-btn').addEventListener('click', deleteSelectedContracts);
+        document.getElementById('scan-btn').addEventListener('click', scanContracts);
+    } finally {
+        const end = performance.now();
+        log(`Setup event listeners in ${end - start}ms`, 'setupEventListeners');
+    }
 }
 
 async function scanContracts() {
+    const start = performance.now();
+    log('Scanning contracts', 'scanContracts');
+
     try {
-        const response = await fetch('/bank/contract/scan', {
-            method: 'GET',
-        });
+        const response = await fetch('/bank/contract/scan', { method: 'GET' });
 
         if (!response.ok) throw new Error('Failed to send request to the server');
 
@@ -157,28 +209,32 @@ async function scanContracts() {
             get_contract_data();
             displayCustomAlert('success', result.header, result.success);
         }
-
     } catch (err) {
+        error(`Error scanning contracts: ${err.message}`, 'scanContracts');
         displayCustomAlert('error', 'Scan Failed', err.message);
+    } finally {
+        const end = performance.now();
+        log(`Scanned contracts in ${end - start}ms`, 'scanContracts');
     }
 }
 
 async function deleteSelectedContracts() {
-    const selectedContracts = document.querySelectorAll('.selected');
-
-    if (selectedContracts.length === 0) {
-        displayCustomAlert('error', 'Delete contracts', 'Please select at least 1 contract to delete.');
-        return;
-    }
-
-    const contractIDs = Array.from(selectedContracts).map(contract => parseInt(contract.getAttribute('data-id'), 10));
+    const start = performance.now();
+    log('Deleting selected contracts', 'deleteSelectedContracts');
 
     try {
+        const selectedContracts = document.querySelectorAll('.selected');
+
+        if (selectedContracts.length === 0) {
+            displayCustomAlert('error', 'Delete contracts', 'Please select at least 1 contract to delete.');
+            return;
+        }
+
+        const contractIDs = Array.from(selectedContracts).map(contract => parseInt(contract.getAttribute('data-id'), 10));
+
         const response = await fetch('/bank/contract/delete', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ids: contractIDs }),
         });
 
@@ -192,39 +248,35 @@ async function deleteSelectedContracts() {
         }
 
         if (result.success) {
-            const selectedContracts = document.querySelectorAll('.selected');
-
-            console.log(selectedContracts);
-
-            selectedContracts.forEach(contract => {
-                contract.remove();
-            }
-            );
-
+            selectedContracts.forEach(contract => contract.remove());
             displayCustomAlert('success', result.header, result.success);
         }
-
     } catch (err) {
+        error(`Error deleting contracts: ${err.message}`, 'deleteSelectedContracts');
         displayCustomAlert('error', 'Delete Failed', err.message);
+    } finally {
+        const end = performance.now();
+        log(`Deleted contracts in ${end - start}ms`, 'deleteSelectedContracts');
     }
 }
 
 async function mergeSelectedContracts() {
-    const selectedContracts = document.querySelectorAll('.selected');
-
-    if (selectedContracts.length < 2) {
-        displayCustomAlert('error', 'Merge contracts', 'Please select at least 2 contracts to merge.');
-        return;
-    }
-
-    const contractIDs = Array.from(selectedContracts).map(contract => parseInt(contract.getAttribute('data-id'), 10));
+    const start = performance.now();
+    log('Merging selected contracts', 'mergeSelectedContracts');
 
     try {
+        const selectedContracts = document.querySelectorAll('.selected');
+
+        if (selectedContracts.length < 2) {
+            displayCustomAlert('error', 'Merge contracts', 'Please select at least 2 contracts to merge.');
+            return;
+        }
+
+        const contractIDs = Array.from(selectedContracts).map(contract => parseInt(contract.getAttribute('data-id'), 10));
+
         const response = await fetch('/bank/contract/merge', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ids: contractIDs }),
         });
 
@@ -238,24 +290,27 @@ async function mergeSelectedContracts() {
         }
 
         get_contract_data();
-
         displayCustomAlert('success', 'Merge Successful', 'Contracts have been successfully merged.');
-
     } catch (err) {
+        error(`Error merging contracts: ${err.message}`, 'mergeSelectedContracts');
         displayCustomAlert('error', 'Merge Failed', err.message);
+    } finally {
+        const end = performance.now();
+        log(`Merged contracts in ${end - start}ms`, 'mergeSelectedContracts');
     }
 }
 
 function generateContractHTML(contractWithHistory, index) {
-    const { contract, contract_history, total_amount_paid, last_payment_date } = contractWithHistory;
+    const start = performance.now();
+    log('Generating contract HTML', 'generateContractHTML');
 
+    const { contract, contract_history, total_amount_paid, last_payment_date } = contractWithHistory;
     const currentAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
     const totalAmountClass = total_amount_paid < 0 ? 'negative' : 'positive';
-
     const dateLabel = contract.end_date ? 'End date' : 'Last payment date';
     const dateValue = contract.end_date ? formatDate(contract.end_date) : formatDate(last_payment_date);
 
-    return `
+    const html = `
         <div class="display" id="display-${index}" data-id="${contract.id}">
             <div class="container-without-border-horizontally-header">
                 <p>✏️</p>
@@ -272,30 +327,49 @@ function generateContractHTML(contractWithHistory, index) {
             </div>
         </div>
     `;
+
+    const end = performance.now();
+    log(`Generated contract HTML in ${end - start}ms`, 'generateContractHTML');
+
+    return html;
 }
 
 function generateHistoryHTML(contractHistory) {
-    if (contractHistory.length === 0) {
-        return '<li>No history available.</li>';
-    }
+    const start = performance.now();
+    log('Generating history HTML', 'generateHistoryHTML');
 
-    return contractHistory.map(({ old_amount, new_amount, changed_at }) => `
-        <li>
-            <p>Old Amount: <span class="${old_amount < 0 ? 'negative' : 'positive'}">$${old_amount.toFixed(2)}</span></p>
-            <p>New Amount: <span class="${new_amount < 0 ? 'negative' : 'positive'}">$${new_amount.toFixed(2)}</span></p>
-            <p>Changed At: ${formatDate(changed_at)}</p>
-        </li>
-    `).join('');
+    const html = contractHistory.length === 0
+        ? '<li>No history available.</li>'
+        : contractHistory.map(({ old_amount, new_amount, changed_at }) => `
+            <li>
+                <p>Old Amount: <span class="${old_amount < 0 ? 'negative' : 'positive'}">$${old_amount.toFixed(2)}</span></p>
+                <p>New Amount: <span class="${new_amount < 0 ? 'negative' : 'positive'}">$${new_amount.toFixed(2)}</span></p>
+                <p>Changed At: ${formatDate(changed_at)}</p>
+            </li>
+        `).join('');
+
+    const end = performance.now();
+    log(`Generated history HTML in ${end - start}ms`, 'generateHistoryHTML');
+
+    return html;
 }
 
 function showClosedContracts() {
-    const toggleButton = document.getElementById('toggle-closed-contracts');
-    const slider = toggleButton.querySelector('.slider');
+    const start = performance.now();
+    log('Showing closed contracts', 'showClosedContracts');
 
-    slider.classList.toggle('active');
+    try {
+        const toggleButton = document.getElementById('toggle-closed-contracts');
+        const slider = toggleButton.querySelector('.slider');
 
-    const closedContractsTitle = document.getElementById('closed-contracts-title');
-    closedContractsTitle.style.display = closedContractsTitle.style.display === 'none' ? 'block' : 'none';
+        slider.classList.toggle('active');
 
-    closedContractsWrapper.style.display = closedContractsWrapper.style.display === 'none' ? 'flex' : 'none';
+        const closedContractsTitle = document.getElementById('closed-contracts-title');
+        closedContractsTitle.style.display = closedContractsTitle.style.display === 'none' ? 'flex' : 'none';
+
+        closedContractsWrapper.style.display = closedContractsWrapper.style.display === 'none' ? 'flex' : 'none';
+    } finally {
+        const end = performance.now();
+        log(`Displayed closed contracts in ${end - start}ms`, 'showClosedContracts');
+    }
 }
