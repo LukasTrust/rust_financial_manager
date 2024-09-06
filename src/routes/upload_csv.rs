@@ -30,8 +30,12 @@ pub async fn upload_csv(
 
     if current_bank.is_none() {
         return Ok(Json(ResponseData::new_error(
-            "No bank selected".to_string(),
-            "Please select a bank before trying to upload the CSV file",
+            state
+                .localize_message(cookie_user_id, "no_bank_selected")
+                .await,
+            state
+                .localize_message(cookie_user_id, "no_bank_selected_details")
+                .await,
         )));
     }
 
@@ -45,8 +49,12 @@ pub async fn upload_csv(
         Err(_) => {
             error!("Failed to read CSV file");
             return Ok(Json(ResponseData::new_error(
-                "Failed to read CSV file".to_string(),
-                "There was an internal error while trying to read the CSV file",
+                state
+                    .localize_message(cookie_user_id, "error_reading_csv_file")
+                    .await,
+                state
+                    .localize_message(cookie_user_id, "error_reading_csv_file_details")
+                    .await,
             )));
         }
     };
@@ -69,14 +77,18 @@ pub async fn upload_csv(
 
     match result {
         Ok(result_string) => Ok(Json(ResponseData::new_success(
-            "Succesfully parsed the CSV file".to_string(),
-            &result_string,
+            state
+                .localize_message(cookie_user_id, "csv_file_read")
+                .await,
+            result_string,
         ))),
         Err(error) => {
             error!("Failed to insert records: {}", error);
             Ok(Json(ResponseData::new_error(
                 error,
-                "There was an internal error while trying to insert the records",
+                state
+                    .localize_message(cookie_user_id, "error_saving_csv_data_details")
+                    .await,
             )))
         }
     }

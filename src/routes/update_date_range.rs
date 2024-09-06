@@ -15,9 +15,9 @@ use crate::utils::structs::ResponseData;
 
 #[get("/update_date_range/<start_date>/<end_date>")]
 pub async fn update_date_range(
-    cookies: &CookieJar<'_>,
     start_date: &str,
     end_date: &str,
+    cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Result<Json<Value>, Box<Redirect>> {
@@ -45,7 +45,9 @@ pub async fn update_date_range(
             if let Err(error) = result {
                 return Ok(Json(json!(ResponseData::new_error(
                     error,
-                    "There was an internal error while loading the bank. Please try again."
+                    state
+                        .localize_message(cookie_user_id, "error_updating_date_range")
+                        .await,
                 ))));
             }
 
@@ -62,7 +64,9 @@ pub async fn update_date_range(
             if let Err(error) = banks {
                 return Ok(Json(json!(ResponseData::new_error(
                     error,
-                    "There was an internal error trying to load the banks of the profile"
+                    state
+                        .localize_message(cookie_user_id, "base_internal_error")
+                        .await,
                 ))));
             }
 
@@ -75,7 +79,9 @@ pub async fn update_date_range(
             if let Err(error) = result {
                 return Ok(Json(json!(ResponseData::new_error(
                     error,
-                    "There was an internal error while loading the bank. Please try again."
+                    state
+                        .localize_message(cookie_user_id, "error_updating_date_range")
+                        .await,
                 ))));
             }
 

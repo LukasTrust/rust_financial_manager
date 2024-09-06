@@ -43,7 +43,9 @@ pub async fn get_graph_data(
             if let Err(error) = banks {
                 return Ok(Json(json!(ResponseData::new_error(
                     error,
-                    "There was an internal error trying to load the banks of the profile"
+                    state
+                        .localize_message(cookie_user_id, "error_loading_banks")
+                        .await
                 ))));
             }
 

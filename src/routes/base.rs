@@ -35,7 +35,9 @@ pub async fn base(
             "base",
             json!(ResponseData::new_error(
                 error,
-                "There was an internal error trying to load the banks of the profile"
+                state
+                    .localize_message(cookie_user_id, "base_internal_error")
+                    .await
             )),
         ));
     }
@@ -71,12 +73,16 @@ pub async fn dashboard(
 
     state.set_current_bank(cookie_user_id, None).await;
 
+    let mut message = state
+        .localize_message(cookie_user_id, "dashboard_welcome_message")
+        .await;
+
+    message = message.replace("{first_name}", &user_first_name);
+    message = message.replace("{last_name}", &user_last_name);
+
     Ok(Template::render(
         "dashboard",
-        json!(ResponseData::new_success(
-            String::new(),
-            &format!("Welcome, {} {}!", user_first_name, user_last_name)
-        )),
+        json!(ResponseData::new_success(String::new(), message)),
     ))
 }
 
@@ -98,14 +104,23 @@ pub async fn settings(
 /// Display the login page.
 /// Remove the user_id cookie to log the user out.
 #[get("/logout")]
-pub fn logout(cookies: &CookieJar<'_>) -> Result<Template, Box<Redirect>> {
+pub async fn logout(
+    cookies: &CookieJar<'_>,
+    state: &State<AppState>,
+) -> Result<Template, Box<Redirect>> {
     info!("User logged out.");
     let cookie = cookies.get_private("user_id");
 
+    let cookie_user_id = get_user_id(cookies)?;
+
     if cookie.is_none() {
         return Err(show_error_page(
-            "Error validating the login!".to_string(),
-            "Please login again.".to_string(),
+            state
+                .localize_message(cookie_user_id, "logout_error_validation")
+                .await,
+            state
+                .localize_message(cookie_user_id, "logout_login_prompt")
+                .await,
         ));
     }
 

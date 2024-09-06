@@ -1,15 +1,12 @@
 use rocket::catchers;
 use rocket::fs::{relative, FileServer};
 use rocket::local::asynchronous::Client;
-use rocket::tokio::sync::RwLock;
 use rocket_db_pools::Database;
 use rocket_dyn_templates::Template;
 use rust_financial_manager::database::db_connector::DbConn;
 use rust_financial_manager::routes::bank_transaction::{
     transaction_set_old_amount, transaction_update_contract_amount,
 };
-use std::collections::HashMap;
-use std::sync::Arc;
 
 use routes::add_bank::{add_bank, add_bank_form};
 use routes::bank::bank_view;
@@ -30,14 +27,12 @@ use routes::update_csv::update_csv;
 use routes::update_date_range::update_date_range;
 use routes::upload_csv::upload_csv;
 use rust_financial_manager::routes;
-use rust_financial_manager::routes::get_graph_data::get_graph_data;
+use rust_financial_manager::routes::get_data::get_graph_data;
+use rust_financial_manager::routes::settings::set_user_language;
 use rust_financial_manager::utils::appstate::AppState;
 
 pub async fn get_test_client() -> Client {
-    let app_state = AppState {
-        current_bank: Arc::new(RwLock::new(HashMap::new())),
-        use_mocking: true,
-    };
+    let app_state = AppState::new(true);
 
     let rocket = rocket::build()
         .manage(app_state)
@@ -90,6 +85,8 @@ pub async fn get_test_client() -> Client {
                 transaction_show,
                 transaction_not_allow_contract,
                 transaction_allow_contract,
+                // Settings
+                set_user_language,
             ],
         )
         .mount("/static", FileServer::from(relative!("static")).rank(11))

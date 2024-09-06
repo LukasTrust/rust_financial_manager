@@ -40,13 +40,13 @@ pub async fn register_user(
         error!("Invalid email format.");
         return Json(ResponseData::new_error(
             String::new(),
-            "Invalid email format. Please use a valid email.",
+            "Invalid email format. Please use a valid email.".to_string(),
         ));
     }
 
     if !is_strong_password(&user_form.password) {
         error!("Weak password.");
-        return Json(ResponseData::new_error(String::new(), "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character."));
+        return Json(ResponseData::new_error(String::new(), "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.".to_string()));
     }
 
     let hashed_password = match hash(user_form.password.clone(), DEFAULT_COST) {
@@ -55,7 +55,7 @@ pub async fn register_user(
             info!("Hashing password failed.");
             return Json(ResponseData::new_error(
                 String::new(),
-                "Internal server error. Please try again later.",
+                "Internal server error. Please try again later.".to_string(),
             ));
         }
     };
@@ -75,20 +75,20 @@ pub async fn register_user(
     match result {
         Ok(_) => Json(ResponseData::new_success(
             String::new(),
-            "Registration successful. Please log in.",
+            "Registration successful. Please log in.".to_string(),
         )),
         Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
             info!("Registration failed, email already exists.");
             Json(ResponseData::new_error(
                 String::new(),
-                "Email already exists. Please use a different email.",
+                "Email already exists. Please use a different email.".to_string(),
             ))
         }
         Err(_) => {
             error!("Registration failed, database error.");
             Json(ResponseData::new_error(
                 String::new(),
-                "Internal server error. Please try again later.",
+                "Internal server error. Please try again later.".to_string(),
             ))
         }
     }

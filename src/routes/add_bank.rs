@@ -68,27 +68,44 @@ pub async fn add_bank_form(
                     };
 
                     if let Err(e) = banks_result {
-                        return Ok(Json(json!( ResponseData::new_error(e, "There was an internal error trying to load the banks. Please login again and retry."))));
+                        return Ok(Json(json!(ResponseData::new_error(
+                            e,
+                            state
+                                .localize_message(cookie_user_id, "error_loading_banks")
+                                .await
+                        ))));
                     }
 
                     let banks = banks_result.unwrap();
 
-                    let mut result = json!(ResponseData::new_success("New bank added".to_string(), &format!("The new bank '{}' has been added to your profile.", new_bank.name)));
+                    let message = state
+                        .localize_message(cookie_user_id, "bank_added_details")
+                        .await;
+
+                    let formatted_message = message.replace("{}", &new_bank.name);
+
+                    let mut result = json!(ResponseData::new_success(
+                        state.localize_message(cookie_user_id, "bank_added").await,
+                        formatted_message
+                    ));
                     result["banks"] = json!(banks);
 
                     Ok(Json(result))
                 }
-                Err(e) => {
-                    Ok(Json(json!(ResponseData::new_error(e, "There was an internal error trying to add the csv converter of the new bank. The bank was added but the csv converter was not."))))
-                }
+                Err(e) => Ok(Json(json!(ResponseData::new_error(
+                    e,
+                    state
+                        .localize_message(cookie_user_id, "error_adding_csv")
+                        .await
+                )))),
             }
         }
-        Err(e) => Ok(Json(json!(ResponseData::new_error(
-            e,
-            &format!(
-                "The bank '{}' could not be added because it already exists in your profile.",
-                new_bank.name
-            )
-        )))),
+        Err(e) => {
+            let message = state.localize_message(cookie_user_id, "bank_exists").await;
+
+            let formatted_message = message.replace("{}", &new_bank.name);
+
+            Ok(Json(json!(ResponseData::new_error(e, formatted_message))))
+        }
     }
 }

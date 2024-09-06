@@ -122,7 +122,7 @@ pub struct ResponseData {
 }
 
 impl ResponseData {
-    pub fn new_success(header: String, success: &str) -> Self {
+    pub fn new_success(header: String, success: String) -> Self {
         ResponseData {
             header: header,
             success: Some(success.to_string()),
@@ -130,7 +130,7 @@ impl ResponseData {
         }
     }
 
-    pub fn new_error(header: String, error: &str) -> Self {
+    pub fn new_error(header: String, error: String) -> Self {
         ResponseData {
             header: header,
             success: None,

@@ -1,5 +1,6 @@
 use log::warn;
 use rocket::serde::json::Json;
+use rocket::State;
 use rocket_db_pools::Connection;
 use std::vec;
 
@@ -10,11 +11,14 @@ use crate::utils::loading_utils::load_contract_history;
 use crate::utils::structs::ResponseData;
 use crate::utils::update_utils::update_transactions_of_contract_to_new_contract;
 
+use super::appstate::AppState;
 use super::insert_utiles::insert_contract_histories;
 use super::loading_utils::load_last_transaction_data_of_contract;
 
 pub async fn handle_all_closed_contracts(
     contracts: Vec<Contract>,
+    cookie_user_id: i32,
+    state: &State<AppState>,
     db: &mut Connection<DbConn>,
 ) -> Json<ResponseData> {
     let contracts_clone = contracts.clone();
@@ -23,15 +27,17 @@ pub async fn handle_all_closed_contracts(
         .min_by_key(|contract| contract.end_date)
         .unwrap();
 
-    process_contracts(contract_head, contracts, db).await
+    process_contracts(contract_head, contracts, cookie_user_id, state, db).await
 }
 
 pub async fn handle_open_and_closed_contracts(
     open_contracts: Vec<Contract>,
     closed_contracts: Vec<Contract>,
+    cookie_user_id: i32,
+    state: &State<AppState>,
     db: &mut Connection<DbConn>,
 ) -> Json<ResponseData> {
-    let contract_head = get_contract_head(&open_contracts, db).await;
+    let contract_head = get_contract_head(&open_contracts, cookie_user_id, state, db).await;
 
     if let Err(error) = contract_head {
         return error;
@@ -42,11 +48,13 @@ pub async fn handle_open_and_closed_contracts(
     let mut combined_contracts = open_contracts.clone();
     combined_contracts.extend(closed_contracts.clone());
 
-    process_contracts(contract_head, combined_contracts, db).await
+    process_contracts(contract_head, combined_contracts, cookie_user_id, state, db).await
 }
 
 async fn get_contract_head<'a>(
     contracts: &'a [Contract],
+    cookie_user_id: i32,
+    state: &State<AppState>,
     db: &mut Connection<DbConn>,
 ) -> Result<&'a Contract, Json<ResponseData>> {
     let mut last_transaction_datas = vec![];
@@ -57,7 +65,9 @@ async fn get_contract_head<'a>(
         if let Err(error) = last_transaction_data {
             return Err(Json(ResponseData::new_error(
                 error,
-                "There was an internal error while loading the transaction data.",
+                state
+                    .localize_message(cookie_user_id, "error_loading_transactions")
+                    .await,
             )));
         }
 
@@ -87,6 +97,8 @@ async fn get_contract_head<'a>(
 async fn process_contracts(
     contract_head: &Contract,
     contracts: Vec<Contract>,
+    cookie_user_id: i32,
+    state: &State<AppState>,
     db: &mut Connection<DbConn>,
 ) -> Json<ResponseData> {
     let other_contracts = contracts
@@ -107,7 +119,9 @@ async fn process_contracts(
     if let Err(error) = header_contract_history {
         return Json(ResponseData::new_error(
             error,
-            "There was an internal error while loading the contract history.",
+            state
+                .localize_message(cookie_user_id, "error_loading_contract_history")
+                .await,
         ));
     }
 
@@ -120,7 +134,9 @@ async fn process_contracts(
         if let Err(error) = contract_histories {
             return Json(ResponseData::new_error(
                 error,
-                "There was an internal error while loading the contract history.",
+                state
+                    .localize_message(cookie_user_id, "error_loading_contract_history")
+                    .await,
             ));
         }
 
@@ -197,7 +213,9 @@ async fn process_contracts(
     if let Err(error) = insert_result {
         return Json(ResponseData::new_error(
             error,
-            "There was an internal error while inserting the contract histories.",
+            state
+                .localize_message(cookie_user_id, "error_inserting_contract_history_details")
+                .await,
         ));
     }
 
@@ -213,7 +231,12 @@ async fn process_contracts(
     if let Err(error) = result {
         return Json(ResponseData::new_error(
             error,
-            "There was an internal error while updating the transactions.",
+            state
+                .localize_message(
+                    cookie_user_id,
+                    "error_updating_transaction_of_contract_details",
+                )
+                .await,
         ));
     }
 
@@ -224,12 +247,18 @@ async fn process_contracts(
     if let Err(error) = delete_result {
         return Json(ResponseData::new_error(
             error,
-            "There was an internal error while deleting the contracts.",
+            state
+                .localize_message(cookie_user_id, "error_deleting_contract")
+                .await,
         ));
     }
 
     Json(ResponseData::new_success(
-        "Contracts merged successfully".to_string(),
-        "The contracts were successfully merged.",
+        state
+            .localize_message(cookie_user_id, "contracts_merged")
+            .await,
+        state
+            .localize_message(cookie_user_id, "contracts_merged_details")
+            .await,
     ))
 }

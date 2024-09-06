@@ -27,7 +27,9 @@ pub async fn bank_view(
             "bank",
             json!(ResponseData::new_error(
                 error,
-                "There was an internal error while loading the bank. Please try again."
+                state
+                    .localize_message(cookie_user_id, "no_bank_selected_details")
+                    .await
             )),
         ));
     }
@@ -38,8 +40,12 @@ pub async fn bank_view(
         return Ok(Template::render(
             "bank",
             json!(ResponseData::new_error(
-                "No bank selected".to_string(),
-                "There was an internal error while loading the bank. Please try again."
+                state
+                    .localize_message(cookie_user_id, "no_bank_selected")
+                    .await,
+                state
+                    .localize_message(cookie_user_id, "no_bank_selected_details")
+                    .await
             )),
         ));
     }

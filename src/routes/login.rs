@@ -57,7 +57,7 @@ pub async fn login_user(
                 cookies.add_private(Cookie::new("user_id", user.id.to_string()));
                 Json(ResponseData::new_success(
                     String::new(),
-                    "Login successful. Redirecting...",
+                    "Login successful. Redirecting...".to_string(),
                 ))
             }
             Ok(false) => {
@@ -67,14 +67,14 @@ pub async fn login_user(
                 );
                 Json(ResponseData::new_error(
                     String::new(),
-                    "Login failed. Either the email or password was incorrect.",
+                    "Login failed. Either the email or password was incorrect.".to_string(),
                 ))
             }
             Err(err) => {
                 error!("Login failed, bcrypt error: {}", err);
                 Json(ResponseData::new_error(
                     String::new(),
-                    "Login failed. Please input both email and passowrd.",
+                    "Login failed. Please input both email and passowrd.".to_string(),
                 ))
             }
         },
@@ -82,7 +82,7 @@ pub async fn login_user(
             error!("Login failed, database error {}", err);
             Json(ResponseData::new_error(
                 String::new(),
-                "Login failed. Either the email or password was incorrect.",
+                "Login failed. Either the email or password was incorrect.".to_string(),
             ))
         }
     }

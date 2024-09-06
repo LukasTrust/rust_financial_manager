@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use chrono::NaiveDate;
 use log::{error, info, warn};
-use rocket::{http::CookieJar, response::Redirect, serde::json::Json};
+use rocket::{http::CookieJar, response::Redirect, serde::json::Json, State};
 use rocket_db_pools::Connection;
 
 use crate::{
@@ -11,6 +11,7 @@ use crate::{
 };
 
 use super::{
+    appstate::AppState,
     display_utils::{generate_graph_data, generate_performance_value},
     loading_utils::{
         load_contract_history, load_contracts_of_bank, load_last_transaction_data_of_contract,
@@ -202,6 +203,8 @@ pub async fn get_transactions_with_contract(
 
 pub async fn get_transaction(
     transaction_id: i32,
+    cookie_user_id: i32,
+    state: &State<AppState>,
     db: &mut Connection<DbConn>,
 ) -> Result<Transaction, Json<ResponseData>> {
     let start_time = Instant::now();
@@ -212,7 +215,9 @@ pub async fn get_transaction(
         error!("Error loading transaction {}: {}", transaction_id, error);
         return Err(Json(ResponseData::new_error(
             error,
-            "There was an internal error while trying to load the transaction. Please try again.",
+            state
+                .localize_message(cookie_user_id, "error_loading_transactions")
+                .await,
         )));
     }
 
@@ -221,8 +226,12 @@ pub async fn get_transaction(
     if transaction.is_none() {
         info!("Transaction {} not found", transaction_id);
         return Err(Json(ResponseData::new_error(
-            "Transaction not found".to_string(),
-            "The transaction does not exist.",
+            state
+                .localize_message(cookie_user_id, "transaction_not_found")
+                .await,
+            state
+                .localize_message(cookie_user_id, "transaction_not_found_details")
+                .await,
         )));
     }
 

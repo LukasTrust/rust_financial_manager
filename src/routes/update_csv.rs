@@ -35,8 +35,12 @@ pub async fn update_csv(
 
     if current_bank.is_none() {
         return Ok(Json(ResponseData::new_error(
-            "No bank selected".to_string(),
-            "Please select a bank before tying to updated the CSV converters",
+            state
+                .localize_message(cookie_user_id, "no_bank_selected")
+                .await,
+            state
+                .localize_message(cookie_user_id, "no_bank_selected_details")
+                .await,
         )));
     }
 
@@ -47,7 +51,9 @@ pub async fn update_csv(
     if let Err(error) = csv_converter_of_bank {
         return Ok(Json(ResponseData::new_error(
             error,
-            "There was an internal error loading the CSV converter",
+            state
+                .localize_message(cookie_user_id, "error_loading_csv_converter")
+                .await,
         )));
     }
 
@@ -77,15 +83,21 @@ pub async fn update_csv(
                 Ok(_) => {
                     info!("CSV converter updated");
                     Ok(Json(ResponseData::new_success(
-                        "CSV converters updated".to_string(),
-                        "The CSV converters have been successfully updated.",
+                        state
+                            .localize_message(cookie_user_id, "csv_converter_updated")
+                            .await,
+                        state
+                            .localize_message(cookie_user_id, "csv_converter_updated_details")
+                            .await,
                     )))
                 }
                 Err(error) => {
                     error!("Error updating CSV converter: {}", error);
                     Ok(Json(ResponseData::new_error(
                         error,
-                        "There was an internal error updating the CSV converters",
+                        state
+                            .localize_message(cookie_user_id, "error_updating_csv_converter")
+                            .await,
                     )))
                 }
             }
@@ -105,15 +117,21 @@ pub async fn update_csv(
                 Ok(_) => {
                     info!("CSV converter updated");
                     Ok(Json(ResponseData::new_success(
-                        "CSV converters updated".to_string(),
-                        "The CSV converters have been successfully updated.",
+                        state
+                            .localize_message(cookie_user_id, "csv_converter_updated")
+                            .await,
+                        state
+                            .localize_message(cookie_user_id, "csv_converter_updated_details")
+                            .await,
                     )))
                 }
                 Err(error) => {
                     error!("Error adding CSV converter: {}", error);
                     Ok(Json(ResponseData::new_error(
                         error,
-                        "There was an internal error adding the CSV converters",
+                        state
+                            .localize_message(cookie_user_id, "error_updating_csv_converter")
+                            .await,
                     )))
                 }
             }

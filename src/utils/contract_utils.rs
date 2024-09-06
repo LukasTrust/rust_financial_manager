@@ -1,5 +1,6 @@
 use log::{error, info};
 use rocket::serde::json::Json;
+use rocket::State;
 use rocket_db_pools::Connection;
 
 use crate::database::db_connector::DbConn;
@@ -11,6 +12,7 @@ use crate::utils::update_utils::{
     update_contract_history, update_contract_with_new_amount, update_transactions_with_contract,
 };
 
+use super::appstate::AppState;
 use super::loading_utils::{
     load_contract_history, load_contracts_from_ids, load_transaction_by_id,
 };
@@ -146,9 +148,11 @@ pub async fn handle_remove_contract(
 pub async fn handel_update_amount(
     transaction_id: i32,
     contract_id: i32,
+    cookie_user_id: i32,
+    state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Result<String, Json<ResponseData>> {
-    let transaction = get_transaction(transaction_id, &mut db).await?;
+    let transaction = get_transaction(transaction_id, cookie_user_id, state, &mut db).await?;
 
     let contract = load_contracts_from_ids(vec![contract_id], &mut db).await;
 
@@ -156,7 +160,9 @@ pub async fn handel_update_amount(
         error!("Error loading contract {}: {}", contract_id, error);
         return Err(Json(ResponseData::new_error(
             error,
-            "There was an internal error while loading the contract. Please try again.",
+            state
+                .localize_message(cookie_user_id, "error_loading_contract")
+                .await,
         )));
     }
 
@@ -165,8 +171,12 @@ pub async fn handel_update_amount(
     if contract.is_empty() {
         info!("Contract {} not found", contract_id);
         return Err(Json(ResponseData::new_error(
-            "Contract not found".to_string(),
-            "The contract does not exist.",
+            state
+                .localize_message(cookie_user_id, "error_contract_not_found")
+                .await,
+            state
+                .localize_message(cookie_user_id, "error_contract_not_found_details")
+                .await,
         )));
     }
 
@@ -187,7 +197,9 @@ pub async fn handel_update_amount(
         error!("Error inserting contract history: {}", error);
         return Err(Json(ResponseData::new_error(
             error,
-            "There was an internal error while inserting the contract history. Please try again.",
+            state
+                .localize_message(cookie_user_id, "error_inserting_contract_history_details")
+                .await,
         )));
     }
 
@@ -200,7 +212,12 @@ pub async fn handel_update_amount(
             "Error updating contract {} with new amount {}: {}",
             contract.id, transaction.amount, error
         );
-        return Err(Json(ResponseData::new_error(error, "There was an internal error while updating the contract with the new amount. Please try again.")));
+        return Err(Json(ResponseData::new_error(
+            error,
+            state
+                .localize_message(cookie_user_id, "error_updating_contract_amount_details")
+                .await,
+        )));
     }
 
     Ok("Contract updated".into())
@@ -209,9 +226,11 @@ pub async fn handel_update_amount(
 pub async fn handle_set_old_amount(
     transaction_id: i32,
     contract_id: i32,
+    cookie_user_id: i32,
+    state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Json<ResponseData> {
-    let transaction = get_transaction(transaction_id, &mut db).await;
+    let transaction = get_transaction(transaction_id, cookie_user_id, state, &mut db).await;
 
     if let Err(error) = transaction {
         return error;
@@ -224,7 +243,9 @@ pub async fn handle_set_old_amount(
         error!("Error loading contract {}: {}", contract_id, error);
         return Json(ResponseData::new_error(
             error,
-            "There was an internal error while loading the contract. Please try again.",
+            state
+                .localize_message(cookie_user_id, "error_loading_contract")
+                .await,
         ));
     }
 
@@ -240,7 +261,9 @@ pub async fn handle_set_old_amount(
         error!("Error loading contract history {}: {}", contract_id, error);
         return Json(ResponseData::new_error(
             error,
-            "There was an internal error while loading the contract history. Please try again.",
+            state
+                .localize_message(cookie_user_id, "error_loading_contract_history")
+                .await,
         ));
     }
 
@@ -278,7 +301,12 @@ pub async fn handle_set_old_amount(
                 });
 
             if let Err(error) = result {
-                return Json(ResponseData::new_error(error, "There was an internal error while updating the contract history. Please try again."));
+                return Json(ResponseData::new_error(
+                    error,
+                    state
+                        .localize_message(cookie_user_id, "error_updating_contract_history")
+                        .await,
+                ));
             }
 
             let result = insert_contract_histories(&vec![history], &mut db).await;
@@ -286,13 +314,22 @@ pub async fn handle_set_old_amount(
             if let Err(error) = result {
                 return Json(ResponseData::new_error(
                     error,
-                    "There was an internal error while updating the contract. Please try again.",
+                    state
+                        .localize_message(
+                            cookie_user_id,
+                            "error_inserting_contract_history_details",
+                        )
+                        .await,
                 ));
             }
 
             return Json(ResponseData::new_success(
-                "Contract history updated".to_string(),
-                "The contract history was updated.",
+                state
+                    .localize_message(cookie_user_id, "contract_history_updated")
+                    .await,
+                state
+                    .localize_message(cookie_user_id, "contract_history_updated_details")
+                    .await,
             ));
         }
         (None, Some(after)) => {
@@ -316,7 +353,12 @@ pub async fn handle_set_old_amount(
                 });
 
             if let Err(error) = result {
-                return Json(ResponseData::new_error(error, "There was an internal error while updating the contract history. Please try again."));
+                return Json(ResponseData::new_error(
+                    error,
+                    state
+                        .localize_message(cookie_user_id, "error_updating_contract_history")
+                        .await,
+                ));
             }
 
             let result = insert_contract_histories(&vec![history], &mut db).await;
@@ -324,13 +366,22 @@ pub async fn handle_set_old_amount(
             if let Err(error) = result {
                 return Json(ResponseData::new_error(
                     error,
-                    "There was an internal error while updating the contract. Please try again.",
+                    state
+                        .localize_message(
+                            cookie_user_id,
+                            "error_inserting_contract_history_details",
+                        )
+                        .await,
                 ));
             }
 
             return Json(ResponseData::new_success(
-                "Contract history updated".to_string(),
-                "The contract history was updated.",
+                state
+                    .localize_message(cookie_user_id, "contract_history_updated")
+                    .await,
+                state
+                    .localize_message(cookie_user_id, "contract_history_updated_details")
+                    .await,
             ));
         }
         (Some(before), None) => {
@@ -347,13 +398,22 @@ pub async fn handle_set_old_amount(
             if let Err(error) = result {
                 return Json(ResponseData::new_error(
                     error,
-                    "There was an internal error while updating the contract. Please try again.",
+                    state
+                        .localize_message(
+                            cookie_user_id,
+                            "error_inserting_contract_history_details",
+                        )
+                        .await,
                 ));
             }
 
             return Json(ResponseData::new_success(
-                "Contract history updated".to_string(),
-                "The contract history was updated.",
+                state
+                    .localize_message(cookie_user_id, "contract_history_updated")
+                    .await,
+                state
+                    .localize_message(cookie_user_id, "contract_history_updated_details")
+                    .await,
             ));
         }
         (None, None) => {
@@ -370,13 +430,22 @@ pub async fn handle_set_old_amount(
             if let Err(error) = result {
                 return Json(ResponseData::new_error(
                     error,
-                    "There was an internal error while updating the contract. Please try again.",
+                    state
+                        .localize_message(
+                            cookie_user_id,
+                            "error_inserting_contract_history_details",
+                        )
+                        .await,
                 ));
             }
 
             return Json(ResponseData::new_success(
-                "Contract history updated".to_string(),
-                "The contract history was updated.",
+                state
+                    .localize_message(cookie_user_id, "contract_history_updated")
+                    .await,
+                state
+                    .localize_message(cookie_user_id, "contract_history_updated_details")
+                    .await,
             ));
         }
     }

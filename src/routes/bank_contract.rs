@@ -37,8 +37,12 @@ pub async fn bank_contact_display(
 
     if current_bank.is_none() {
         return Ok(Json(json!(ResponseData::new_error(
-            "No bank selected".to_string(),
-            "There was an internal error while loading the bank. Please try again."
+            state
+                .localize_message(cookie_user_id, "no_bank_selected")
+                .await,
+            state
+                .localize_message(cookie_user_id, "no_bank_selected_details")
+                .await,
         ))));
     }
 
@@ -51,15 +55,18 @@ pub async fn bank_contact_display(
     if let Err(error) = contract_history_string {
         result = json!(ResponseData::new_error(
             error,
-            &format!(
-                "There was an internal error trying to load the contracts of '{}'.",
-                current_bank.name
-            ),
+            state
+                .localize_message(cookie_user_id, "error_loading_contracts")
+                .await
         ));
     } else {
         result = json!(ResponseData::new_success(
-            "Contracts loaded".to_string(),
-            "The contracts were successfully loaded.",
+            state
+                .localize_message(cookie_user_id, "contracts_loaded")
+                .await,
+            state
+                .localize_message(cookie_user_id, "contracts_loaded_details")
+                .await
         ));
         result["contracts"] = json!(contract_history_string.unwrap());
     }
@@ -75,18 +82,24 @@ pub struct ContractIds {
 #[post("/bank/contract/merge", format = "json", data = "<ids>")]
 pub async fn bank_contract_merge(
     ids: Json<ContractIds>,
+    cookies: &CookieJar<'_>,
+    state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Json<ResponseData> {
+) -> Result<Json<ResponseData>, Box<Redirect>> {
     let time = std::time::SystemTime::now();
+    let cookie_user_id = get_user_id(cookies)?;
+
     let contract_id_for_loading = ids.ids.clone();
 
     let contracts = load_contracts_from_ids(contract_id_for_loading.clone(), &mut db).await;
 
     if let Err(error) = contracts {
-        return Json(ResponseData::new_error(
+        return Ok(Json(ResponseData::new_error(
             error,
-            "There was an internal error while loading the contracts.",
-        ));
+            state
+                .localize_message(cookie_user_id, "error_loading_contracts")
+                .await,
+        )));
     }
 
     let contracts = contracts.unwrap();
@@ -102,7 +115,7 @@ pub async fn bank_contract_merge(
 
     if all_closed {
         warn!("Time to load contracts: {:?}", time.elapsed().unwrap());
-        return handle_all_closed_contracts(contracts, &mut db).await;
+        return Ok(handle_all_closed_contracts(contracts, cookie_user_id, state, &mut db).await);
     }
 
     let mut open_contracts = Vec::new();
@@ -117,23 +130,36 @@ pub async fn bank_contract_merge(
     }
 
     warn!("Time to load contracts: {:?}", time.elapsed().unwrap());
-    handle_open_and_closed_contracts(open_contracts, closed_contracts, &mut db).await
+    Ok(handle_open_and_closed_contracts(
+        open_contracts,
+        closed_contracts,
+        cookie_user_id,
+        state,
+        &mut db,
+    )
+    .await)
 }
 
 #[post("/bank/contract/delete", format = "json", data = "<ids>")]
 pub async fn bank_contract_delete(
     ids: Json<ContractIds>,
+    cookies: &CookieJar<'_>,
+    state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Json<ResponseData> {
+) -> Result<Json<ResponseData>, Box<Redirect>> {
+    let time = std::time::SystemTime::now();
+    let cookie_user_id = get_user_id(cookies)?;
     let contract_ids = ids.ids.clone();
 
     let contracts = load_contracts_from_ids(contract_ids.clone(), &mut db).await;
 
     if let Err(error) = contracts {
-        return Json(ResponseData::new_error(
+        return Ok(Json(ResponseData::new_error(
             error,
-            "There was an internal error while loading the contracts.",
-        ));
+            state
+                .localize_message(cookie_user_id, "error_loading_contracts")
+                .await,
+        )));
     }
 
     let contracts = contracts.unwrap();
@@ -141,22 +167,29 @@ pub async fn bank_contract_delete(
     let result = delete_contracts_with_ids(contract_ids, &mut db).await;
 
     if let Err(error) = result {
-        return Json(ResponseData::new_error(
+        return Ok(Json(ResponseData::new_error(
             error,
-            "There was an internal error while deleting the contracts.",
-        ));
+            state
+                .localize_message(cookie_user_id, "error_deleting_contract")
+                .await,
+        )));
     }
+
+    let delete_message = state
+        .localize_message(cookie_user_id, "message_deleted_contract")
+        .await;
 
     let mut success = String::new();
 
     for contract in contracts.iter() {
-        success += &format!("Successfully deleted contract '{}'.\n", contract.name);
+        success += &delete_message.clone().replace("{}", &contract.name);
     }
 
-    Json(ResponseData::new_success(
+    warn!("Time to delete contracts: {:?}", time.elapsed().unwrap());
+    Ok(Json(ResponseData::new_success(
         "Deleted contracts".to_string(),
-        &success,
-    ))
+        success,
+    )))
 }
 
 #[get("/bank/contract/scan")]
@@ -165,14 +198,20 @@ pub async fn bank_scan_for_new_contracts(
     state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Result<Json<ResponseData>, Box<Redirect>> {
+    let time = std::time::SystemTime::now();
     let cookie_user_id = get_user_id(cookies)?;
 
     let current_bank = state.get_current_bank(cookie_user_id).await;
 
     if current_bank.is_none() {
         return Ok(Json(ResponseData::new_error(
-            "No bank selected".to_string(),
-            "There was an internal error while loading the bank. Please try again.",
+            state
+                .localize_message(cookie_user_id, "no_bank_selected")
+                .await,
+            state
+                .to_owned()
+                .localize_message(cookie_user_id, "no_bank_selected_details")
+                .await,
         )));
     }
 
@@ -183,15 +222,21 @@ pub async fn bank_scan_for_new_contracts(
     if let Err(error) = result {
         return Ok(Json(ResponseData::new_error(
             error,
-            "There was an internal error while scanning for new contracts.",
+            state
+                .localize_message(cookie_user_id, "error_scanning_for_contracts")
+                .await,
         )));
     }
 
     let result = result.unwrap();
 
+    warn!(
+        "Time to scan for new contracts: {:?}",
+        time.elapsed().unwrap()
+    );
     Ok(Json(ResponseData::new_success(
         "Scanned for new contracts".to_string(),
-        &result,
+        result,
     )))
 }
 
@@ -199,19 +244,35 @@ pub async fn bank_scan_for_new_contracts(
 pub async fn bank_contract_name_changed(
     id: i32,
     name: &str,
+    cookies: &CookieJar<'_>,
+    state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Json<ResponseData> {
+) -> Result<Json<ResponseData>, Box<Redirect>> {
+    let time = std::time::SystemTime::now();
+    let cookie_user_id = get_user_id(cookies)?;
+
     let result = update_contract_with_new_name(id, name.to_string(), &mut db).await;
 
     if let Err(error) = result {
-        return Json(ResponseData::new_error(
+        return Ok(Json(ResponseData::new_error(
             error,
-            "There was an internal error while updating the contract name.",
-        ));
+            state
+                .localize_message(cookie_user_id, "error_updating_contract_name")
+                .await,
+        )));
     }
 
-    Json(ResponseData::new_success(
-        "Updated contract name".to_string(),
-        "Successfully updated the contract name.",
-    ))
+    warn!(
+        "Time to update contract name: {:?}",
+        time.elapsed().unwrap()
+    );
+
+    Ok(Json(ResponseData::new_success(
+        state
+            .localize_message(cookie_user_id, "contract_name_updated")
+            .await,
+        state
+            .localize_message(cookie_user_id, "contract_name_updated_details")
+            .await,
+    )))
 }
