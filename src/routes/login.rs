@@ -43,46 +43,42 @@ pub async fn login_user(
     let email_of_user = &user_form.email.to_lowercase();
     let password_of_user = &user_form.password;
 
-    let result = match state.use_mocking {
+    let user = match state.use_mocking {
         true => load_user_by_email_mocking(email_of_user),
         false => load_user_by_email(email_of_user, &mut db).await,
     };
 
+    let user = match user {
+        Ok(u) => u,
+        Err(e) => return e,
+    };
+
     info!("Login attempt for user with email: {}", email_of_user);
 
-    match result {
-        Ok(user) => match verify(password_of_user, &user.password) {
-            Ok(true) => {
-                info!("Login successful for user with email: {}", email_of_user);
-                cookies.add_private(Cookie::new("user_id", user.id.to_string()));
-                Json(ResponseData::new_success(
-                    String::new(),
-                    "Login successful. Redirecting...".to_string(),
-                ))
-            }
-            Ok(false) => {
-                info!(
-                    "Login failed for user with email, password did not match: {} {}",
-                    email_of_user, password_of_user
-                );
-                Json(ResponseData::new_error(
-                    String::new(),
-                    "Login failed. Either the email or password was incorrect.".to_string(),
-                ))
-            }
-            Err(err) => {
-                error!("Login failed, bcrypt error: {}", err);
-                Json(ResponseData::new_error(
-                    String::new(),
-                    "Login failed. Please input both email and passowrd.".to_string(),
-                ))
-            }
-        },
-        Err(err) => {
-            error!("Login failed, database error {}", err);
+    match verify(password_of_user, &user.password) {
+        Ok(true) => {
+            info!("Login successful for user with email: {}", email_of_user);
+            cookies.add_private(Cookie::new("user_id", user.id.to_string()));
+            Json(ResponseData::new_success(
+                String::new(),
+                "Login successful. Redirecting...".to_string(),
+            ))
+        }
+        Ok(false) => {
+            info!(
+                "Login failed for user with email, password did not match: {} {}",
+                email_of_user, password_of_user
+            );
             Json(ResponseData::new_error(
                 String::new(),
                 "Login failed. Either the email or password was incorrect.".to_string(),
+            ))
+        }
+        Err(err) => {
+            error!("Login failed, bcrypt error: {}", err);
+            Json(ResponseData::new_error(
+                String::new(),
+                "Login failed. Please input both email and passowrd.".to_string(),
             ))
         }
     }

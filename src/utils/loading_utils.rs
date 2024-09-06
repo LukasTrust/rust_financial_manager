@@ -1,18 +1,20 @@
-use diesel::{result::Error, BoolExpressionMethods, ExpressionMethods, QueryDsl};
+use diesel::{BoolExpressionMethods, ExpressionMethods, QueryDsl};
 use log::{error, info};
 use rocket::response::Redirect;
+use rocket::serde::json::Json;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, Contract, ContractHistory, User};
 use crate::routes::error_page::show_error_page;
+use crate::utils::structs::ResponseData;
 
 use super::structs::{Bank, Transaction};
 
 pub async fn load_user_by_email(
     email_for_loading: &str,
     db: &mut Connection<DbConn>,
-) -> Result<User, Error> {
+) -> Result<User, Json<ResponseData>> {
     use crate::schema::users as users_without_dsl;
     use crate::schema::users::dsl::*;
 
@@ -20,6 +22,13 @@ pub async fn load_user_by_email(
         .filter(email.eq(email_for_loading))
         .first::<User>(db)
         .await
+        .map_err(|e| {
+            error!("Error loading the user: {:?}", e);
+            Json(ResponseData::new_error(
+                String::new(),
+                "Login failed. Either the email or password was incorrect.".to_string(),
+            ))
+        })
 }
 
 pub async fn load_user_by_id(

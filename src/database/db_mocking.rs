@@ -1,8 +1,11 @@
 use bcrypt::{hash, DEFAULT_COST};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use rocket::response::Redirect;
+use rocket::{response::Redirect, serde::json::Json};
 
-use crate::{routes::error_page::show_error_page, utils::structs::Bank};
+use crate::{
+    routes::error_page::show_error_page,
+    utils::structs::{Bank, ResponseData},
+};
 
 use super::models::{CSVConverter, NewBank, NewCSVConverter, NewUser, User};
 
@@ -23,21 +26,25 @@ pub fn insert_user_mocking(new_user: NewUser) -> Result<usize, DieselError> {
     Ok(1)
 }
 
-pub fn load_user_by_email_mocking(user_email: &str) -> Result<User, DieselError> {
+pub fn load_user_by_email_mocking(user_email: &str) -> Result<User, Json<ResponseData>> {
     if user_email == "fake_email@mail.com" {
-        return Err(DieselError::NotFound);
+        return Err(Json(ResponseData::new_error(
+            String::new(),
+            "Login failed. Either the email or password was incorrect.".to_string(),
+        )));
     }
 
     if user_email == "user_exists@mail.com" {
         let hashed_password = match hash("Password123", DEFAULT_COST) {
             Ok(h) => h,
             Err(_) => {
-                return Err(DieselError::DatabaseError(
-                    DatabaseErrorKind::UniqueViolation,
-                    Box::new(String::new()),
-                ));
+                return Err(Json(ResponseData::new_error(
+                    String::new(),
+                    "Login failed. Either the email or password was incorrect.".to_string(),
+                )));
             }
         };
+
         return Ok(User {
             id: 1,
             first_name: "John".to_string(),
@@ -50,10 +57,10 @@ pub fn load_user_by_email_mocking(user_email: &str) -> Result<User, DieselError>
     let hashed_password = match hash("WrongPassword", DEFAULT_COST) {
         Ok(h) => h,
         Err(_) => {
-            return Err(DieselError::DatabaseError(
-                DatabaseErrorKind::UniqueViolation,
-                Box::new(String::new()),
-            ));
+            return Err(Json(ResponseData::new_error(
+                String::new(),
+                "Login failed. Either the email or password was incorrect.".to_string(),
+            )));
         }
     };
 
