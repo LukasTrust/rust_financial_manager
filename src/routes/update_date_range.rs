@@ -1,7 +1,6 @@
 use chrono::NaiveDate;
 use log::info;
 use rocket::http::CookieJar;
-use rocket::response::Redirect;
 use rocket::serde::json::Json;
 use rocket::{get, State};
 use rocket_db_pools::Connection;
@@ -20,10 +19,11 @@ pub async fn update_date_range(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<Value>, Box<Redirect>> {
+) -> Result<Json<Value>, Json<ResponseData>> {
     info!("Updating date range to {} - {}", start_date, end_date);
 
     let cookie_user_id = get_user_id(cookies)?;
+    let language = state.get_user_language(cookie_user_id).await;
 
     let first_date = NaiveDate::parse_from_str(start_date, "%Y-%m-%d").unwrap();
     let last_date = NaiveDate::parse_from_str(end_date, "%Y-%m-%d").unwrap();
@@ -33,59 +33,32 @@ pub async fn update_date_range(
     info!("Current bank: {:?}", current_bank);
 
     match current_bank {
-        Some(current_bank) => {
-            let result = get_performance_value_and_graph_data(
+        Ok(current_bank) => {
+            let (performance_value, graph_data) = get_performance_value_and_graph_data(
                 &vec![current_bank],
                 Some(first_date),
                 Some(last_date),
+                language,
                 db,
             )
-            .await;
-
-            if let Err(error) = result {
-                return Ok(Json(json!(ResponseData::new_error(
-                    error,
-                    state
-                        .localize_message(cookie_user_id, "error_updating_date_range")
-                        .await,
-                ))));
-            }
-
-            let (performance_value, graph_data) = result.unwrap();
+            .await?;
 
             Ok(Json(json!({
                 "graph_data": graph_data,
                 "performance_value": performance_value,
             })))
         }
-        None => {
-            let banks = load_banks_of_user(cookie_user_id, &mut db).await;
+        Err(_) => {
+            let banks = load_banks_of_user(cookie_user_id, language, &mut db).await?;
 
-            if let Err(error) = banks {
-                return Ok(Json(json!(ResponseData::new_error(
-                    error,
-                    state
-                        .localize_message(cookie_user_id, "base_internal_error")
-                        .await,
-                ))));
-            }
-
-            let banks = banks.unwrap();
-
-            let result =
-                get_performance_value_and_graph_data(&banks, Some(first_date), Some(last_date), db)
-                    .await;
-
-            if let Err(error) = result {
-                return Ok(Json(json!(ResponseData::new_error(
-                    error,
-                    state
-                        .localize_message(cookie_user_id, "error_updating_date_range")
-                        .await,
-                ))));
-            }
-
-            let (performance_value, graph_data) = result.unwrap();
+            let (performance_value, graph_data) = get_performance_value_and_graph_data(
+                &banks,
+                Some(first_date),
+                Some(last_date),
+                language,
+                db,
+            )
+            .await?;
 
             Ok(Json(json!({
                 "graph_data": graph_data,

@@ -1,6 +1,5 @@
 use rocket::http::CookieJar;
-use rocket::response::Redirect;
-use rocket::serde::json::json;
+use rocket::serde::json::Json;
 use rocket::{get, State};
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
@@ -17,40 +16,12 @@ pub async fn bank_view(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Box<Redirect>> {
+) -> Result<Template, Json<ResponseData>> {
     let cookie_user_id = get_user_id(cookies)?;
+    let language = state.get_user_language(cookie_user_id).await;
 
-    let current_bank = load_current_bank_of_user(cookie_user_id, bank_id, &mut db).await;
-
-    if let Err(error) = current_bank {
-        return Ok(Template::render(
-            "bank",
-            json!(ResponseData::new_error(
-                error,
-                state
-                    .localize_message(cookie_user_id, "no_bank_selected_details")
-                    .await
-            )),
-        ));
-    }
-
-    let current_bank = current_bank.unwrap();
-
-    if current_bank.is_none() {
-        return Ok(Template::render(
-            "bank",
-            json!(ResponseData::new_error(
-                state
-                    .localize_message(cookie_user_id, "no_bank_selected")
-                    .await,
-                state
-                    .localize_message(cookie_user_id, "no_bank_selected_details")
-                    .await
-            )),
-        ));
-    }
-
-    let current_bank = current_bank.unwrap();
+    let current_bank =
+        load_current_bank_of_user(cookie_user_id, bank_id, language, &mut db).await?;
 
     state
         .set_current_bank(cookie_user_id, Some(current_bank.clone()))

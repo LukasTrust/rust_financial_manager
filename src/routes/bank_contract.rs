@@ -9,7 +9,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use crate::database::db_connector::DbConn;
-use crate::utils::appstate::AppState;
+use crate::utils::appstate::{AppState, LOCALIZATION};
 use crate::utils::create_contract::create_contract_from_transactions;
 use crate::utils::delete_utils::delete_contracts_with_ids;
 use crate::utils::get_utils::{get_contracts_with_history, get_user_id};
@@ -30,46 +30,20 @@ pub async fn bank_contact_display(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<Value>, Box<Redirect>> {
+) -> Result<Json<Value>, Json<ResponseData>> {
     let cookie_user_id = get_user_id(cookies)?;
+    let language = state.get_user_language(cookie_user_id).await;
 
-    let current_bank = state.get_current_bank(cookie_user_id).await;
+    let current_bank = state.get_current_bank(cookie_user_id).await?;
 
-    if current_bank.is_none() {
-        return Ok(Json(json!(ResponseData::new_error(
-            state
-                .localize_message(cookie_user_id, "no_bank_selected")
-                .await,
-            state
-                .localize_message(cookie_user_id, "no_bank_selected_details")
-                .await,
-        ))));
-    }
+    let contract_history_string =
+        get_contracts_with_history(current_bank.id, language, &mut db).await?;
 
-    let current_bank = current_bank.unwrap();
-
-    let contract_history_string = get_contracts_with_history(current_bank.id, &mut db).await;
-
-    let mut result;
-
-    if let Err(error) = contract_history_string {
-        result = json!(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_loading_contracts")
-                .await
-        ));
-    } else {
-        result = json!(ResponseData::new_success(
-            state
-                .localize_message(cookie_user_id, "contracts_loaded")
-                .await,
-            state
-                .localize_message(cookie_user_id, "contracts_loaded_details")
-                .await
-        ));
-        result["contracts"] = json!(contract_history_string.unwrap());
-    }
+    let mut result = json!(ResponseData::new_success(
+        LOCALIZATION.get_localized_string(language, "contracts_loaded"),
+        LOCALIZATION.get_localized_string(language, "contracts_loaded_details")
+    ));
+    result["contracts"] = serde_json::Value::String(contract_history_string);
 
     Ok(Json(result))
 }
@@ -85,24 +59,15 @@ pub async fn bank_contract_merge(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Box<Redirect>> {
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
     let time = std::time::SystemTime::now();
     let cookie_user_id = get_user_id(cookies)?;
+    let language = state.get_user_language(cookie_user_id).await;
 
     let contract_id_for_loading = ids.ids.clone();
 
-    let contracts = load_contracts_from_ids(contract_id_for_loading.clone(), &mut db).await;
-
-    if let Err(error) = contracts {
-        return Ok(Json(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_loading_contracts")
-                .await,
-        )));
-    }
-
-    let contracts = contracts.unwrap();
+    let contracts =
+        load_contracts_from_ids(contract_id_for_loading.clone(), language, &mut db).await?;
 
     let mut all_closed = true;
 
@@ -115,7 +80,7 @@ pub async fn bank_contract_merge(
 
     if all_closed {
         warn!("Time to load contracts: {:?}", time.elapsed().unwrap());
-        return Ok(handle_all_closed_contracts(contracts, cookie_user_id, state, &mut db).await);
+        return Ok(handle_all_closed_contracts(contracts, language, &mut db).await);
     }
 
     let mut open_contracts = Vec::new();
@@ -130,14 +95,7 @@ pub async fn bank_contract_merge(
     }
 
     warn!("Time to load contracts: {:?}", time.elapsed().unwrap());
-    Ok(handle_open_and_closed_contracts(
-        open_contracts,
-        closed_contracts,
-        cookie_user_id,
-        state,
-        &mut db,
-    )
-    .await)
+    Ok(handle_open_and_closed_contracts(open_contracts, closed_contracts, language, &mut db).await)
 }
 
 #[post("/bank/contract/delete", format = "json", data = "<ids>")]
@@ -146,38 +104,24 @@ pub async fn bank_contract_delete(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Box<Redirect>> {
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
     let time = std::time::SystemTime::now();
     let cookie_user_id = get_user_id(cookies)?;
+    let language = state.get_user_language(cookie_user_id).await;
     let contract_ids = ids.ids.clone();
 
-    let contracts = load_contracts_from_ids(contract_ids.clone(), &mut db).await;
+    let contracts = load_contracts_from_ids(contract_ids.clone(), language, &mut db).await?;
 
-    if let Err(error) = contracts {
+    let result = delete_contracts_with_ids(contract_ids.clone(), language, &mut db).await?;
+
+    if result != contract_ids.len() {
         return Ok(Json(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_loading_contracts")
-                .await,
+            LOCALIZATION.get_localized_string(language, "error_deleting_contract"),
+            LOCALIZATION.get_localized_string(language, "error_deleting_contract_details"),
         )));
     }
 
-    let contracts = contracts.unwrap();
-
-    let result = delete_contracts_with_ids(contract_ids, &mut db).await;
-
-    if let Err(error) = result {
-        return Ok(Json(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_deleting_contract")
-                .await,
-        )));
-    }
-
-    let delete_message = state
-        .localize_message(cookie_user_id, "message_deleted_contract")
-        .await;
+    let delete_message = LOCALIZATION.get_localized_string(language, "message_deleted_contract");
 
     let mut success = String::new();
 
@@ -197,38 +141,14 @@ pub async fn bank_scan_for_new_contracts(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Box<Redirect>> {
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
     let time = std::time::SystemTime::now();
     let cookie_user_id = get_user_id(cookies)?;
+    let language = state.get_user_language(cookie_user_id).await;
 
-    let current_bank = state.get_current_bank(cookie_user_id).await;
+    let current_bank = state.get_current_bank(cookie_user_id).await?;
 
-    if current_bank.is_none() {
-        return Ok(Json(ResponseData::new_error(
-            state
-                .localize_message(cookie_user_id, "no_bank_selected")
-                .await,
-            state
-                .to_owned()
-                .localize_message(cookie_user_id, "no_bank_selected_details")
-                .await,
-        )));
-    }
-
-    let current_bank = current_bank.unwrap();
-
-    let result = create_contract_from_transactions(current_bank.id, &mut db).await;
-
-    if let Err(error) = result {
-        return Ok(Json(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_scanning_for_contracts")
-                .await,
-        )));
-    }
-
-    let result = result.unwrap();
+    let result = create_contract_from_transactions(current_bank.id, language, &mut db).await?;
 
     warn!(
         "Time to scan for new contracts: {:?}",
@@ -247,20 +167,12 @@ pub async fn bank_contract_name_changed(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Box<Redirect>> {
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
     let time = std::time::SystemTime::now();
     let cookie_user_id = get_user_id(cookies)?;
+    let language = state.get_user_language(cookie_user_id).await;
 
-    let result = update_contract_with_new_name(id, name.to_string(), &mut db).await;
-
-    if let Err(error) = result {
-        return Ok(Json(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_updating_contract_name")
-                .await,
-        )));
-    }
+    update_contract_with_new_name(id, name.to_string(), language, &mut db).await?;
 
     warn!(
         "Time to update contract name: {:?}",
@@ -268,11 +180,7 @@ pub async fn bank_contract_name_changed(
     );
 
     Ok(Json(ResponseData::new_success(
-        state
-            .localize_message(cookie_user_id, "contract_name_updated")
-            .await,
-        state
-            .localize_message(cookie_user_id, "contract_name_updated_details")
-            .await,
+        LOCALIZATION.get_localized_string(language, "contract_name_updated"),
+        LOCALIZATION.get_localized_string(language, "contract_name_updated_details"),
     )))
 }

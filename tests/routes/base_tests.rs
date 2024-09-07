@@ -13,7 +13,11 @@ mod tests {
 
         let response = client.get("/base").dispatch().await;
 
-        assert_eq!(response.status(), Status::SeeOther);
+        assert_eq!(response.status(), Status::Ok);
+        let response_string = response.into_string().await.unwrap();
+
+        assert!(response_string.contains("Error validating the login!"));
+        assert!(response_string.contains("Please login again."));
     }
 
     #[tokio::test]

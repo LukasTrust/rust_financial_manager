@@ -1,18 +1,17 @@
-use log::{error, info};
+use log::error;
 use rocket::serde::json::Json;
-use rocket::State;
 use rocket_db_pools::Connection;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::NewContractHistory;
+use crate::utils::appstate::LOCALIZATION;
 use crate::utils::delete_utils::delete_contract_history_with_ids;
-use crate::utils::get_utils::get_transaction;
 use crate::utils::insert_utiles::insert_contract_histories;
 use crate::utils::update_utils::{
     update_contract_history, update_contract_with_new_amount, update_transactions_with_contract,
 };
 
-use super::appstate::AppState;
+use super::appstate::Language;
 use super::loading_utils::{
     load_contract_history, load_contracts_from_ids, load_transaction_by_id,
 };
@@ -20,47 +19,37 @@ use super::structs::ResponseData;
 
 pub async fn handle_remove_contract(
     transaction_id: i32,
+    language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<String, String> {
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
     // Load transaction by ID
-    let transaction = load_transaction_by_id(transaction_id, db)
-        .await
-        .map_err(|error| {
-            error!("Failed to load transaction: {}", error);
-            error
-        })?
-        .ok_or_else(|| {
-            error!("Transaction not found");
-            "Transaction not found".to_string()
-        })?;
+    let transaction = load_transaction_by_id(transaction_id, language, db).await?;
 
     // Check if transaction has a contract
     let contract_id = transaction.contract_id.ok_or_else(|| {
         error!("Transaction has no contract");
-        "Transaction has no contract".to_string()
+        return Json(ResponseData::new_error(
+            LOCALIZATION.get_localized_string(language, "error_transaction_has_no_contract"),
+            LOCALIZATION
+                .get_localized_string(language, "error_transaction_has_no_contract_details"),
+        ));
     })?;
 
     // Load contract
-    let contract = load_contracts_from_ids(vec![contract_id], db)
-        .await
-        .map_err(|e| {
-            error!("Failed to load contract: {}", e);
-            e
-        })?
-        .into_iter()
-        .next()
-        .ok_or_else(|| {
-            error!("Contract not found");
-            "Contract not found".to_string()
-        })?;
+    let contract = load_contracts_from_ids(vec![contract_id], language, db).await?;
+
+    if contract.len() != 1 {
+        error!("Contract not found");
+        return Err(Json(ResponseData::new_error(
+            LOCALIZATION.get_localized_string(language, "error_contract_not_found"),
+            LOCALIZATION.get_localized_string(language, "error_contract_not_found_details"),
+        )));
+    }
+
+    let contract = contract[0].clone();
 
     // Load contract history
-    let contract_histories = load_contract_history(contract.id, db)
-        .await
-        .map_err(|error| {
-            error!("Failed to load contract histories: {}", error);
-            error
-        })?;
+    let contract_histories = load_contract_history(contract.id, language, db).await?;
 
     // Find contract history corresponding to the transaction amount
     if let Some(history) = contract_histories
@@ -77,12 +66,7 @@ pub async fn handle_remove_contract(
             .filter(|h| h.changed_at > history.changed_at)
             .min_by_key(|h| h.changed_at);
 
-        delete_contract_history_with_ids(vec![history.id], db)
-            .await
-            .map_err(|e| {
-                error!("Failed to delete contract history: {}", e);
-                e
-            })?;
+        delete_contract_history_with_ids(vec![history.id], language, db).await?;
 
         match (history_before, history_after) {
             (Some(before), Some(_)) => {
@@ -90,12 +74,7 @@ pub async fn handle_remove_contract(
                 let mut updated_before = before.clone();
                 updated_before.new_amount = history.new_amount;
 
-                update_contract_history(updated_before, db)
-                    .await
-                    .map_err(|e| {
-                        error!("Failed to update contract history: {}", e);
-                        e
-                    })?;
+                update_contract_history(updated_before, language, db).await?;
             }
             (None, Some(after)) => {
                 // Case 2: Only after history entry exists
@@ -103,84 +82,47 @@ pub async fn handle_remove_contract(
 
                 updated_after.old_amount = history.old_amount;
 
-                update_contract_history(updated_after, db)
-                    .await
-                    .map_err(|e| {
-                        error!("Failed to update contract history: {}", e);
-                        e
-                    })?;
+                update_contract_history(updated_after, language, db).await?;
             }
             (Some(before), None) => {
                 // Case 3: Only before history entry exists
-                update_contract_with_new_amount(contract.id, before.new_amount, db)
-                    .await
-                    .map_err(|e| {
-                        error!("Failed to update contract: {}", e);
-                        e
-                    })?;
+                update_contract_with_new_amount(contract.id, before.new_amount, language, db)
+                    .await?;
             }
             (None, None) => {
                 // Case 4: No history entries exist
-                update_contract_with_new_amount(contract.id, history.old_amount, db)
-                    .await
-                    .map_err(|e| {
-                        error!("Failed to update contract: {}", e);
-                        e
-                    })?;
+                update_contract_with_new_amount(contract.id, history.old_amount, language, db)
+                    .await?;
             }
         }
     }
 
     // Update the transaction to remove the contract association
-    update_transactions_with_contract(vec![transaction_id], None::<i32>, db)
-        .await
-        .map_err(|e| {
-            error!(
-                "Error removing contract from transaction {}: {}",
-                transaction_id, e
-            );
-            e
-        })?;
+    update_transactions_with_contract(vec![transaction_id], None::<i32>, language, db).await?;
 
-    Ok("Contract removed".into())
+    Ok(Json(ResponseData::new_success(
+        LOCALIZATION.get_localized_string(language, "transaction_removed_from_contract"),
+        LOCALIZATION.get_localized_string(language, "transaction_removed_from_contract_details"),
+    )))
 }
 
 pub async fn handel_update_amount(
     transaction_id: i32,
     contract_id: i32,
-    cookie_user_id: i32,
-    state: &State<AppState>,
+    language: Language,
     mut db: Connection<DbConn>,
-) -> Result<String, Json<ResponseData>> {
-    let transaction = get_transaction(transaction_id, cookie_user_id, state, &mut db).await?;
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
+    let transaction = load_transaction_by_id(transaction_id, language, &mut db).await?;
 
-    let contract = load_contracts_from_ids(vec![contract_id], &mut db).await;
+    let contract = load_contracts_from_ids(vec![contract_id], language, &mut db).await?;
 
-    if let Err(error) = contract {
-        error!("Error loading contract {}: {}", contract_id, error);
+    if contract.len() != 1 {
+        error!("Contract not found");
         return Err(Json(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_loading_contract")
-                .await,
+            LOCALIZATION.get_localized_string(language, "error_contract_not_found"),
+            LOCALIZATION.get_localized_string(language, "error_contract_not_found_details"),
         )));
     }
-
-    let contract = contract.unwrap();
-
-    if contract.is_empty() {
-        info!("Contract {} not found", contract_id);
-        return Err(Json(ResponseData::new_error(
-            state
-                .localize_message(cookie_user_id, "error_contract_not_found")
-                .await,
-            state
-                .localize_message(cookie_user_id, "error_contract_not_found_details")
-                .await,
-        )));
-    }
-
-    assert!(contract.len() == 1);
 
     let mut contract = contract[0].clone();
 
@@ -191,83 +133,39 @@ pub async fn handel_update_amount(
         changed_at: transaction.date,
     };
 
-    let result = insert_contract_histories(&vec![contract_history], &mut db).await;
-
-    if let Err(error) = result {
-        error!("Error inserting contract history: {}", error);
-        return Err(Json(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_inserting_contract_history_details")
-                .await,
-        )));
-    }
+    insert_contract_histories(&vec![contract_history], language, &mut db).await?;
 
     contract.current_amount = transaction.amount;
 
-    let result = update_contract_with_new_amount(contract.id, transaction.amount, &mut db).await;
+    update_contract_with_new_amount(contract.id, transaction.amount, language, &mut db).await?;
 
-    if let Err(error) = result {
-        error!(
-            "Error updating contract {} with new amount {}: {}",
-            contract.id, transaction.amount, error
-        );
-        return Err(Json(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_updating_contract_amount_details")
-                .await,
-        )));
-    }
-
-    Ok("Contract updated".into())
+    Ok(Json(ResponseData::new_success(
+        LOCALIZATION.get_localized_string(language, "contract_updated"),
+        LOCALIZATION.get_localized_string(language, "contract_updated_details"),
+    )))
 }
 
 pub async fn handle_set_old_amount(
     transaction_id: i32,
     contract_id: i32,
-    cookie_user_id: i32,
-    state: &State<AppState>,
+    language: Language,
     mut db: Connection<DbConn>,
-) -> Json<ResponseData> {
-    let transaction = get_transaction(transaction_id, cookie_user_id, state, &mut db).await;
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
+    let transaction = load_transaction_by_id(transaction_id, language, &mut db).await?;
 
-    if let Err(error) = transaction {
-        return error;
+    let contract = load_contracts_from_ids(vec![contract_id], language, &mut db).await?;
+
+    if contract.len() != 1 {
+        error!("Contract not found");
+        return Err(Json(ResponseData::new_error(
+            LOCALIZATION.get_localized_string(language, "error_contract_not_found"),
+            LOCALIZATION.get_localized_string(language, "error_contract_not_found_details"),
+        )));
     }
-
-    let transaction = transaction.unwrap();
-
-    let contract = load_contracts_from_ids(vec![contract_id], &mut db).await;
-    if let Err(error) = contract {
-        error!("Error loading contract {}: {}", contract_id, error);
-        return Json(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_loading_contract")
-                .await,
-        ));
-    }
-
-    let contract = contract.unwrap();
-
-    assert!(contract.len() == 1);
 
     let contract = contract[0].clone();
 
-    let contract_histories = load_contract_history(contract_id, &mut db).await;
-
-    if let Err(error) = contract_histories {
-        error!("Error loading contract history {}: {}", contract_id, error);
-        return Json(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_loading_contract_history")
-                .await,
-        ));
-    }
-
-    let contract_histories = contract_histories.unwrap();
+    let contract_histories = load_contract_history(contract_id, language, &mut db).await?;
 
     let history_before = contract_histories
         .iter()
@@ -293,44 +191,14 @@ pub async fn handle_set_old_amount(
 
             updated_after.old_amount = history.new_amount;
 
-            let result = update_contract_history(updated_after, &mut db)
-                .await
-                .map_err(|e| {
-                    error!("Failed to update contract history: {}", e);
-                    e
-                });
+            update_contract_history(updated_after, language, &mut db).await?;
 
-            if let Err(error) = result {
-                return Json(ResponseData::new_error(
-                    error,
-                    state
-                        .localize_message(cookie_user_id, "error_updating_contract_history")
-                        .await,
-                ));
-            }
+            insert_contract_histories(&vec![history], language, &mut db).await?;
 
-            let result = insert_contract_histories(&vec![history], &mut db).await;
-
-            if let Err(error) = result {
-                return Json(ResponseData::new_error(
-                    error,
-                    state
-                        .localize_message(
-                            cookie_user_id,
-                            "error_inserting_contract_history_details",
-                        )
-                        .await,
-                ));
-            }
-
-            return Json(ResponseData::new_success(
-                state
-                    .localize_message(cookie_user_id, "contract_history_updated")
-                    .await,
-                state
-                    .localize_message(cookie_user_id, "contract_history_updated_details")
-                    .await,
-            ));
+            Ok(Json(ResponseData::new_success(
+                LOCALIZATION.get_localized_string(language, "contract_history_updated"),
+                LOCALIZATION.get_localized_string(language, "contract_history_updated_details"),
+            )))
         }
         (None, Some(after)) => {
             // Case 2: Only after history entry exists
@@ -345,44 +213,14 @@ pub async fn handle_set_old_amount(
 
             updated_after.old_amount = history.new_amount;
 
-            let result = update_contract_history(updated_after, &mut db)
-                .await
-                .map_err(|e| {
-                    error!("Failed to update contract history: {}", e);
-                    e
-                });
+            update_contract_history(updated_after, language, &mut db).await?;
 
-            if let Err(error) = result {
-                return Json(ResponseData::new_error(
-                    error,
-                    state
-                        .localize_message(cookie_user_id, "error_updating_contract_history")
-                        .await,
-                ));
-            }
+            insert_contract_histories(&vec![history], language, &mut db).await?;
 
-            let result = insert_contract_histories(&vec![history], &mut db).await;
-
-            if let Err(error) = result {
-                return Json(ResponseData::new_error(
-                    error,
-                    state
-                        .localize_message(
-                            cookie_user_id,
-                            "error_inserting_contract_history_details",
-                        )
-                        .await,
-                ));
-            }
-
-            return Json(ResponseData::new_success(
-                state
-                    .localize_message(cookie_user_id, "contract_history_updated")
-                    .await,
-                state
-                    .localize_message(cookie_user_id, "contract_history_updated_details")
-                    .await,
-            ));
+            Ok(Json(ResponseData::new_success(
+                LOCALIZATION.get_localized_string(language, "contract_history_updated"),
+                LOCALIZATION.get_localized_string(language, "contract_history_updated_details"),
+            )))
         }
         (Some(before), None) => {
             // Case 3: Only before history entry exists
@@ -393,28 +231,12 @@ pub async fn handle_set_old_amount(
                 changed_at: transaction.date,
             };
 
-            let result = insert_contract_histories(&vec![history], &mut db).await;
+            insert_contract_histories(&vec![history], language, &mut db).await?;
 
-            if let Err(error) = result {
-                return Json(ResponseData::new_error(
-                    error,
-                    state
-                        .localize_message(
-                            cookie_user_id,
-                            "error_inserting_contract_history_details",
-                        )
-                        .await,
-                ));
-            }
-
-            return Json(ResponseData::new_success(
-                state
-                    .localize_message(cookie_user_id, "contract_history_updated")
-                    .await,
-                state
-                    .localize_message(cookie_user_id, "contract_history_updated_details")
-                    .await,
-            ));
+            Ok(Json(ResponseData::new_success(
+                LOCALIZATION.get_localized_string(language, "contract_history_updated"),
+                LOCALIZATION.get_localized_string(language, "contract_history_updated_details"),
+            )))
         }
         (None, None) => {
             // Case 4: No history entries exist
@@ -425,28 +247,12 @@ pub async fn handle_set_old_amount(
                 changed_at: transaction.date,
             };
 
-            let result = insert_contract_histories(&vec![history], &mut db).await;
+            insert_contract_histories(&vec![history], language, &mut db).await?;
 
-            if let Err(error) = result {
-                return Json(ResponseData::new_error(
-                    error,
-                    state
-                        .localize_message(
-                            cookie_user_id,
-                            "error_inserting_contract_history_details",
-                        )
-                        .await,
-                ));
-            }
-
-            return Json(ResponseData::new_success(
-                state
-                    .localize_message(cookie_user_id, "contract_history_updated")
-                    .await,
-                state
-                    .localize_message(cookie_user_id, "contract_history_updated_details")
-                    .await,
-            ));
+            Ok(Json(ResponseData::new_success(
+                LOCALIZATION.get_localized_string(language, "contract_history_updated"),
+                LOCALIZATION.get_localized_string(language, "contract_history_updated_details"),
+            )))
         }
     }
 }

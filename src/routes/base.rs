@@ -1,15 +1,13 @@
 use log::info;
 use rocket::http::CookieJar;
-use rocket::response::Redirect;
-use rocket::serde::json::json;
+use rocket::serde::json::{json, Json};
 use rocket::{get, State};
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::Template;
 
 use crate::database::db_connector::DbConn;
 use crate::database::db_mocking::load_user_by_id_mocking;
-use crate::routes::error_page::show_error_page;
-use crate::utils::appstate::AppState;
+use crate::utils::appstate::{AppState, LOCALIZATION};
 use crate::utils::get_utils::get_user_id;
 use crate::utils::loading_utils::{load_banks_of_user, load_user_by_id};
 use crate::utils::structs::ResponseData;
@@ -23,26 +21,13 @@ pub async fn base(
     mut db: Connection<DbConn>,
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-) -> Result<Template, Box<Redirect>> {
+) -> Result<Template, Json<ResponseData>> {
     let cookie_user_id = get_user_id(cookies)?;
+    let language = state.get_user_language(cookie_user_id).await;
 
     info!("User is logged in: {}", cookie_user_id);
 
-    let banks = load_banks_of_user(cookie_user_id, &mut db).await;
-
-    if let Err(error) = banks {
-        return Ok(Template::render(
-            "base",
-            json!(ResponseData::new_error(
-                error,
-                state
-                    .localize_message(cookie_user_id, "base_internal_error")
-                    .await
-            )),
-        ));
-    }
-
-    let banks = banks.unwrap();
+    let banks = load_banks_of_user(cookie_user_id, language, &mut db).await?;
 
     state.set_current_bank(cookie_user_id, None).await;
 
@@ -63,19 +48,18 @@ pub async fn dashboard(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Template, Box<Redirect>> {
+) -> Result<Template, Json<ResponseData>> {
     let cookie_user_id = get_user_id(cookies)?;
+    let language = state.get_user_language(cookie_user_id).await;
 
     let (user_first_name, user_last_name) = match state.use_mocking {
         true => load_user_by_id_mocking(cookie_user_id)?,
-        false => load_user_by_id(cookie_user_id, &mut db).await?,
+        false => load_user_by_id(cookie_user_id, language, &mut db).await?,
     };
 
     state.set_current_bank(cookie_user_id, None).await;
 
-    let mut message = state
-        .localize_message(cookie_user_id, "dashboard_welcome_message")
-        .await;
+    let mut message = LOCALIZATION.get_localized_string(language, "dashboard_welcome_message");
 
     message = message.replace("{first_name}", &user_first_name);
     message = message.replace("{last_name}", &user_last_name);
@@ -93,7 +77,7 @@ pub async fn dashboard(
 pub async fn settings(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-) -> Result<Template, Box<Redirect>> {
+) -> Result<Template, Json<ResponseData>> {
     let cookie_user_id = get_user_id(cookies)?;
 
     state.set_current_bank(cookie_user_id, None).await;
@@ -107,21 +91,18 @@ pub async fn settings(
 pub async fn logout(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-) -> Result<Template, Box<Redirect>> {
+) -> Result<Template, Json<ResponseData>> {
     info!("User logged out.");
+    let cookie_user_id = get_user_id(cookies)?;
+    let language = state.get_user_language(cookie_user_id).await;
+
     let cookie = cookies.get_private("user_id");
 
-    let cookie_user_id = get_user_id(cookies)?;
-
     if cookie.is_none() {
-        return Err(show_error_page(
-            state
-                .localize_message(cookie_user_id, "logout_error_validation")
-                .await,
-            state
-                .localize_message(cookie_user_id, "logout_login_prompt")
-                .await,
-        ));
+        return Err(Json(ResponseData::new_error(
+            LOCALIZATION.get_localized_string(language, "logout_error_validation"),
+            LOCALIZATION.get_localized_string(language, "logout_login_prompt"),
+        )));
     }
 
     let cookie = cookie.unwrap();

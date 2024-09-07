@@ -65,9 +65,9 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
         let response_string = response.into_string().await.unwrap();
 
-        assert!(response_string.contains("Bank already exists"));
+        assert!(response_string.contains("Error inserting bank"));
         assert!(response_string.contains(
-            "The bank 'copy_bank' could not be added because it already exists in your profile."
+            "A bank with this name already exists in your profile. Please choose a different bank name."
         ));
     }
 
@@ -88,8 +88,10 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
         let response_string = response.into_string().await.unwrap();
 
+        log::info!("{}", response_string);
+
         assert!(response_string.contains("Error inserting csv converter"));
-        assert!(response_string.contains("The bank was added but the csv converter was not."));
+        assert!(response_string.contains("There was an internal error trying to add the csv converter of the new bank. The bank was added but the csv converter was not."));
     }
 
     #[tokio::test]

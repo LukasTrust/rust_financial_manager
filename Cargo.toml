@@ -18,3 +18,4 @@ env_logger = "0.11.5"
 csv = "1.1"
 rocket_db_pools = { version = "0.2.0", features = ["diesel_postgres"] }
 rocket_dyn_templates = { version = "0.2.0", features = ["tera"] }
+once_cell = "1.18.0"

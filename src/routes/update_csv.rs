@@ -1,13 +1,13 @@
-use log::{error, info};
+use log::info;
 use rocket::form::{Form, FromForm};
+use rocket::http::CookieJar;
 use rocket::serde::json::Json;
-use rocket::{http::CookieJar, response::Redirect};
 use rocket::{post, State};
 use rocket_db_pools::Connection;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::NewCSVConverter;
-use crate::utils::appstate::AppState;
+use crate::utils::appstate::{AppState, LOCALIZATION};
 use crate::utils::get_utils::get_user_id;
 use crate::utils::insert_utiles::insert_csv_converter;
 use crate::utils::loading_utils::load_csv_converter_of_bank;
@@ -28,39 +28,17 @@ pub async fn update_csv(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Box<Redirect>> {
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
     let cookie_user_id = get_user_id(cookies)?;
+    let language = state.get_user_language(cookie_user_id).await;
 
-    let current_bank = state.get_current_bank(cookie_user_id).await;
+    let current_bank = state.get_current_bank(cookie_user_id).await?;
 
-    if current_bank.is_none() {
-        return Ok(Json(ResponseData::new_error(
-            state
-                .localize_message(cookie_user_id, "no_bank_selected")
-                .await,
-            state
-                .localize_message(cookie_user_id, "no_bank_selected_details")
-                .await,
-        )));
-    }
-
-    let current_bank = current_bank.unwrap();
-
-    let csv_converter_of_bank = load_csv_converter_of_bank(current_bank.id, &mut db).await;
-
-    if let Err(error) = csv_converter_of_bank {
-        return Ok(Json(ResponseData::new_error(
-            error,
-            state
-                .localize_message(cookie_user_id, "error_loading_csv_converter")
-                .await,
-        )));
-    }
-
-    let csv_converter_of_bank = csv_converter_of_bank.unwrap();
+    let csv_converter_of_bank =
+        load_csv_converter_of_bank(current_bank.id, language, &mut db).await;
 
     match csv_converter_of_bank {
-        Some(mut csv_converter) => {
+        Ok(mut csv_converter) => {
             if form.counterparty_column.is_some() {
                 csv_converter.counterparty_column = form.counterparty_column;
             }
@@ -77,32 +55,15 @@ pub async fn update_csv(
                 csv_converter.date_column = form.date_column;
             }
 
-            let result = update_csv_converter(csv_converter, &mut db).await;
+            update_csv_converter(csv_converter, language, &mut db).await?;
 
-            match result {
-                Ok(_) => {
-                    info!("CSV converter updated");
-                    Ok(Json(ResponseData::new_success(
-                        state
-                            .localize_message(cookie_user_id, "csv_converter_updated")
-                            .await,
-                        state
-                            .localize_message(cookie_user_id, "csv_converter_updated_details")
-                            .await,
-                    )))
-                }
-                Err(error) => {
-                    error!("Error updating CSV converter: {}", error);
-                    Ok(Json(ResponseData::new_error(
-                        error,
-                        state
-                            .localize_message(cookie_user_id, "error_updating_csv_converter")
-                            .await,
-                    )))
-                }
-            }
+            info!("CSV converter updated");
+            Ok(Json(ResponseData::new_success(
+                LOCALIZATION.get_localized_string(language, "csv_converter_updated"),
+                LOCALIZATION.get_localized_string(language, "csv_converter_updated_details"),
+            )))
         }
-        None => {
+        Err(_) => {
             let new_csv_converter = NewCSVConverter {
                 bank_id: current_bank.id,
                 counterparty_column: form.counterparty_column,
@@ -111,30 +72,13 @@ pub async fn update_csv(
                 date_column: form.date_column,
             };
 
-            let result = insert_csv_converter(new_csv_converter, &mut db).await;
+            insert_csv_converter(new_csv_converter, language, &mut db).await?;
 
-            match result {
-                Ok(_) => {
-                    info!("CSV converter updated");
-                    Ok(Json(ResponseData::new_success(
-                        state
-                            .localize_message(cookie_user_id, "csv_converter_updated")
-                            .await,
-                        state
-                            .localize_message(cookie_user_id, "csv_converter_updated_details")
-                            .await,
-                    )))
-                }
-                Err(error) => {
-                    error!("Error adding CSV converter: {}", error);
-                    Ok(Json(ResponseData::new_error(
-                        error,
-                        state
-                            .localize_message(cookie_user_id, "error_updating_csv_converter")
-                            .await,
-                    )))
-                }
-            }
+            info!("CSV converter updated");
+            Ok(Json(ResponseData::new_success(
+                LOCALIZATION.get_localized_string(language, "csv_converter_updated"),
+                LOCALIZATION.get_localized_string(language, "csv_converter_updated_details"),
+            )))
         }
     }
 }

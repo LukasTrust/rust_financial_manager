@@ -3,7 +3,6 @@ use csv::ReaderBuilder;
 use log::{error, info};
 use rocket::data::{Data, ToByteUnit};
 use rocket::http::CookieJar;
-use rocket::response::Redirect;
 use rocket::serde::json::Json;
 use rocket::{post, State};
 use rocket_db_pools::Connection;
@@ -11,7 +10,7 @@ use std::io::Cursor;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewTransaction};
-use crate::utils::appstate::AppState;
+use crate::utils::appstate::{AppState, Language, LOCALIZATION};
 use crate::utils::create_contract::create_contract_from_transactions;
 use crate::utils::get_utils::get_user_id;
 use crate::utils::insert_utiles::insert_transactions;
@@ -24,24 +23,13 @@ pub async fn upload_csv(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Box<Redirect>> {
+) -> Result<Json<ResponseData>, Json<ResponseData>> {
     let cookie_user_id = get_user_id(cookies)?;
-    let current_bank = state.get_current_bank(cookie_user_id).await;
+    let language = state.get_user_language(cookie_user_id).await;
 
-    if current_bank.is_none() {
-        return Ok(Json(ResponseData::new_error(
-            state
-                .localize_message(cookie_user_id, "no_bank_selected")
-                .await,
-            state
-                .localize_message(cookie_user_id, "no_bank_selected_details")
-                .await,
-        )));
-    }
+    let current_bank = state.get_current_bank(cookie_user_id).await?;
 
-    let current_bank = current_bank.unwrap();
-
-    let transactions_task = load_transactions_of_bank(current_bank.id, &mut db);
+    let transactions_task = load_transactions_of_bank(current_bank.id, language, &mut db);
 
     // Read the CSV file
     let data_stream = match data.open(512.kibibytes()).into_bytes().await {
@@ -49,12 +37,8 @@ pub async fn upload_csv(
         Err(_) => {
             error!("Failed to read CSV file");
             return Ok(Json(ResponseData::new_error(
-                state
-                    .localize_message(cookie_user_id, "error_reading_csv_file")
-                    .await,
-                state
-                    .localize_message(cookie_user_id, "error_reading_csv_file_details")
-                    .await,
+                LOCALIZATION.get_localized_string(language, "error_reading_csv_file"),
+                LOCALIZATION.get_localized_string(language, "error_reading_csv_file_details"),
             )));
         }
     };
@@ -71,47 +55,29 @@ pub async fn upload_csv(
         &mut rdr,
         current_bank.clone(),
         existing_transactions,
+        language,
         &mut db,
     )
-    .await;
+    .await?;
 
-    match result {
-        Ok(result_string) => Ok(Json(ResponseData::new_success(
-            state
-                .localize_message(cookie_user_id, "csv_file_read")
-                .await,
-            result_string,
-        ))),
-        Err(error) => {
-            error!("Failed to insert records: {}", error);
-            Ok(Json(ResponseData::new_error(
-                error,
-                state
-                    .localize_message(cookie_user_id, "error_saving_csv_data_details")
-                    .await,
-            )))
-        }
-    }
+    Ok(Json(ResponseData::new_success(
+        LOCALIZATION.get_localized_string(language, "csv_file_read"),
+        result,
+    )))
 }
 
 async fn extract_and_process_records<R: std::io::Read>(
     rdr: &mut csv::Reader<R>,
     current_bank: Bank,
     existing_transactions: Vec<Transaction>,
+    language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<String, String> {
+) -> Result<String, Json<ResponseData>> {
     let mut transactions_to_insert = vec![];
 
-    let csv_converter = load_csv_converter_of_bank(current_bank.id, db).await?;
+    let csv_converter = load_csv_converter_of_bank(current_bank.id, language, db).await?;
 
-    if csv_converter.is_none() {
-        error!("No CSV converter found");
-        return Err("No CSV converter found".to_string());
-    }
-
-    let csv_converter = csv_converter.unwrap();
-
-    validate_csv_converters(csv_converter)?;
+    validate_csv_converters(csv_converter, language)?;
 
     let date_index = csv_converter.date_column.unwrap() as usize;
     let counterparty_index = csv_converter.counterparty_column.unwrap() as usize;
@@ -127,7 +93,10 @@ async fn extract_and_process_records<R: std::io::Read>(
             Ok(rec) => rec,
             Err(_) => {
                 error!("Failed to read CSV file");
-                return Err("Failed to read CSV file".to_string());
+                return Err(Json(ResponseData::new_error(
+                    LOCALIZATION.get_localized_string(language, "error_reading_csv_file"),
+                    LOCALIZATION.get_localized_string(language, "error_reading_csv_file_details"),
+                )));
             }
         };
 
@@ -139,8 +108,14 @@ async fn extract_and_process_records<R: std::io::Read>(
         for (j, value) in record.as_slice().split(';').enumerate() {
             match j {
                 idx if idx == date_index => {
-                    date_from_csv = NaiveDate::parse_from_str(value, "%d.%m.%Y")
-                        .map_err(|e| format!("Failed to parse date: {}", e))?;
+                    date_from_csv = NaiveDate::parse_from_str(value, "%d.%m.%Y").map_err(|e| {
+                        error!("Failed to parse date: {}", e);
+                        Json(ResponseData::new_error(
+                            LOCALIZATION.get_localized_string(language, "error_parsing_date"),
+                            LOCALIZATION
+                                .get_localized_string(language, "error_parsing_date_details"),
+                        ))
+                    })?;
                 }
                 idx if idx == counterparty_index => {
                     counterparty_from_csv = value;
@@ -166,7 +141,14 @@ async fn extract_and_process_records<R: std::io::Read>(
                     amount_from_csv = processed_value
                         .replace(',', ".") // Convert comma to dot for parsing
                         .parse::<f64>()
-                        .map_err(|e| format!("Failed to parse amount: {}", e))?;
+                        .map_err(|e| {
+                            error!("Failed to parse amount: {}", e);
+                            Json(ResponseData::new_error(
+                                LOCALIZATION.get_localized_string(language, "error_parsing_amount"),
+                                LOCALIZATION
+                                    .get_localized_string(language, "error_parsing_amount_details"),
+                            ))
+                        })?;
                 }
                 idx if idx == bank_balance_after_index => {
                     // Determine and handle the decimal separator
@@ -189,7 +171,19 @@ async fn extract_and_process_records<R: std::io::Read>(
                     bank_balance_after = processed_value
                         .replace(',', ".") // Convert comma to dot for parsing
                         .parse::<f64>()
-                        .map_err(|e| format!("Failed to parse bank balance after: {}", e))?;
+                        .map_err(|e| {
+                            error!("Failed to parse bank balance after: {}", e);
+                            Json(ResponseData::new_error(
+                                LOCALIZATION.get_localized_string(
+                                    language,
+                                    "error_parsing_bank_balance_after",
+                                ),
+                                LOCALIZATION.get_localized_string(
+                                    language,
+                                    "error_parsing_bank_balance_after_details",
+                                ),
+                            ))
+                        })?;
                 }
                 _ => (),
             }
@@ -211,31 +205,39 @@ async fn extract_and_process_records<R: std::io::Read>(
     }
 
     let (succesful_inserts, failed_inserts) =
-        insert_transactions(transactions_to_insert, existing_transactions, db).await?;
+        insert_transactions(transactions_to_insert, existing_transactions, language, db).await?;
 
     info!(
         "Succesfully insertet {} and {} were duplicates",
         succesful_inserts, failed_inserts
     );
 
-    let contract_result = create_contract_from_transactions(current_bank.id, db).await?;
+    let contract_result = create_contract_from_transactions(current_bank.id, language, db).await?;
 
-    let result = format!(
-        "Succesfully insertet {} and {} were duplicates. {}",
-        succesful_inserts, failed_inserts, contract_result
-    );
+    let mut local_string =
+        LOCALIZATION.get_localized_string(language, "transactions_inserted_details");
 
-    Ok(result)
+    local_string = local_string.replace("{success}", &succesful_inserts.to_string());
+    local_string = local_string.replace("{error}", &failed_inserts.to_string());
+    local_string = local_string.replace("{contracts}", &contract_result);
+
+    Ok(local_string)
 }
 
-fn validate_csv_converters(csv_converter: CSVConverter) -> Result<(), String> {
+fn validate_csv_converters(
+    csv_converter: CSVConverter,
+    language: Language,
+) -> Result<(), Json<ResponseData>> {
     if csv_converter.date_column.is_none()
         || csv_converter.counterparty_column.is_none()
         || csv_converter.amount_column.is_none()
         || csv_converter.bank_balance_after_column.is_none()
     {
         error!("CSV converter not set up");
-        return Err("CSV converter not set up".to_string());
+        return Err(Json(ResponseData::new_error(
+            LOCALIZATION.get_localized_string(language, "csv_converter_not_set_up"),
+            LOCALIZATION.get_localized_string(language, "csv_converter_not_set_up_details"),
+        )));
     }
     info!("CSV converter found");
 

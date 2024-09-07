@@ -2,7 +2,7 @@
     "bank_added": "Neue Bank hinzugefügt.",
     "bank_added_details": "Die neue Bank '{}' wurde Ihrem Profil hinzugefügt.",
     "error_loading_banks": "Es gab einen internen Fehler beim Laden der Banken. Bitte melden Sie sich erneut an und versuchen Sie es erneut.",
-    "error_adding_csv": "Es gab einen internen Fehler beim Hinzufügen des CSV-Konverters der neuen Bank. Die Bank wurde hinzugefügt, aber der CSV-Konverter nicht.",
+    "error_inserting_csv_details": "Es gab einen internen Fehler beim Hinzufügen des CSV-Konverters der neuen Bank. Die Bank wurde hinzugefügt, aber der CSV-Konverter nicht.",
     "bank_exists": "Die Bank '{}' konnte nicht hinzugefügt werden, da sie bereits in Ihrem Profil vorhanden ist.",
     "base_internal_error": "Es gab einen internen Fehler beim Laden der Bankprofile.",
     "dashboard_welcome_message": "Willkommen, {first_name} {last_name}!",

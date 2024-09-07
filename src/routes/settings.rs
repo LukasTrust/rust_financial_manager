@@ -1,32 +1,30 @@
 use rocket::http::CookieJar;
-use rocket::response::Redirect;
 use rocket::serde::json::{json, Json};
 use rocket::{get, State};
 use serde_json::Value;
 
-use crate::utils::appstate::{AppState, Language};
+use crate::utils::appstate::{AppState, Language, LOCALIZATION};
 use crate::utils::get_utils::get_user_id;
-
-use super::error_page::show_error_page;
+use crate::utils::structs::ResponseData;
 
 #[get("/user/set_language/<language>")]
 pub async fn set_user_language(
     language: String,
     state: &State<AppState>,
     cookies: &CookieJar<'_>,
-) -> Result<Json<&'static str>, Box<Redirect>> {
-    // Get the user's ID from the cookie
+) -> Result<Json<&'static str>, Json<ResponseData>> {
     let cookie_user_id = get_user_id(cookies)?;
+    let user_language = state.get_user_language(cookie_user_id).await;
 
     // Convert the language string to the enum
     let user_language = match language.as_str() {
         "English" => Language::English,
         "German" => Language::German,
         _ => {
-            return Err(show_error_page(
-                "Language not supported".to_string(),
-                "The requested message is not supported.".to_string(),
-            ))
+            return Err(Json(ResponseData::new_error(
+                LOCALIZATION.get_localized_string(user_language, "error_invalid_language"),
+                LOCALIZATION.get_localized_string(user_language, "error_invalid_language_details"),
+            )))
         }
     };
 
@@ -40,15 +38,11 @@ pub async fn set_user_language(
 pub async fn get_user_language(
     state: &State<AppState>,
     cookies: &CookieJar<'_>,
-) -> Result<Json<Value>, Box<Redirect>> {
-    // Get the user's ID from the cookie
+) -> Result<Json<Value>, Json<ResponseData>> {
     let cookie_user_id = get_user_id(cookies)?;
 
     // Get the user's language preference from the state
-    let user_language = state
-        .get_user_language(cookie_user_id)
-        .await
-        .unwrap_or(Language::English);
+    let user_language = state.get_user_language(cookie_user_id).await;
 
     Ok(Json(json!({ "language": user_language })))
 }

@@ -1,11 +1,8 @@
 use bcrypt::{hash, DEFAULT_COST};
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use rocket::{response::Redirect, serde::json::Json};
+use rocket::serde::json::Json;
 
-use crate::{
-    routes::error_page::show_error_page,
-    utils::structs::{Bank, ResponseData},
-};
+use crate::utils::structs::{Bank, ResponseData};
 
 use super::models::{CSVConverter, NewBank, NewCSVConverter, NewUser, User};
 
@@ -73,20 +70,24 @@ pub fn load_user_by_email_mocking(user_email: &str) -> Result<User, Json<Respons
     })
 }
 
-pub fn load_user_by_id_mocking(user_id: i32) -> Result<(String, String), Box<Redirect>> {
+pub fn load_user_by_id_mocking(user_id: i32) -> Result<(String, String), Json<ResponseData>> {
     if user_id == 0 {
         return Ok(("John".to_string(), "Doe".to_string()));
     }
 
-    Err(show_error_page(
-        "User not found!".to_string(),
-        "Please login again.".to_string(),
-    ))
+    Err(Json(ResponseData::new_error(
+        "Error loading user".to_string(),
+        "There was an internal error while loading the user. Please try again.".to_string(),
+    )))
 }
 
-pub fn insert_bank_mocking(new_bank: NewBank) -> Result<Bank, String> {
+pub fn insert_bank_mocking(new_bank: NewBank) -> Result<Bank, Json<ResponseData>> {
     if new_bank.name == "copy_bank" {
-        return Err("Bank already exists".into());
+        return Err(Json(ResponseData::new_error(
+            "Error inserting bank".to_string(),
+            "A bank with this name already exists in your profile. Please choose a different bank name."
+                .to_string(),
+        )));
     }
 
     if new_bank.name == "csv_error" {
@@ -108,9 +109,12 @@ pub fn insert_bank_mocking(new_bank: NewBank) -> Result<Bank, String> {
 
 pub fn insert_csv_converter_mocking(
     new_csv_converter: NewCSVConverter,
-) -> Result<CSVConverter, String> {
+) -> Result<CSVConverter, Json<ResponseData>> {
     if new_csv_converter.bank_id == 0 {
-        return Err("Error inserting csv converter".into());
+        return Err(Json(ResponseData::new_error(
+            "Error inserting csv converter".to_string(),
+            "There was an internal error trying to add the csv converter of the new bank. The bank was added but the csv converter was not.".to_string(),
+        )));
     }
 
     Ok(CSVConverter {
@@ -126,12 +130,15 @@ pub fn insert_csv_converter_mocking(
 pub fn load_banks_of_user_mocking(
     user_id_for_loading: i32,
     new_bank: Option<NewBank>,
-) -> Result<Vec<Bank>, String> {
+) -> Result<Vec<Bank>, Json<ResponseData>> {
     if new_bank.is_some() {
         let new_bank = new_bank.unwrap();
 
         if new_bank.name == "error_loading_banks" {
-            return Err("Error loading banks".into());
+            return Err(Json(ResponseData::new_error(
+                "Error loading banks".to_string(),
+                "There was an internal error trying to load the banks. Please login again and retry.".to_string(),
+            )));
         }
 
         return Ok(vec![Bank {

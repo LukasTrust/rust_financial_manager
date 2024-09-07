@@ -1,5 +1,6 @@
 use chrono::{Datelike, NaiveDate};
 use log::info;
+use rocket::serde::json::Json;
 use rocket::tokio;
 use rocket_db_pools::Connection;
 use std::collections::{HashMap, HashSet};
@@ -9,7 +10,7 @@ use crate::database::models::{Contract, NewContract, NewContractHistory};
 use crate::utils::insert_utiles::{insert_contract_histories, insert_contracts};
 use crate::utils::loading_utils::{
     load_contracts_of_bank_without_end_date, load_last_transaction_data_of_bank,
-    load_last_transaction_data_of_contract,
+    load_last_transaction_of_contract,
     load_transactions_of_bank_without_contract_and_contract_allowed,
 };
 use crate::utils::structs::Transaction;
@@ -18,18 +19,21 @@ use crate::utils::update_utils::{
     update_transactions_with_contract,
 };
 
-use super::structs::CounterpartyMap;
+use super::appstate::{Language, LOCALIZATION};
+use super::structs::{CounterpartyMap, ResponseData};
 
-type Result<T> = std::result::Result<T, String>;
+type Result<T> = std::result::Result<T, Json<ResponseData>>;
 
 pub async fn create_contract_from_transactions(
     bank_id: i32,
+    language: Language,
     db: &mut Connection<DbConn>,
 ) -> Result<String> {
-    let existing_contracts = load_contracts_of_bank_without_end_date(bank_id, db).await?;
+    let existing_contracts = load_contracts_of_bank_without_end_date(bank_id, language, db).await?;
 
     let mut transactions =
-        load_transactions_of_bank_without_contract_and_contract_allowed(bank_id, db).await?;
+        load_transactions_of_bank_without_contract_and_contract_allowed(bank_id, language, db)
+            .await?;
 
     if transactions.is_empty() {
         return Ok("No transactions without contract found!".to_string());
@@ -45,8 +49,12 @@ pub async fn create_contract_from_transactions(
         transactions_matching_a_contract.len()
     );
 
-    update_transactions_with_contract_id_local(transactions_matching_a_contract.clone(), db)
-        .await?;
+    update_transactions_with_contract_id_local(
+        transactions_matching_a_contract.clone(),
+        language,
+        db,
+    )
+    .await?;
 
     transactions.retain(|transaction| {
         !transactions_matching_a_contract
@@ -75,6 +83,7 @@ pub async fn create_contract_from_transactions(
     create_contract_history(
         transactions_matching_changed_contracts.clone(),
         existing_contracts.clone(),
+        language,
         db,
     )
     .await?;
@@ -96,21 +105,18 @@ pub async fn create_contract_from_transactions(
     );
 
     let new_contracts_ids =
-        create_contracts_from_transactions(bank_id, grouped_transactions, db).await?;
+        create_contracts_from_transactions(bank_id, grouped_transactions, language, db).await?;
 
     let mut all_contracts = new_contracts_ids.clone();
     all_contracts.extend(existing_contracts);
 
-    let last_transaction_date = load_last_transaction_data_of_bank(bank_id, db).await?;
+    let last_transaction = load_last_transaction_data_of_bank(bank_id, language, db).await?;
 
-    if last_transaction_date.is_none() {
-        return Err("No transactions found for bank!".to_string());
-    }
-
-    let last_transaction_date = last_transaction_date.unwrap().date;
+    let last_transaction_date = last_transaction.date;
 
     let contracts_closed =
-        check_if_contract_should_be_closed(all_contracts, last_transaction_date, db).await?;
+        check_if_contract_should_be_closed(all_contracts, last_transaction_date, language, db)
+            .await?;
 
     info!("Contracts closed: {}", contracts_closed);
 
@@ -175,6 +181,7 @@ fn filter_transactions_matching_changed_contract(
 
 async fn update_transactions_with_contract_id_local(
     contracts_with_transactions: HashMap<i32, Vec<Transaction>>,
+    language: Language,
     db: &mut Connection<DbConn>,
 ) -> Result<()> {
     for (contract_id, transactions) in contracts_with_transactions {
@@ -183,7 +190,7 @@ async fn update_transactions_with_contract_id_local(
             .map(|transaction| transaction.id)
             .collect::<Vec<i32>>();
 
-        update_transactions_with_contract(ids, Some(contract_id), db).await?;
+        update_transactions_with_contract(ids, Some(contract_id), language, db).await?;
     }
 
     Ok(())
@@ -197,6 +204,7 @@ fn round_to_i64(amount: f64, precision: u32) -> i64 {
 async fn create_contract_history(
     contracts_with_transactions: HashMap<i32, Vec<Transaction>>,
     existing_contracts: Vec<Contract>,
+    language: Language,
     db: &mut Connection<DbConn>,
 ) -> Result<()> {
     let mut new_contract_histories = Vec::new();
@@ -207,7 +215,12 @@ async fn create_contract_history(
             .find(|contract| contract.id == contract_id)
         {
             Some(contract) => contract,
-            None => return Err(format!("Contract with ID {} not found", contract_id)),
+            None => {
+                return Err(Json(ResponseData::new_error(
+                    LOCALIZATION.get_localized_string(language, "error_contract_not_found"),
+                    LOCALIZATION.get_localized_string(language, "error_contract_not_found_details"),
+                )))
+            }
         };
 
         transactions.sort_by_key(|transaction| transaction.date);
@@ -232,13 +245,13 @@ async fn create_contract_history(
 
             new_contract_histories.push(contract_history);
 
-            update_contract_with_new_amount(contract_id, transaction.amount, db).await?;
+            update_contract_with_new_amount(contract_id, transaction.amount, language, db).await?;
         }
     }
 
-    insert_contract_histories(&new_contract_histories, db).await?;
+    insert_contract_histories(&new_contract_histories, language, db).await?;
 
-    update_transactions_with_contract_id_local(contracts_with_transactions, db).await?;
+    update_transactions_with_contract_id_local(contracts_with_transactions, language, db).await?;
 
     Ok(())
 }
@@ -273,6 +286,7 @@ fn group_transactions_by_counterparty_and_amount(
 async fn create_contracts_from_transactions(
     bank_id: i32,
     grouped_transactions: CounterpartyMap,
+    language: Language,
     db: &mut Connection<DbConn>,
 ) -> Result<Vec<Contract>> {
     let mut created_contracts = HashSet::new();
@@ -342,7 +356,7 @@ async fn create_contracts_from_transactions(
     }
 
     // Batch insert contracts and retrieve the inserted contract IDs
-    let inserted_contracts = insert_contracts(&contract_insertions, db).await?;
+    let inserted_contracts = insert_contracts(&contract_insertions, language, db).await?;
 
     // Ensure the number of inserted contracts matches the contract_keys
     assert_eq!(inserted_contracts.len(), contract_keys.len());
@@ -350,7 +364,8 @@ async fn create_contracts_from_transactions(
     // Update transactions with the corresponding contract IDs
     for (i, (transaction_ids, _contract_key)) in transaction_updates.iter().enumerate() {
         let contract_id = inserted_contracts[i].id;
-        update_transactions_with_contract(transaction_ids.clone(), Some(contract_id), db).await?;
+        update_transactions_with_contract(transaction_ids.clone(), Some(contract_id), language, db)
+            .await?;
     }
 
     Ok(inserted_contracts)
@@ -384,26 +399,28 @@ fn months_between(date1: NaiveDate, date2: NaiveDate) -> Option<i32> {
 async fn check_if_contract_should_be_closed(
     contracts: Vec<Contract>,
     last_transaction_date: NaiveDate,
+    language: Language,
     db: &mut Connection<DbConn>,
 ) -> Result<i32> {
     let mut closed_contracts = 0;
 
     for contract in contracts {
         let last_transaction_of_contract =
-            load_last_transaction_data_of_contract(contract.id, db).await?;
+            load_last_transaction_of_contract(contract.id, language, db).await?;
 
-        if last_transaction_of_contract.is_none() {
-            return Err(format!("No transaction found for contract {}", contract.id));
-        }
-
-        let last_transaction_of_contract = last_transaction_of_contract.unwrap().date;
+        let last_transaction_of_contract = last_transaction_of_contract.date;
 
         let months_between = months_between(last_transaction_of_contract, last_transaction_date);
 
         if let Some(months) = months_between {
             if months > contract.months_between_payment * 2 {
-                update_contract_with_end_date(contract.id, Some(last_transaction_of_contract), db)
-                    .await?;
+                update_contract_with_end_date(
+                    contract.id,
+                    Some(last_transaction_of_contract),
+                    language,
+                    db,
+                )
+                .await?;
 
                 closed_contracts += 1;
             }
