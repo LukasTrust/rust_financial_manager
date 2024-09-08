@@ -21,20 +21,25 @@ export function setGloableLanguage(newLanguage) {
     state.language = newLanguage;
 }
 
+let old_url = localStorage.getItem('old_url') || '/dashboard';
+
 document.addEventListener("DOMContentLoaded", function () {
     log('DOM content loaded. Initializing sidebar buttons and loading default content:', 'DOMContentLoaded');
+
     document.querySelectorAll("button").forEach(button => {
         const url = button.getAttribute('url');
         if (url) {
             button.addEventListener("click", function () {
                 loadContent(url);
+                old_url = url;
+                if (url !== '/logout') {
+                    localStorage.setItem('old_url', old_url);
+                }
             });
-
-        };
+        }
     });
 
-    // Display the dashboard by default
-    loadContent("/dashboard");
+    loadContent(old_url);
 });
 
 // Main function to load content
@@ -48,9 +53,6 @@ export async function loadContent(url) {
             window.location.href = `/`;
             return;
         }
-
-        // Redirect to error page if login validation fails
-        if (handleLoginError(html)) return;
 
         // Set the main content to the fetched HTML
         document.getElementById('main-content').innerHTML = html;
@@ -91,16 +93,6 @@ async function fetchContent(url) {
     if (!response.ok) throw new Error('Network response was not ok');
 
     return response.text();
-}
-
-// Function to handle login validation errors
-function handleLoginError(html) {
-    if (html.includes('Please login again')) {
-        error('Error validating the login. Redirecting to error page:', 'loadContent');
-        window.location.href = '/error?error_title=Error%20validating%20the%20login!&error_message=Please%20login%20again.';
-        return true;
-    }
-    return false;
 }
 
 // Function to handle bank page specific logic

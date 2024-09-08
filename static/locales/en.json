@@ -21,7 +21,7 @@
     "csv_converter_not_set_up_details": "The CSV converter is not set up. Please try again.",
     "dashboard_welcome_message": "Welcome, {first_name} {last_name}!",
     "logout_error_validation": "Error validating the login!",
-    "logout_login_prompt": "Please log in again.",
+    "logout_login_prompt": "Please login again.",
     "error_loading_user": "Error loading user",
     "error_loading_user_details": "There was an internal error while loading the user. Please try again.",
     "error_invalid_language": "Invalid language",

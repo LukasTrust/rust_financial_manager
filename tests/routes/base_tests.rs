@@ -17,7 +17,7 @@ mod tests {
         let response_string = response.into_string().await.unwrap();
 
         assert!(response_string.contains("User ID not found in cookies"));
-        assert!(response_string.contains("Please log in again."));
+        assert!(response_string.contains("Please login again."));
     }
 
     #[tokio::test]

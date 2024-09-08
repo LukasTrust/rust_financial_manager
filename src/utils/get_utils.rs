@@ -27,7 +27,7 @@ pub fn get_user_id(cookies: &CookieJar<'_>) -> Result<i32, Json<ErrorResponse>> 
         error!("User ID not found in cookies.");
         return Err(Json(ErrorResponse::new(
             "User ID not found in cookies.".to_string(),
-            "Please log in again.".to_string(),
+            "Please login again.".to_string(),
         )));
     }
 
