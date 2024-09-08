@@ -35,6 +35,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (url !== '/logout') {
                     localStorage.setItem('old_url', old_url);
                 }
+                else {
+                    localStorage.removeItem('old_url');
+                }
             });
         }
     });

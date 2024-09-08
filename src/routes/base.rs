@@ -21,25 +21,43 @@ pub async fn base(
     mut db: Connection<DbConn>,
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
-) -> Result<Template, Json<ErrorResponse>> {
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+) -> Template {
+    let result = get_user_id_and_language(cookies);
+
+    if result.is_err() {
+        return Template::render(
+            "error_page",
+            json!({"error_header": "Error loading user", "error_message": "There was an internal error. Please login again."}),
+        );
+    }
+
+    let (cookie_user_id, cookie_user_language) = result.unwrap();
 
     info!("User is logged in: {}", cookie_user_id);
 
-    let banks = load_banks_of_user(cookie_user_id, cookie_user_language, &mut db).await?;
+    let banks = load_banks_of_user(cookie_user_id, cookie_user_language, &mut db).await;
+
+    if banks.is_err() {
+        return Template::render(
+            "error_page",
+            json!({"error_header": LOCALIZATION.get_localized_string(cookie_user_language, "error_loading_banks"), "error_message": LOCALIZATION.get_localized_string(cookie_user_language, "error_loading_banks_details")}),
+        );
+    }
+
+    let banks = banks.unwrap();
 
     state.set_current_bank(cookie_user_id, None).await;
 
     let localized_strings = get_base_localized_strings(cookie_user_language);
 
-    Ok(Template::render(
+    Template::render(
         "base",
         json!({
             "banks": banks,
             "translations": localized_strings,
             "view_name": "dashboard",
         }),
-    ))
+    )
 }
 
 /// Display the login page.
