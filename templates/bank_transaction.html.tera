@@ -1,56 +1,54 @@
-    <body>
-        <div class="scroll-container">
-            <div class="container-without-border">
-                <h1>Transactions</h1>
+<!-- transactions.tera -->
+<body>
+    <div class="scroll-container">
+        <div class="container-without-border">
+            <h1>{{ translations.transactions_title }}</h1>
 
-                <!-- Static header and table structure -->
-                <div class="container-without-border-horizontally-header">
-                    <label for="date-range">Select date range:</label>
-                    <input type="text" id="date-range" class="flatpickr">
-                    <label for="contract-filter">Filter by Contract:</label>
-                    <select style="max-width: 300px" id="contract-filter">
-                        <option value>All Contracts</option>
-                        <!-- Options will be dynamically populated by JS -->
-                    </select>
-                    <input style="width: auto; height: 15px" type="text"
-                        id="transaction-search"
-                        placeholder="Search transactions...">
+            <!-- Static header and table structure -->
+            <div class="container-without-border-horizontally-header">
+                <label for="date-range">{{ translations.transactions_select_date_range_label }}</label>
+                <input type="text" id="date-range" class="flatpickr">
+                <label for="contract-filter">{{ translations.transactions_filter_by_contract_label }}</label>
+                <select style="max-width: 300px" id="contract-filter">
+                    <option value>{{ translations.transactions_all_contracts_option }}</option>
+                    <!-- Options will be dynamically populated by JS -->
+                </select>
+                <input style="width: auto; height: 15px" type="text"
+                       id="transaction-search"
+                       placeholder="{{ translations.transactions_search_placeholder }}">
 
-                    <div class="container-without-border-horizontally"
-                        style="width: auto">
-                        <button id="toggle-hidden-transaction"
-                            class="toggle-button">
-                            <div class="slider"></div>
-                        </button>
-                        <div class="container-without-border">
-                            <span>Hide hidden transactions</span>
-                            <span>Show hidden transactions</span>
-                        </div>
+                <div class="container-without-border-horizontally" style="width: auto">
+                    <button id="toggle-hidden-transaction" class="toggle-button">
+                        <div class="slider"></div>
+                    </button>
+                    <div class="container-without-border">
+                        <span>{{ translations.transactions_hide_hidden_text }}</span>
+                        <span>{{ translations.transactions_show_hidden_text }}</span>
                     </div>
-
                 </div>
-
-                <table class="transaction-table">
-                    <thead>
-                        <tr>
-                            <th data-key="icon" class="sortable">Icon<span>↑</span></th> 
-                            <th data-key="counterparty" class="sortable">Counterparty<span>↑</span></th>
-                            <th data-key="amount" class="sortable">Amount<span>↑</span></th>
-                            <th data-key="bank_balance_after" class="sortable">Balance<span>↑</span></th>
-                            <th data-key="date" class="sortable">Date<span>↑</span></th>
-                            <th data-key="name" class="sortable">Contract Name<span>↑</span></th>
-                            <th data-key="current_amount" class="sortable">Contract Amount<span>↑</span></th>
-                        </tr>
-                    </thead>
-                    <tbody id="transaction-table-body">
-                        <!-- Rows will be generated and inserted here -->
-                    </tbody>
-                </table>
             </div>
-        </div>
 
-        <!-- JSON data for transactions -->
-        <script id="transactions-data" type="application/json">
+            <table class="transaction-table">
+                <thead>
+                    <tr>
+                        <th data-key="icon" class="sortable">{{ translations.transactions_icon_header }}<span>↑</span></th>
+                        <th data-key="counterparty" class="sortable">{{ translations.transactions_counterparty_header }}<span>↑</span></th>
+                        <th data-key="amount" class="sortable">{{ translations.transactions_amount_header }}<span>↑</span></th>
+                        <th data-key="bank_balance_after" class="sortable">{{ translations.transactions_balance_header }}<span>↑</span></th>
+                        <th data-key="date" class="sortable">{{ translations.transactions_date_header }}<span>↑</span></th>
+                        <th data-key="name" class="sortable">{{ translations.transactions_contract_name_header }}<span>↑</span></th>
+                        <th data-key="current_amount" class="sortable">{{ translations.transactions_contract_amount_header }}<span>↑</span></th>
+                    </tr>
+                </thead>
+                <tbody id="transaction-table-body">
+                    <!-- Rows will be generated and inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- JSON data for transactions -->
+    <script id="transactions-data" type="application/json">
         {{ transactions | safe }}
     </script>
-    </body>
+</body>

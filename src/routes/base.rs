@@ -10,7 +10,9 @@ use crate::utils::appstate::{AppState, LOCALIZATION};
 use crate::utils::get_utils::{get_user_id, get_user_id_and_language, get_user_language};
 use crate::utils::loading_utils::{load_banks_of_user, load_user_by_id};
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
-use crate::utils::translation_utils::get_base_localized_strings;
+use crate::utils::translation_utils::{
+    get_base_localized_strings, get_dashboard_localized_strings,
+};
 
 /// Display the base page.
 /// The base page is the dashboard that displays the user's bank accounts and transactions.
@@ -82,9 +84,14 @@ pub async fn dashboard(
     message = message.replace("{first_name}", &user_first_name);
     message = message.replace("{last_name}", &user_last_name);
 
+    let translation_string = get_dashboard_localized_strings(cookie_user_language);
+
     Ok(Template::render(
         "dashboard",
-        json!(SuccessResponse::new(String::new(), message)),
+        json!({
+                    "translations": translation_string,
+                    "success": SuccessResponse::new(String::new(), message),
+        }),
     ))
 }
 

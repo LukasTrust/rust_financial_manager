@@ -25,7 +25,7 @@ async function handleFormSubmission(form) {
             }
 
             if (result.success) {
-                if (result.header === 'Successfully read the csv file') {
+                if (result.header === 'Successfully read the csv file' || result.header === 'CSV-Datei erfolgreich gelesen') {
                     await handlePageWithGraphData();
                 }
 

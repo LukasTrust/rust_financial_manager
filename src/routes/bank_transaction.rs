@@ -17,6 +17,7 @@ use crate::utils::get_utils::{
 };
 use crate::utils::loading_utils::load_transaction_by_id;
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
+use crate::utils::translation_utils::get_transactions_localized_strings;
 use crate::utils::update_utils::{
     update_transaction_with_contract_not_allowed, update_transaction_with_hidden,
     update_transactions_with_contract,
@@ -48,6 +49,10 @@ pub async fn bank_transaction(
         "Bank transaction handling completed in {:?}",
         start_time.elapsed()
     );
+
+    let translation_string = get_transactions_localized_strings(cookie_user_language);
+    result["translations"] = json!(translation_string);
+
     Ok(Template::render("bank_transaction", json!(result)))
 }
 

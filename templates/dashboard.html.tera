@@ -1,36 +1,34 @@
 <body>
-        <div class="container-without-border">
-            <div class="container-without-border-horizontally-header">
-                <h1 id="header-success">{{success}}</h1>
-                <label for="dateRange" class="date-label">Select date
-                    range:</label>
-                <input type="text" id="dateRange" class="date-input"
-                    placeholder="Select date range">
-            </div>
-            <div id="balance_graph" class="balance_graph"></div>
-            <h2>Transaction data:</h2>
-            <div class="container-without-border-horizontally">
-                <p class="box">Number of transaction: <span id="total_transactions"></span></p>
-
-                <p class="box">Average amount: <span id="average_transaction_amount"></span></p>
-
-                <p class="box">Net gain/loss: <span id="net_gain_loss"></span></p>
-
-                <p class="box">Performance: <span id="performance_percentage"></span> </p>
-
-                <p class="box">Discrepancy: <span id="total_discrepancy"></span></p>
-            </div>
-            <h2>Contract data:</h2>
-            <div class="container-without-border-horizontally">
-                <p class="box">Number of contracts: <span id="total_contracts"></span></p>
-
-                <p class="box">Total amount per year: <span id="total_amount_per_year"></span></p>
-
-                <p class="box">Contracts one month: <span id="one_month_contract_amount"></span></p>
-
-                <p class="box">Contracts three month : <span id="three_month_contract_amount"></span></p>
-
-                <p class="box">Contracts six month: <span id="six_month_contract_amount"></span> </p>
-            </div>
+    <div class="container-without-border">
+        <div class="container-without-border-horizontally-header">
+            <h1 id="header-success">{{ success.success }}</h1>
+            <label for="dateRange" class="date-label">{{ translations.dashboard_select_date_range_label }}</label>
+            <input type="text" id="dateRange" class="date-input" placeholder="{{ translations.dashboard_select_date_range_label }}">
         </div>
+        <div id="balance_graph" class="balance_graph"></div>
+        <h2>{{ translations.dashboard_transaction_data_title }}</h2>
+        <div class="container-without-border-horizontally">
+            <p class="box">{{ translations.dashboard_number_of_transactions_label }} <span id="total_transactions"></span></p>
+
+            <p class="box">{{ translations.dashboard_average_amount_label }} <span id="average_transaction_amount"></span></p>
+
+            <p class="box">{{ translations.dashboard_net_gain_loss_label }} <span id="net_gain_loss"></span></p>
+
+            <p class="box">{{ translations.dashboard_performance_label }} <span id="performance_percentage"></span> </p>
+
+            <p class="box">{{ translations.dashboard_discrepancy_label }} <span id="total_discrepancy"></span></p>
+        </div>
+        <h2>{{ translations.dashboard_contract_data_title }}</h2>
+        <div class="container-without-border-horizontally">
+            <p class="box">{{ translations.dashboard_number_of_contracts_label }} <span id="total_contracts"></span></p>
+
+            <p class="box">{{ translations.dashboard_total_amount_per_year_label }} <span id="total_amount_per_year"></span></p>
+
+            <p class="box">{{ translations.dashboard_contracts_one_month_label }} <span id="one_month_contract_amount"></span></p>
+
+            <p class="box">{{ translations.dashboard_contracts_three_month_label }} <span id="three_month_contract_amount"></span></p>
+
+            <p class="box">{{ translations.dashboard_contracts_six_month_label }} <span id="six_month_contract_amount"></span> </p>
+        </div>
+    </div>
 </body>
