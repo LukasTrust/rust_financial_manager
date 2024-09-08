@@ -17,6 +17,8 @@ jobs:
         run: rustc --version && cargo --version
       - name: Install cargo-tarpaulin and cargo-audit
         run: cargo install cargo-tarpaulin cargo-audit
+      - name: Install Diesel CLI
+        run: cargo install diesel_cli --no-default-features --features postgres
 
   build:
     runs-on: ubuntu-latest
@@ -63,6 +65,14 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v3
+      - name: Set ROCKET_ENV to test
+        run: echo "ROCKET_ENV=test" >> $GITHUB_ENV
+      - name: Replace Database URL in Rocket.toml
+        run: sed -i 's|url = "postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@192.168.178.48/financial_manager"|url = "postgres://postgres:postgres@localhost:5432/postgres_db"|' Rocket.toml
+      - name: Run Diesel Migrations
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres_db
+        run: diesel migration run
       - name: Run Tests
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres_db

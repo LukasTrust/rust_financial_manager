@@ -15,24 +15,24 @@ use super::appstate::Language;
 use super::loading_utils::{
     load_contract_history, load_contracts_from_ids, load_transaction_by_id,
 };
-use super::structs::ResponseData;
+use super::structs::{ErrorResponse, SuccessResponse};
 
 pub async fn handle_remove_contract(
     transaction_id: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Json<ResponseData>, Json<ResponseData>> {
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     // Load transaction by ID
     let transaction = load_transaction_by_id(transaction_id, language, db).await?;
 
     // Check if transaction has a contract
     let contract_id = transaction.contract_id.ok_or_else(|| {
         error!("Transaction has no contract");
-        return Json(ResponseData::new_error(
+        Json(ErrorResponse::new(
             LOCALIZATION.get_localized_string(language, "error_transaction_has_no_contract"),
             LOCALIZATION
                 .get_localized_string(language, "error_transaction_has_no_contract_details"),
-        ));
+        ))
     })?;
 
     // Load contract
@@ -40,7 +40,7 @@ pub async fn handle_remove_contract(
 
     if contract.len() != 1 {
         error!("Contract not found");
-        return Err(Json(ResponseData::new_error(
+        return Err(Json(ErrorResponse::new(
             LOCALIZATION.get_localized_string(language, "error_contract_not_found"),
             LOCALIZATION.get_localized_string(language, "error_contract_not_found_details"),
         )));
@@ -100,7 +100,7 @@ pub async fn handle_remove_contract(
     // Update the transaction to remove the contract association
     update_transactions_with_contract(vec![transaction_id], None::<i32>, language, db).await?;
 
-    Ok(Json(ResponseData::new_success(
+    Ok(Json(SuccessResponse::new(
         LOCALIZATION.get_localized_string(language, "transaction_removed_from_contract"),
         LOCALIZATION.get_localized_string(language, "transaction_removed_from_contract_details"),
     )))
@@ -111,14 +111,14 @@ pub async fn handel_update_amount(
     contract_id: i32,
     language: Language,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Json<ResponseData>> {
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let transaction = load_transaction_by_id(transaction_id, language, &mut db).await?;
 
     let contract = load_contracts_from_ids(vec![contract_id], language, &mut db).await?;
 
     if contract.len() != 1 {
         error!("Contract not found");
-        return Err(Json(ResponseData::new_error(
+        return Err(Json(ErrorResponse::new(
             LOCALIZATION.get_localized_string(language, "error_contract_not_found"),
             LOCALIZATION.get_localized_string(language, "error_contract_not_found_details"),
         )));
@@ -139,7 +139,7 @@ pub async fn handel_update_amount(
 
     update_contract_with_new_amount(contract.id, transaction.amount, language, &mut db).await?;
 
-    Ok(Json(ResponseData::new_success(
+    Ok(Json(SuccessResponse::new(
         LOCALIZATION.get_localized_string(language, "contract_updated"),
         LOCALIZATION.get_localized_string(language, "contract_updated_details"),
     )))
@@ -150,14 +150,14 @@ pub async fn handle_set_old_amount(
     contract_id: i32,
     language: Language,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Json<ResponseData>> {
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let transaction = load_transaction_by_id(transaction_id, language, &mut db).await?;
 
     let contract = load_contracts_from_ids(vec![contract_id], language, &mut db).await?;
 
     if contract.len() != 1 {
         error!("Contract not found");
-        return Err(Json(ResponseData::new_error(
+        return Err(Json(ErrorResponse::new(
             LOCALIZATION.get_localized_string(language, "error_contract_not_found"),
             LOCALIZATION.get_localized_string(language, "error_contract_not_found_details"),
         )));
@@ -195,7 +195,7 @@ pub async fn handle_set_old_amount(
 
             insert_contract_histories(&vec![history], language, &mut db).await?;
 
-            Ok(Json(ResponseData::new_success(
+            Ok(Json(SuccessResponse::new(
                 LOCALIZATION.get_localized_string(language, "contract_history_updated"),
                 LOCALIZATION.get_localized_string(language, "contract_history_updated_details"),
             )))
@@ -217,7 +217,7 @@ pub async fn handle_set_old_amount(
 
             insert_contract_histories(&vec![history], language, &mut db).await?;
 
-            Ok(Json(ResponseData::new_success(
+            Ok(Json(SuccessResponse::new(
                 LOCALIZATION.get_localized_string(language, "contract_history_updated"),
                 LOCALIZATION.get_localized_string(language, "contract_history_updated_details"),
             )))
@@ -233,7 +233,7 @@ pub async fn handle_set_old_amount(
 
             insert_contract_histories(&vec![history], language, &mut db).await?;
 
-            Ok(Json(ResponseData::new_success(
+            Ok(Json(SuccessResponse::new(
                 LOCALIZATION.get_localized_string(language, "contract_history_updated"),
                 LOCALIZATION.get_localized_string(language, "contract_history_updated_details"),
             )))
@@ -249,7 +249,7 @@ pub async fn handle_set_old_amount(
 
             insert_contract_histories(&vec![history], language, &mut db).await?;
 
-            Ok(Json(ResponseData::new_success(
+            Ok(Json(SuccessResponse::new(
                 LOCALIZATION.get_localized_string(language, "contract_history_updated"),
                 LOCALIZATION.get_localized_string(language, "contract_history_updated_details"),
             )))

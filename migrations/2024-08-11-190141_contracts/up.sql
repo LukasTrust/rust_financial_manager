@@ -1,8 +1,8 @@
 CREATE TABLE contracts (
     id SERIAL PRIMARY KEY,
     bank_id INT NOT NULL,
-    name VARCHAR(200) NOT NULL,
-    parse_name VARCHAR(200) NOT NULL,
+    name text NOT NULL,
+    parse_name text NOT NULL,
     current_amount FLOAT NOT NULL,
     months_between_payment INT NOT NULL,
     end_date DATE,

@@ -8,10 +8,10 @@ use rocket_db_pools::Connection;
 use crate::database::db_connector::DbConn;
 use crate::database::models::NewCSVConverter;
 use crate::utils::appstate::{AppState, LOCALIZATION};
-use crate::utils::get_utils::get_user_id;
+use crate::utils::get_utils::get_user_id_and_language;
 use crate::utils::insert_utiles::insert_csv_converter;
 use crate::utils::loading_utils::load_csv_converter_of_bank;
-use crate::utils::structs::ResponseData;
+use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::update_utils::update_csv_converter;
 
 #[derive(FromForm)]
@@ -28,14 +28,15 @@ pub async fn update_csv(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Json<ResponseData>> {
-    let cookie_user_id = get_user_id(cookies)?;
-    let language = state.get_user_language(cookie_user_id).await;
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
+    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
 
-    let current_bank = state.get_current_bank(cookie_user_id).await?;
+    let current_bank = state
+        .get_current_bank(cookie_user_id, cookie_user_language)
+        .await?;
 
     let csv_converter_of_bank =
-        load_csv_converter_of_bank(current_bank.id, language, &mut db).await;
+        load_csv_converter_of_bank(current_bank.id, cookie_user_language, &mut db).await;
 
     match csv_converter_of_bank {
         Ok(mut csv_converter) => {
@@ -55,12 +56,13 @@ pub async fn update_csv(
                 csv_converter.date_column = form.date_column;
             }
 
-            update_csv_converter(csv_converter, language, &mut db).await?;
+            update_csv_converter(csv_converter, cookie_user_language, &mut db).await?;
 
             info!("CSV converter updated");
-            Ok(Json(ResponseData::new_success(
-                LOCALIZATION.get_localized_string(language, "csv_converter_updated"),
-                LOCALIZATION.get_localized_string(language, "csv_converter_updated_details"),
+            Ok(Json(SuccessResponse::new(
+                LOCALIZATION.get_localized_string(cookie_user_language, "csv_converter_updated"),
+                LOCALIZATION
+                    .get_localized_string(cookie_user_language, "csv_converter_updated_details"),
             )))
         }
         Err(_) => {
@@ -72,12 +74,13 @@ pub async fn update_csv(
                 date_column: form.date_column,
             };
 
-            insert_csv_converter(new_csv_converter, language, &mut db).await?;
+            insert_csv_converter(new_csv_converter, cookie_user_language, &mut db).await?;
 
             info!("CSV converter updated");
-            Ok(Json(ResponseData::new_success(
-                LOCALIZATION.get_localized_string(language, "csv_converter_updated"),
-                LOCALIZATION.get_localized_string(language, "csv_converter_updated_details"),
+            Ok(Json(SuccessResponse::new(
+                LOCALIZATION.get_localized_string(cookie_user_language, "csv_converter_updated"),
+                LOCALIZATION
+                    .get_localized_string(cookie_user_language, "csv_converter_updated_details"),
             )))
         }
     }

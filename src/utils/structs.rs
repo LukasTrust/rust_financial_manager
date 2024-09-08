@@ -115,27 +115,26 @@ impl Default for PerformanceData {
 }
 
 #[derive(Debug, Serialize)]
-pub struct ResponseData {
+pub struct ErrorResponse {
     header: String,
-    success: Option<String>,
-    error: Option<String>,
+    error: String,
 }
 
-impl ResponseData {
-    pub fn new_success(header: String, success: String) -> Self {
-        ResponseData {
-            header: header,
-            success: Some(success.to_string()),
-            error: None,
-        }
+impl ErrorResponse {
+    pub fn new(header: String, error: String) -> ErrorResponse {
+        ErrorResponse { header, error }
     }
+}
 
-    pub fn new_error(header: String, error: String) -> Self {
-        ResponseData {
-            header: header,
-            success: None,
-            error: Some(error.to_string()),
-        }
+#[derive(Debug, Serialize)]
+pub struct SuccessResponse {
+    header: String,
+    success: String,
+}
+
+impl SuccessResponse {
+    pub fn new(header: String, success: String) -> SuccessResponse {
+        SuccessResponse { header, success }
     }
 }
 

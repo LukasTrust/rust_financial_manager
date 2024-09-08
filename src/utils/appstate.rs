@@ -1,3 +1,4 @@
+use core::fmt;
 use log::info;
 use once_cell::sync::Lazy;
 use rocket::{serde::json::Json, tokio::sync::RwLock};
@@ -5,7 +6,7 @@ use serde::Serialize;
 use std::{collections::HashMap, fs, path::Path, sync::Arc};
 
 // Assuming that structs::Bank is correctly imported
-use super::structs::{Bank, ResponseData};
+use super::structs::{Bank, ErrorResponse};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Copy)]
 pub enum Language {
@@ -13,49 +14,40 @@ pub enum Language {
     German,
 }
 
+impl fmt::Display for Language {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct AppState {
     current_bank: Arc<RwLock<HashMap<i32, Bank>>>,
-    user_language: Arc<RwLock<HashMap<i32, Language>>>,
-    pub use_mocking: bool,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        AppState {
+            current_bank: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
 }
 
 impl AppState {
-    pub fn new(use_mocking: bool) -> Self {
-        AppState {
-            current_bank: Arc::new(RwLock::new(HashMap::new())),
-            user_language: Arc::new(RwLock::new(HashMap::new())),
-            use_mocking,
-        }
-    }
-
-    pub async fn get_user_language(&self, user_id: i32) -> Language {
-        let user_languages = self.user_language.read().await;
-
-        let user_language = user_languages.get(&user_id).cloned();
-
-        user_language.unwrap_or(Language::English)
-    }
-
-    pub async fn set_user_language(&self, user_id: i32, language: Language) {
-        let mut user_languages = self.user_language.write().await;
-        user_languages.insert(user_id, language.clone());
-        info!("User language updated: {:?}", language);
-    }
-
-    pub async fn get_current_bank(&self, cookie_user_id: i32) -> Result<Bank, Json<ResponseData>> {
+    pub async fn get_current_bank(
+        &self,
+        cookie_user_id: i32,
+        cookie_use_language: Language,
+    ) -> Result<Bank, Json<ErrorResponse>> {
         let current_bank_state = self.current_bank.read().await;
         let current_bank = current_bank_state.get(&cookie_user_id).cloned();
 
         match current_bank {
             Some(bank) => Ok(bank),
-            None => {
-                let language = self.get_user_language(cookie_user_id).await;
-                Err(Json(ResponseData::new_error(
-                    LOCALIZATION.get_localized_string(language, "no_bank_selected"),
-                    LOCALIZATION.get_localized_string(language, "no_bank_selected_details"),
-                )))
-            }
+            None => Err(Json(ErrorResponse::new(
+                LOCALIZATION.get_localized_string(cookie_use_language, "no_bank_selected"),
+                LOCALIZATION.get_localized_string(cookie_use_language, "no_bank_selected_details"),
+            ))),
         }
     }
 
@@ -112,16 +104,15 @@ impl Localization {
     }
 
     fn load_localized_strings(language_file: &str) -> HashMap<String, String> {
-        let file_content = fs::read_to_string(Path::new(language_file)).expect(&format!(
-            "Could not read localization file: {}",
-            language_file
-        ));
+        let file_content = fs::read_to_string(Path::new(language_file))
+            .unwrap_or_else(|_| panic!("Could not read localization file: {}", language_file));
+
         serde_json::from_str(&file_content).expect("Error parsing the localization JSON file")
     }
 
-    pub fn get_localized_string(&self, language: Language, key: &str) -> String {
+    pub fn get_localized_string(&self, cookie_use_language: Language, key: &str) -> String {
         self.localized_strings
-            .get(&language)
+            .get(&cookie_use_language)
             .and_then(|map| map.get(key))
             .cloned()
             .unwrap_or_else(|| "Unknown key.".to_string())

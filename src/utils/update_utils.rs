@@ -11,21 +11,21 @@ use crate::schema::{contract_history, contracts, csv_converters, transactions};
 use crate::utils::appstate::LOCALIZATION;
 
 use super::appstate::Language;
-use super::structs::ResponseData;
+use super::structs::ErrorResponse;
 
 pub async fn update_transactions_with_contract(
     transaction_ids: Vec<i32>,
     contract_id: Option<i32>,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<usize, Json<ResponseData>> {
+) -> Result<usize, Json<ErrorResponse>> {
     diesel::update(transactions::table.filter(transactions::id.eq_any(transaction_ids.clone())))
         .set(transactions::contract_id.eq(contract_id))
         .execute(db)
         .await
         .map_err(|e| {
             error!("Error updating transactions with contract: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION
                     .get_localized_string(language, "error_updating_transaction_of_contract"),
                 LOCALIZATION.get_localized_string(
@@ -41,7 +41,7 @@ pub async fn update_transactions_of_contract_to_new_contract(
     old_contract_ids: Vec<i32>,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<usize, Json<ResponseData>> {
+) -> Result<usize, Json<ErrorResponse>> {
     diesel::update(transactions::table.filter(transactions::contract_id.eq_any(old_contract_ids)))
         .set(transactions::contract_id.eq(new_contract_id))
         .execute(db)
@@ -51,7 +51,7 @@ pub async fn update_transactions_of_contract_to_new_contract(
                 "Error updating transactions of contract to new contract: {:?}",
                 e
             );
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION
                     .get_localized_string(language, "error_updating_transaction_of_contract"),
                 LOCALIZATION.get_localized_string(
@@ -67,7 +67,7 @@ pub async fn update_transaction_with_hidden(
     is_hidden_for_updating: bool,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<usize, Json<ResponseData>> {
+) -> Result<usize, Json<ErrorResponse>> {
     use crate::schema::transactions::dsl::*;
 
     diesel::update(transactions.filter(id.eq(transactions_id)))
@@ -76,7 +76,7 @@ pub async fn update_transaction_with_hidden(
         .await
         .map_err(|e| {
             error!("Error updating transaction with hidden status: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_updating_transaction"),
                 LOCALIZATION.get_localized_string(language, "error_updating_transaction_details"),
             ))
@@ -88,7 +88,7 @@ pub async fn update_transaction_with_contract_not_allowed(
     contract_not_allowed_for_updating: bool,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<usize, Json<ResponseData>> {
+) -> Result<usize, Json<ErrorResponse>> {
     use crate::schema::transactions::dsl::*;
 
     diesel::update(transactions.filter(id.eq(transaction_id)))
@@ -100,7 +100,7 @@ pub async fn update_transaction_with_contract_not_allowed(
                 "Error updating transaction with contract not allowed status: {:?}",
                 e
             );
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_updating_transaction"),
                 LOCALIZATION.get_localized_string(language, "error_updating_transaction_details"),
             ))
@@ -112,7 +112,7 @@ pub async fn update_contract_with_new_amount(
     new_amount: f64,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<usize, Json<ResponseData>> {
+) -> Result<usize, Json<ErrorResponse>> {
     use crate::schema::contracts::*;
 
     diesel::update(contracts::table.find(contract_id))
@@ -121,7 +121,7 @@ pub async fn update_contract_with_new_amount(
         .await
         .map_err(|e| {
             error!("Error updating contract with new amount: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_updating_contract"),
                 LOCALIZATION
                     .get_localized_string(language, "error_updating_contract_amount_details"),
@@ -134,7 +134,7 @@ pub async fn update_contract_with_new_name(
     new_name: String,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<usize, Json<ResponseData>> {
+) -> Result<usize, Json<ErrorResponse>> {
     use crate::schema::contracts::*;
 
     diesel::update(contracts::table.find(contract_id))
@@ -143,7 +143,7 @@ pub async fn update_contract_with_new_name(
         .await
         .map_err(|e| {
             error!("Error updating contract with new name: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_updating_contract"),
                 LOCALIZATION.get_localized_string(language, "error_updating_contract_name_details"),
             ))
@@ -155,7 +155,7 @@ pub async fn update_contract_with_end_date(
     end_date_for_update: Option<NaiveDate>,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<usize, Json<ResponseData>> {
+) -> Result<usize, Json<ErrorResponse>> {
     use crate::schema::contracts::*;
 
     diesel::update(contracts::table.find(contract_id))
@@ -164,7 +164,7 @@ pub async fn update_contract_with_end_date(
         .await
         .map_err(|e| {
             error!("Error updating contract with end date: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_updating_contract"),
                 LOCALIZATION
                     .get_localized_string(language, "error_updating_contract_end_date_details"),
@@ -176,7 +176,7 @@ pub async fn update_csv_converter(
     csv_converter: CSVConverter,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<usize, Json<ResponseData>> {
+) -> Result<usize, Json<ErrorResponse>> {
     use crate::schema::csv_converters::*;
 
     diesel::update(csv_converters::table.find(csv_converter.id))
@@ -190,7 +190,7 @@ pub async fn update_csv_converter(
         .await
         .map_err(|e| {
             error!("Error updating CSV converter: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_updating_csv_converter"),
                 LOCALIZATION.get_localized_string(language, "error_updating_csv_converter_details"),
             ))
@@ -201,7 +201,7 @@ pub async fn update_contract_history(
     contract_history: ContractHistory,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<usize, Json<ResponseData>> {
+) -> Result<usize, Json<ErrorResponse>> {
     diesel::update(contract_history::table.find(contract_history.id))
         .set((
             contract_history::contract_id.eq(contract_history.contract_id),
@@ -213,7 +213,7 @@ pub async fn update_contract_history(
         .await
         .map_err(|e| {
             error!("Error updating contract history: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_updating_contract_history"),
                 LOCALIZATION
                     .get_localized_string(language, "error_updating_contract_history_details"),

@@ -8,7 +8,7 @@ use crate::database::models::{Contract, ContractHistory, NewContractHistory};
 use crate::utils::appstate::LOCALIZATION;
 use crate::utils::delete_utils::delete_contracts_with_ids;
 use crate::utils::loading_utils::load_contract_history;
-use crate::utils::structs::ResponseData;
+use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::update_utils::update_transactions_of_contract_to_new_contract;
 
 use super::appstate::Language;
@@ -19,7 +19,7 @@ pub async fn handle_all_closed_contracts(
     contracts: Vec<Contract>,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Json<ResponseData> {
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let contracts_clone = contracts.clone();
     let contract_head = contracts_clone
         .iter()
@@ -34,14 +34,8 @@ pub async fn handle_open_and_closed_contracts(
     closed_contracts: Vec<Contract>,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Json<ResponseData> {
-    let contract_head = get_contract_head(&open_contracts, language, db).await;
-
-    if let Err(error) = contract_head {
-        return error;
-    }
-
-    let contract_head = contract_head.unwrap();
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
+    let contract_head = get_contract_head(&open_contracts, language, db).await?;
 
     let mut combined_contracts = open_contracts.clone();
     combined_contracts.extend(closed_contracts.clone());
@@ -53,7 +47,7 @@ async fn get_contract_head<'a>(
     contracts: &'a [Contract],
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<&'a Contract, Json<ResponseData>> {
+) -> Result<&'a Contract, Json<ErrorResponse>> {
     let mut last_transaction_datas = vec![];
 
     for contract in contracts.iter() {
@@ -87,7 +81,7 @@ async fn process_contracts(
     contracts: Vec<Contract>,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Json<ResponseData> {
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let other_contracts = contracts
         .iter()
         .filter(|contract| contract.id != contract_head.id)
@@ -97,35 +91,19 @@ async fn process_contracts(
     let other_contract_ids: Vec<i32> = other_contracts.iter().map(|contract| contract.id).collect();
 
     let mut time = std::time::SystemTime::now();
-    let header_contract_history = load_contract_history(contract_head.bank_id, language, db).await;
+    let mut merged_histories = load_contract_history(contract_head.bank_id, language, db).await?;
     warn!(
         "Time to load header contract history: {:?}",
         time.elapsed().unwrap()
     );
 
-    if let Err(error) = header_contract_history {
-        return error;
-    }
-
-    let mut merged_histories = header_contract_history.unwrap();
-
     time = std::time::SystemTime::now();
     for contract in contracts.iter() {
-        let contract_histories = load_contract_history(contract.bank_id, language, db).await;
+        let mut contract_histories = load_contract_history(contract.bank_id, language, db).await?;
 
-        if let Err(error) = contract_histories {
-            return error;
-        }
+        let last_transaction = load_last_transaction_of_contract(contract.id, language, db).await?;
 
-        let mut contract_histories = contract_histories.unwrap();
-
-        let last_transaction = load_last_transaction_of_contract(contract.id, language, db).await;
-
-        if let Err(error) = last_transaction {
-            return error;
-        }
-
-        let last_transaction_date = last_transaction.unwrap().date;
+        let last_transaction_date = last_transaction.date;
 
         if let Some(latest_history) = contract_histories.last() {
             let changed_at = if let Some(end_date) = contract.end_date {
@@ -183,40 +161,28 @@ async fn process_contracts(
     }
 
     time = std::time::SystemTime::now();
-    let insert_result = insert_contract_histories(&histories_to_insert, language, db).await;
+    insert_contract_histories(&histories_to_insert, language, db).await?;
     warn!(
         "Time to insert contract histories: {:?}",
         time.elapsed().unwrap()
     );
 
-    if let Err(error) = insert_result {
-        return error;
-    }
-
     time = std::time::SystemTime::now();
-    let result = update_transactions_of_contract_to_new_contract(
+    update_transactions_of_contract_to_new_contract(
         contract_head_id,
         other_contract_ids.clone(),
         language,
         db,
     )
-    .await;
+    .await?;
     warn!("Time to update transactions: {:?}", time.elapsed().unwrap());
 
-    if let Err(error) = result {
-        return error;
-    }
-
     time = std::time::SystemTime::now();
-    let delete_result = delete_contracts_with_ids(other_contract_ids, language, db).await;
+    delete_contracts_with_ids(other_contract_ids, language, db).await?;
     warn!("Time to delete contracts: {:?}", time.elapsed().unwrap());
 
-    if let Err(error) = delete_result {
-        return error;
-    }
-
-    Json(ResponseData::new_success(
+    Ok(Json(SuccessResponse::new(
         LOCALIZATION.get_localized_string(language, "contracts_merged"),
         LOCALIZATION.get_localized_string(language, "contracts_merged_details"),
-    ))
+    )))
 }

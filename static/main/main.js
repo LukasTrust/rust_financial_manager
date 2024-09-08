@@ -3,6 +3,7 @@ import { update_performance } from './performanceUpdater.js';
 import { initializeChartAndDatePicker } from './chartManager.js';
 import { loadContracts } from './contractManager.js';
 import { loadTransactions } from './transactionManager.js';
+import { initializeSettings } from './settings.js';
 
 export function log(message, context = '', ...data) {
     console.log(`[${new Date().toISOString()}] [${context}] ${message}`, ...data);
@@ -81,6 +82,9 @@ export async function loadContent(url) {
             }
             else if (url === '/add-bank') {
                 initializeFormHandling();
+            }
+            else if (url === '/settings') {
+                initializeSettings();
             }
         }
 

@@ -6,7 +6,7 @@ use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, Contract, ContractHistory, User};
-use crate::utils::structs::ResponseData;
+use crate::utils::structs::ErrorResponse;
 
 use super::appstate::Language;
 use super::structs::{Bank, Transaction};
@@ -14,7 +14,7 @@ use super::structs::{Bank, Transaction};
 pub async fn load_user_by_email(
     email_for_loading: &str,
     db: &mut Connection<DbConn>,
-) -> Result<User, Json<ResponseData>> {
+) -> Result<User, Json<ErrorResponse>> {
     use crate::schema::users as users_without_dsl;
     use crate::schema::users::dsl::*;
 
@@ -24,7 +24,7 @@ pub async fn load_user_by_email(
         .await
         .map_err(|e| {
             error!("Error loading the user: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 String::new(),
                 "Login failed. Either the email or password was incorrect.".to_string(),
             ))
@@ -33,9 +33,9 @@ pub async fn load_user_by_email(
 
 pub async fn load_user_by_id(
     user_id_for_loading: i32,
-    language: Language,
+    user_language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<(String, String), Json<ResponseData>> {
+) -> Result<(String, String), Json<ErrorResponse>> {
     use crate::schema::users as users_without_dsl;
     use crate::schema::users::dsl::*;
 
@@ -46,9 +46,9 @@ pub async fn load_user_by_id(
         .await
         .map_err(|e| {
             error!("Error loading the user: {:?}", e);
-            Json(ResponseData::new_error(
-                LOCALIZATION.get_localized_string(language, "error_loading_user"),
-                LOCALIZATION.get_localized_string(language, "error_loading_user_details"),
+            Json(ErrorResponse::new(
+                LOCALIZATION.get_localized_string(user_language, "error_loading_user"),
+                LOCALIZATION.get_localized_string(user_language, "error_loading_user_details"),
             ))
         })
 }
@@ -58,7 +58,7 @@ pub async fn load_current_bank_of_user(
     bank_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Bank, Json<ResponseData>> {
+) -> Result<Bank, Json<ErrorResponse>> {
     use crate::schema::banks as banks_without_dsl;
     use crate::schema::banks::dsl::*;
 
@@ -69,7 +69,7 @@ pub async fn load_current_bank_of_user(
         .await
         .map_err(|e| {
             error!("Error loading the bank: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "no_bank_selected"),
                 LOCALIZATION.get_localized_string(language, "no_bank_selected_details"),
             ))
@@ -84,7 +84,7 @@ pub async fn load_banks_of_user(
     user_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Vec<Bank>, Json<ResponseData>> {
+) -> Result<Vec<Bank>, Json<ErrorResponse>> {
     use crate::schema::banks as banks_without_dsl;
     use crate::schema::banks::dsl::*;
 
@@ -94,7 +94,7 @@ pub async fn load_banks_of_user(
         .await
         .map_err(|e| {
             error!("Error loading banks: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_banks"),
                 LOCALIZATION.get_localized_string(language, "error_loading_banks_details"),
             ))
@@ -109,7 +109,7 @@ pub async fn load_transactions_of_bank(
     bank_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Vec<Transaction>, Json<ResponseData>> {
+) -> Result<Vec<Transaction>, Json<ErrorResponse>> {
     use crate::schema::transactions as transactions_without_dsl;
     use crate::schema::transactions::dsl::*;
 
@@ -119,7 +119,7 @@ pub async fn load_transactions_of_bank(
         .await
         .map_err(|e| {
             error!("Error loading transactions: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_transactions"),
                 LOCALIZATION.get_localized_string(language, "error_loading_transactions_details"),
             ))
@@ -130,7 +130,7 @@ pub async fn load_last_transaction_data_of_bank(
     bank_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Transaction, Json<ResponseData>> {
+) -> Result<Transaction, Json<ErrorResponse>> {
     use crate::schema::transactions as transactions_without_dsl;
     use crate::schema::transactions::dsl::*;
 
@@ -141,7 +141,7 @@ pub async fn load_last_transaction_data_of_bank(
         .await
         .map_err(|e| {
             error!("Error loading last transaction data: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_last_transactions"),
                 LOCALIZATION
                     .get_localized_string(language, "error_loading_last_transactions_details"),
@@ -153,7 +153,7 @@ pub async fn load_transactions_of_bank_without_contract_and_contract_allowed(
     bank_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Vec<Transaction>, Json<ResponseData>> {
+) -> Result<Vec<Transaction>, Json<ErrorResponse>> {
     use crate::schema::transactions as transactions_without_dsl;
     use crate::schema::transactions::dsl::*;
 
@@ -168,7 +168,7 @@ pub async fn load_transactions_of_bank_without_contract_and_contract_allowed(
         .await
         .map_err(|e| {
             error!("Error loading transactions: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_transactions"),
                 LOCALIZATION.get_localized_string(language, "error_loading_transactions_details"),
             ))
@@ -179,7 +179,7 @@ pub async fn load_transactions_of_contract(
     contract_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Vec<Transaction>, Json<ResponseData>> {
+) -> Result<Vec<Transaction>, Json<ErrorResponse>> {
     use crate::schema::transactions as transactions_without_dsl;
     use crate::schema::transactions::dsl::*;
 
@@ -189,7 +189,7 @@ pub async fn load_transactions_of_contract(
         .await
         .map_err(|e| {
             error!("Error loading transactions: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_transactions"),
                 LOCALIZATION.get_localized_string(language, "error_loading_transactions_details"),
             ))
@@ -200,7 +200,7 @@ pub async fn load_transaction_by_id(
     transaction_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Transaction, Json<ResponseData>> {
+) -> Result<Transaction, Json<ErrorResponse>> {
     use crate::schema::transactions as transactions_without_dsl;
     use crate::schema::transactions::dsl::*;
 
@@ -210,7 +210,7 @@ pub async fn load_transaction_by_id(
         .await
         .map_err(|e| {
             error!("Error loading transaction data: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_transactions"),
                 LOCALIZATION.get_localized_string(language, "error_loading_transactions_details"),
             ))
@@ -221,7 +221,7 @@ pub async fn load_last_transaction_of_contract(
     contract_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Transaction, Json<ResponseData>> {
+) -> Result<Transaction, Json<ErrorResponse>> {
     use crate::schema::transactions as transactions_without_dsl;
     use crate::schema::transactions::dsl::*;
 
@@ -232,7 +232,7 @@ pub async fn load_last_transaction_of_contract(
         .await
         .map_err(|e| {
             error!("Error loading last transaction data: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_last_transactions"),
                 LOCALIZATION
                     .get_localized_string(language, "error_loading_last_transactions_details"),
@@ -244,7 +244,7 @@ pub async fn load_contracts_of_bank(
     bank_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Vec<Contract>, Json<ResponseData>> {
+) -> Result<Vec<Contract>, Json<ErrorResponse>> {
     use crate::schema::contracts as contracts_without_dsl;
     use crate::schema::contracts::dsl::*;
 
@@ -254,7 +254,7 @@ pub async fn load_contracts_of_bank(
         .await
         .map_err(|e| {
             error!("Error loading contracts: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_contracts"),
                 LOCALIZATION.get_localized_string(language, "error_loading_contracts_details"),
             ))
@@ -265,7 +265,7 @@ pub async fn load_contracts_of_bank_without_end_date(
     bank_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Vec<Contract>, Json<ResponseData>> {
+) -> Result<Vec<Contract>, Json<ErrorResponse>> {
     use crate::schema::contracts as contracts_without_dsl;
     use crate::schema::contracts::dsl::*;
 
@@ -275,7 +275,7 @@ pub async fn load_contracts_of_bank_without_end_date(
         .await
         .map_err(|e| {
             error!("Error loading contracts: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_contracts"),
                 LOCALIZATION.get_localized_string(language, "error_loading_contracts_details"),
             ))
@@ -286,7 +286,7 @@ pub async fn load_contracts_from_ids(
     contract_ids_for_loading: Vec<i32>,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Vec<Contract>, Json<ResponseData>> {
+) -> Result<Vec<Contract>, Json<ErrorResponse>> {
     use crate::schema::contracts as contracts_without_dsl;
     use crate::schema::contracts::dsl::*;
 
@@ -296,7 +296,7 @@ pub async fn load_contracts_from_ids(
         .await
         .map_err(|e| {
             error!("Error loading contracts: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_contracts"),
                 LOCALIZATION.get_localized_string(language, "error_loading_contracts_details"),
             ))
@@ -307,7 +307,7 @@ pub async fn load_contract_history(
     contract_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Vec<ContractHistory>, Json<ResponseData>> {
+) -> Result<Vec<ContractHistory>, Json<ErrorResponse>> {
     use crate::schema::contract_history as contract_history_without_dsl;
     use crate::schema::contract_history::dsl::*;
 
@@ -317,7 +317,7 @@ pub async fn load_contract_history(
         .await
         .map_err(|e| {
             error!("Error loading contract history: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_contract_history"),
                 LOCALIZATION
                     .get_localized_string(language, "error_loading_contract_history_details"),
@@ -329,7 +329,7 @@ pub async fn load_csv_converter_of_bank(
     bank_id_for_loading: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<CSVConverter, Json<ResponseData>> {
+) -> Result<CSVConverter, Json<ErrorResponse>> {
     use crate::schema::csv_converters::dsl::*;
 
     csv_converters
@@ -338,7 +338,7 @@ pub async fn load_csv_converter_of_bank(
         .await
         .map_err(|e| {
             error!("Error loading csv converter: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_loading_csv_converter"),
                 LOCALIZATION.get_localized_string(language, "error_loading_csv_converter_details"),
             ))

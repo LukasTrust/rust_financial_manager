@@ -39,7 +39,6 @@ button:hover {
 
 .main-content {
     flex-grow: 1;
-    /* Allows the main content to grow and fill available space */
     padding: 20px;
 }
 
@@ -543,4 +542,9 @@ label {
     width: 100%;
     text-wrap: wrap;
     margin-bottom: 5px;
+}
+
+.flag {
+    margin: 0 10px;
+    cursor: pointer;
 }

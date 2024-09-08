@@ -75,7 +75,7 @@
     "contracts_merged_details": "The contracts have been merged successfully.",
     "error_inserting_bank": "Error inserting the bank",
     "error_inserting_bank_details": "There was an internal error while inserting the bank. Please try again.",
-    "error_inserting_bank_details_allready_exists": "A bank with this name already exists in your profile. Please choose a different bank name.",
+    "error_inserting_bank_details_already_exists": "A bank with this name already exists in your profile. Please choose a different bank name.",
     "error_loading_last_transactions": "Error loading last transactions",
     "error_loading_last_transactions_details": "There was an internal error while loading the last transactions. Please try again.",
     "error_inserting_contract_histories": "Error inserting contract histories",

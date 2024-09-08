@@ -12,10 +12,10 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, NewTransaction};
 use crate::utils::appstate::{AppState, Language, LOCALIZATION};
 use crate::utils::create_contract::create_contract_from_transactions;
-use crate::utils::get_utils::get_user_id;
+use crate::utils::get_utils::get_user_id_and_language;
 use crate::utils::insert_utiles::insert_transactions;
 use crate::utils::loading_utils::{load_csv_converter_of_bank, load_transactions_of_bank};
-use crate::utils::structs::{Bank, ResponseData, Transaction};
+use crate::utils::structs::{Bank, ErrorResponse, SuccessResponse, Transaction};
 
 #[post("/upload_csv", data = "<data>")]
 pub async fn upload_csv(
@@ -23,22 +23,25 @@ pub async fn upload_csv(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
-) -> Result<Json<ResponseData>, Json<ResponseData>> {
-    let cookie_user_id = get_user_id(cookies)?;
-    let language = state.get_user_language(cookie_user_id).await;
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
+    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
 
-    let current_bank = state.get_current_bank(cookie_user_id).await?;
+    let current_bank = state
+        .get_current_bank(cookie_user_id, cookie_user_language)
+        .await?;
 
-    let transactions_task = load_transactions_of_bank(current_bank.id, language, &mut db);
+    let transactions_task =
+        load_transactions_of_bank(current_bank.id, cookie_user_language, &mut db);
 
     // Read the CSV file
     let data_stream = match data.open(512.kibibytes()).into_bytes().await {
         Ok(bytes) => bytes,
         Err(_) => {
             error!("Failed to read CSV file");
-            return Ok(Json(ResponseData::new_error(
-                LOCALIZATION.get_localized_string(language, "error_reading_csv_file"),
-                LOCALIZATION.get_localized_string(language, "error_reading_csv_file_details"),
+            return Err(Json(ErrorResponse::new(
+                LOCALIZATION.get_localized_string(cookie_user_language, "error_reading_csv_file"),
+                LOCALIZATION
+                    .get_localized_string(cookie_user_language, "error_reading_csv_file_details"),
             )));
         }
     };
@@ -55,13 +58,13 @@ pub async fn upload_csv(
         &mut rdr,
         current_bank.clone(),
         existing_transactions,
-        language,
+        cookie_user_language,
         &mut db,
     )
     .await?;
 
-    Ok(Json(ResponseData::new_success(
-        LOCALIZATION.get_localized_string(language, "csv_file_read"),
+    Ok(Json(SuccessResponse::new(
+        LOCALIZATION.get_localized_string(cookie_user_language, "csv_file_read"),
         result,
     )))
 }
@@ -72,7 +75,7 @@ async fn extract_and_process_records<R: std::io::Read>(
     existing_transactions: Vec<Transaction>,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<String, Json<ResponseData>> {
+) -> Result<String, Json<ErrorResponse>> {
     let mut transactions_to_insert = vec![];
 
     let csv_converter = load_csv_converter_of_bank(current_bank.id, language, db).await?;
@@ -93,7 +96,7 @@ async fn extract_and_process_records<R: std::io::Read>(
             Ok(rec) => rec,
             Err(_) => {
                 error!("Failed to read CSV file");
-                return Err(Json(ResponseData::new_error(
+                return Err(Json(ErrorResponse::new(
                     LOCALIZATION.get_localized_string(language, "error_reading_csv_file"),
                     LOCALIZATION.get_localized_string(language, "error_reading_csv_file_details"),
                 )));
@@ -110,7 +113,7 @@ async fn extract_and_process_records<R: std::io::Read>(
                 idx if idx == date_index => {
                     date_from_csv = NaiveDate::parse_from_str(value, "%d.%m.%Y").map_err(|e| {
                         error!("Failed to parse date: {}", e);
-                        Json(ResponseData::new_error(
+                        Json(ErrorResponse::new(
                             LOCALIZATION.get_localized_string(language, "error_parsing_date"),
                             LOCALIZATION
                                 .get_localized_string(language, "error_parsing_date_details"),
@@ -143,7 +146,7 @@ async fn extract_and_process_records<R: std::io::Read>(
                         .parse::<f64>()
                         .map_err(|e| {
                             error!("Failed to parse amount: {}", e);
-                            Json(ResponseData::new_error(
+                            Json(ErrorResponse::new(
                                 LOCALIZATION.get_localized_string(language, "error_parsing_amount"),
                                 LOCALIZATION
                                     .get_localized_string(language, "error_parsing_amount_details"),
@@ -173,7 +176,7 @@ async fn extract_and_process_records<R: std::io::Read>(
                         .parse::<f64>()
                         .map_err(|e| {
                             error!("Failed to parse bank balance after: {}", e);
-                            Json(ResponseData::new_error(
+                            Json(ErrorResponse::new(
                                 LOCALIZATION.get_localized_string(
                                     language,
                                     "error_parsing_bank_balance_after",
@@ -227,14 +230,14 @@ async fn extract_and_process_records<R: std::io::Read>(
 fn validate_csv_converters(
     csv_converter: CSVConverter,
     language: Language,
-) -> Result<(), Json<ResponseData>> {
+) -> Result<(), Json<ErrorResponse>> {
     if csv_converter.date_column.is_none()
         || csv_converter.counterparty_column.is_none()
         || csv_converter.amount_column.is_none()
         || csv_converter.bank_balance_after_column.is_none()
     {
         error!("CSV converter not set up");
-        return Err(Json(ResponseData::new_error(
+        return Err(Json(ErrorResponse::new(
             LOCALIZATION.get_localized_string(language, "csv_converter_not_set_up"),
             LOCALIZATION.get_localized_string(language, "csv_converter_not_set_up_details"),
         )));

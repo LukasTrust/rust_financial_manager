@@ -4,10 +4,8 @@ diesel::table! {
     banks (id) {
         id -> Int4,
         user_id -> Int4,
-        #[max_length = 50]
-        name -> Varchar,
-        #[max_length = 200]
-        link -> Nullable<Varchar>,
+        name -> Text,
+        link -> Nullable<Text>,
     }
 }
 
@@ -25,10 +23,8 @@ diesel::table! {
     contracts (id) {
         id -> Int4,
         bank_id -> Int4,
-        #[max_length = 200]
-        name -> Varchar,
-        #[max_length = 200]
-        parse_name -> Varchar,
+        name -> Text,
+        parse_name -> Text,
         current_amount -> Float8,
         months_between_payment -> Int4,
         end_date -> Nullable<Date>,
@@ -52,8 +48,7 @@ diesel::table! {
         bank_id -> Int4,
         contract_id -> Nullable<Int4>,
         date -> Date,
-        #[max_length = 200]
-        counterparty -> Varchar,
+        counterparty -> Text,
         amount -> Float8,
         bank_balance_after -> Float8,
         is_hidden -> Bool,
@@ -64,14 +59,11 @@ diesel::table! {
 diesel::table! {
     users (id) {
         id -> Int4,
-        #[max_length = 50]
-        first_name -> Varchar,
-        #[max_length = 50]
-        last_name -> Varchar,
-        #[max_length = 100]
-        email -> Varchar,
-        #[max_length = 200]
-        password -> Varchar,
+        first_name -> Text,
+        last_name -> Text,
+        email -> Text,
+        password -> Text,
+        language -> Text,
     }
 }
 

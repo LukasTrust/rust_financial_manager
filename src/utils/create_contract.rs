@@ -20,9 +20,9 @@ use crate::utils::update_utils::{
 };
 
 use super::appstate::{Language, LOCALIZATION};
-use super::structs::{CounterpartyMap, ResponseData};
+use super::structs::{CounterpartyMap, ErrorResponse};
 
-type Result<T> = std::result::Result<T, Json<ResponseData>>;
+type Result<T> = std::result::Result<T, Json<ErrorResponse>>;
 
 pub async fn create_contract_from_transactions(
     bank_id: i32,
@@ -216,7 +216,7 @@ async fn create_contract_history(
         {
             Some(contract) => contract,
             None => {
-                return Err(Json(ResponseData::new_error(
+                return Err(Json(ErrorResponse::new(
                     LOCALIZATION.get_localized_string(language, "error_contract_not_found"),
                     LOCALIZATION.get_localized_string(language, "error_contract_not_found_details"),
                 )))

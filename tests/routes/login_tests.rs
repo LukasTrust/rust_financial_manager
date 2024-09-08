@@ -39,18 +39,17 @@ mod tests {
             .await;
 
         assert_eq!(response.status(), Status::Ok);
-        assert!(response
-            .into_string()
-            .await
-            .unwrap()
-            .contains("Login successful."),);
+
+        let response_string = response.into_string().await.unwrap();
+
+        assert!(response_string.contains("Login successful. Redirecting..."));
     }
 
     #[tokio::test]
     async fn test_login_user_failed_password_not_matching() {
         let client = get_test_client().await;
 
-        let user = "email=wrong_email@mail.com&password=Password123";
+        let user = "email=wrong_password@mail.com&password=test";
 
         let response = client
             .post("/login")
@@ -60,11 +59,12 @@ mod tests {
             .await;
 
         assert_eq!(response.status(), Status::Ok);
-        assert!(response
-            .into_string()
-            .await
-            .unwrap()
-            .contains("Login failed. Either the email or password was incorrect."),);
+
+        let response_string = response.into_string().await.unwrap();
+
+        assert!(
+            response_string.contains("Login failed. Either the email or password was incorrect."),
+        );
     }
 
     #[tokio::test]

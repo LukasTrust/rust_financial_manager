@@ -3,16 +3,14 @@ use log::{error, info};
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar};
 use rocket::serde::json::Json;
-use rocket::{get, post, State};
+use rocket::{get, post};
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 
 use crate::database::db_connector::DbConn;
-use crate::database::db_mocking::load_user_by_email_mocking;
 
-use crate::utils::appstate::AppState;
 use crate::utils::loading_utils::load_user_by_email;
-use crate::utils::structs::{FormUser, ResponseData};
+use crate::utils::structs::{ErrorResponse, FormUser, SuccessResponse};
 
 /// Display the login form.
 /// The form is used to collect user information such as email and password.
@@ -36,22 +34,13 @@ pub fn login_from_register(success: String) -> Template {
 #[post("/login", data = "<user_form>")]
 pub async fn login_user(
     user_form: Form<FormUser>,
-    state: &State<AppState>,
     cookies: &CookieJar<'_>,
     mut db: Connection<DbConn>,
-) -> Json<ResponseData> {
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let email_of_user = &user_form.email.to_lowercase();
     let password_of_user = &user_form.password;
 
-    let user = match state.use_mocking {
-        true => load_user_by_email_mocking(email_of_user),
-        false => load_user_by_email(email_of_user, &mut db).await,
-    };
-
-    let user = match user {
-        Ok(u) => u,
-        Err(e) => return e,
-    };
+    let user = load_user_by_email(email_of_user, &mut db).await?;
 
     info!("Login attempt for user with email: {}", email_of_user);
 
@@ -59,27 +48,28 @@ pub async fn login_user(
         Ok(true) => {
             info!("Login successful for user with email: {}", email_of_user);
             cookies.add_private(Cookie::new("user_id", user.id.to_string()));
-            Json(ResponseData::new_success(
+            cookies.add_private(Cookie::new("language", user.language));
+            Ok(Json(SuccessResponse::new(
                 String::new(),
                 "Login successful. Redirecting...".to_string(),
-            ))
+            )))
         }
         Ok(false) => {
             info!(
                 "Login failed for user with email, password did not match: {} {}",
                 email_of_user, password_of_user
             );
-            Json(ResponseData::new_error(
+            Err(Json(ErrorResponse::new(
                 String::new(),
                 "Login failed. Either the email or password was incorrect.".to_string(),
-            ))
+            )))
         }
         Err(err) => {
             error!("Login failed, bcrypt error: {}", err);
-            Json(ResponseData::new_error(
+            Err(Json(ErrorResponse::new(
                 String::new(),
-                "Login failed. Please input both email and passowrd.".to_string(),
-            ))
+                "Login failed. Either the email or password was incorrect.".to_string(),
+            )))
         }
     }
 }

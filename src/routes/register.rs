@@ -4,16 +4,14 @@ use log::{error, info};
 use regex::Regex;
 use rocket::form::Form;
 use rocket::serde::json::Json;
-use rocket::{get, post, State};
+use rocket::{get, post};
 use rocket_db_pools::{diesel, Connection};
 use rocket_dyn_templates::{context, Template};
 
 use crate::database::db_connector::DbConn;
-use crate::database::db_mocking::insert_user_mocking;
 use crate::database::models::NewUser;
-use crate::utils::appstate::AppState;
 use crate::utils::insert_utiles::insert_user;
-use crate::utils::structs::ResponseData;
+use crate::utils::structs::{ErrorResponse, SuccessResponse};
 
 /// Display the registration form.
 /// The form is used to collect user information such as first name, last name, email, and password.
@@ -32,31 +30,30 @@ pub fn register_form() -> Template {
 /// If there is an internal server error, an error message is displayed.
 #[post("/register", data = "<user_form>")]
 pub async fn register_user(
-    state: &State<AppState>,
     mut db: Connection<DbConn>,
     user_form: Form<NewUser>,
-) -> Json<ResponseData> {
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     if !is_valid_email(&user_form.email) {
         error!("Invalid email format.");
-        return Json(ResponseData::new_error(
+        return Err(Json(ErrorResponse::new(
             String::new(),
             "Invalid email format. Please use a valid email.".to_string(),
-        ));
+        )));
     }
 
     if !is_strong_password(&user_form.password) {
         error!("Weak password.");
-        return Json(ResponseData::new_error(String::new(), "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.".to_string()));
+        return Err(Json(ErrorResponse::new(String::new(), "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.".to_string())));
     }
 
     let hashed_password = match hash(user_form.password.clone(), DEFAULT_COST) {
         Ok(h) => h,
         Err(_) => {
             info!("Hashing password failed.");
-            return Json(ResponseData::new_error(
+            return Err(Json(ErrorResponse::new(
                 String::new(),
                 "Internal server error. Please try again later.".to_string(),
-            ));
+            )));
         }
     };
 
@@ -67,29 +64,26 @@ pub async fn register_user(
         password: hashed_password,
     };
 
-    let result = match state.use_mocking {
-        true => insert_user_mocking(new_user),
-        false => insert_user(new_user, &mut db).await,
-    };
+    let result = insert_user(new_user, &mut db).await;
 
     match result {
-        Ok(_) => Json(ResponseData::new_success(
+        Ok(_) => Ok(Json(SuccessResponse::new(
             String::new(),
             "Registration successful. Please log in.".to_string(),
-        )),
+        ))),
         Err(DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _)) => {
             info!("Registration failed, email already exists.");
-            Json(ResponseData::new_error(
+            Err(Json(ErrorResponse::new(
                 String::new(),
                 "Email already exists. Please use a different email.".to_string(),
-            ))
+            )))
         }
         Err(_) => {
             error!("Registration failed, database error.");
-            Json(ResponseData::new_error(
+            Err(Json(ErrorResponse::new(
                 String::new(),
                 "Internal server error. Please try again later.".to_string(),
-            ))
+            )))
         }
     }
 }

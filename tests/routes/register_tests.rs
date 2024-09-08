@@ -19,7 +19,7 @@ mod tests {
         let client = get_test_client().await;
 
         let new_user =
-            "first_name=John&last_name=Doe&email=john.doe@mail.com&password=S3cureP@ssw0rd!";
+            "first_name=Success&last_name=Doe&email=Success@mail.com&password=S3cureP@ssw0rd!";
 
         let response = client
             .post("/register")
@@ -29,11 +29,10 @@ mod tests {
             .await;
 
         assert_eq!(response.status(), Status::Ok);
-        assert!(response
-            .into_string()
-            .await
-            .unwrap()
-            .contains("Registration successful. Please log in."));
+
+        let response_body = response.into_string().await.unwrap();
+
+        assert!(response_body.contains("Registration successful. Please log in."));
     }
 
     #[tokio::test]
@@ -41,7 +40,7 @@ mod tests {
         let client = get_test_client().await;
 
         let new_user =
-            "first_name=John&last_name=Doe&email=copy_email@mail.com&password=S3cureP@ssw0rd!";
+            "first_name=Copy&last_name=Doe&email=copy_email@mail.com&password=S3cureP@ssw0rd!";
 
         let response = client
             .post("/register")
@@ -77,28 +76,6 @@ mod tests {
             .await
             .unwrap()
             .contains("Invalid email format. Please use a valid email."));
-    }
-
-    #[tokio::test]
-    async fn test_register_user_failed_internal_error() {
-        let client = get_test_client().await;
-
-        let new_user =
-            "first_name=John&last_name=Doe&email=internal_error@mail.com&password=S3cureP@ssw0rd!";
-
-        let response = client
-            .post("/register")
-            .header(ContentType::Form)
-            .body(new_user)
-            .dispatch()
-            .await;
-
-        assert_eq!(response.status(), Status::Ok);
-        assert!(response
-            .into_string()
-            .await
-            .unwrap()
-            .contains("Internal server error. Please try again later."));
     }
 
     #[test]

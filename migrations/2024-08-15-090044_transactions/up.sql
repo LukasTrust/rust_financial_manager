@@ -3,7 +3,7 @@ CREATE TABLE transactions (
     bank_id INT NOT NULL,
     contract_id INT,
     date DATE NOT NULL,
-    counterparty VARCHAR(200) NOT NULL,
+    counterparty text NOT NULL,
     amount FLOAT NOT NULL,
     bank_balance_after FLOAT NOT NULL,
     is_hidden BOOLEAN NOT NULL DEFAULT FALSE,

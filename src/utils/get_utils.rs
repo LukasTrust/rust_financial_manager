@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use log::{error, info};
+use log::error;
 use rocket::{http::CookieJar, serde::json::Json};
 use rocket_db_pools::Connection;
 
@@ -13,32 +13,53 @@ use super::{
         load_transactions_of_bank, load_transactions_of_contract,
     },
     structs::{
-        Bank, ContractWithHistory, PerformanceData, ResponseData, Transaction,
+        Bank, ContractWithHistory, ErrorResponse, PerformanceData, Transaction,
         TransactionWithContract,
     },
 };
 
-/// Extract the user ID from the user ID cookie.
-/// If the user ID cookie is not found or cannot be parsed, an error page is displayed.
-/// The user ID is returned if the user ID cookie is found and parsed successfully.
-pub fn get_user_id(cookies: &CookieJar<'_>) -> Result<i32, Json<ResponseData>> {
-    if let Some(cookie_user_id) = cookies.get_private("user_id") {
-        info!("User ID cookie found: {:?}", cookie_user_id.value());
+pub fn get_user_id(cookies: &CookieJar<'_>) -> Result<i32, Json<ErrorResponse>> {
+    let user_id = cookies
+        .get_private("user_id")
+        .and_then(|cookie| cookie.value().parse().ok());
 
-        cookie_user_id.value().parse::<i32>().map_err(|_| {
-            error!("Error parsing user ID cookie.");
-            Json(ResponseData::new_error(
-                "Error validating the login!".to_string(),
-                "Please login again.".to_string(),
-            ))
-        })
-    } else {
-        error!("No user ID cookie found.");
-        Err(Json(ResponseData::new_error(
-            "Error validating the login!".to_string(),
-            "Please login again.".to_string(),
-        )))
+    if user_id.is_none() {
+        error!("User ID not found in cookies.");
+        return Err(Json(ErrorResponse::new(
+            "User ID not found in cookies.".to_string(),
+            "Please log in again.".to_string(),
+        )));
     }
+
+    Ok(user_id.unwrap())
+}
+
+pub fn get_user_language(cookies: &CookieJar<'_>) -> Language {
+    let language = cookies.get_private("language").and_then(|cookie| {
+        let language = cookie.value();
+
+        match language {
+            "English" => Some(Language::English),
+            "German" => Some(Language::German),
+            _ => None,
+        }
+    });
+
+    if language.is_none() {
+        error!("Language not found in cookies.");
+        return Language::English;
+    }
+
+    language.unwrap()
+}
+
+pub fn get_user_id_and_language(
+    cookies: &CookieJar<'_>,
+) -> Result<(i32, Language), Json<ErrorResponse>> {
+    let user_id = get_user_id(cookies)?;
+    let language = get_user_language(cookies);
+
+    Ok((user_id, language))
 }
 
 pub fn get_first_date_and_last_date_from_bank(
@@ -72,7 +93,7 @@ pub async fn get_performance_value_and_graph_data(
     input_last_date: Option<NaiveDate>,
     language: Language,
     mut db: Connection<DbConn>,
-) -> Result<(PerformanceData, String), Json<ResponseData>> {
+) -> Result<(PerformanceData, String), Json<ErrorResponse>> {
     let mut all_transactions = Vec::new();
     let mut all_contracts = Vec::new();
 
@@ -119,7 +140,7 @@ pub async fn get_total_amount_paid_of_contract(
     contract_id: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<f64, Json<ResponseData>> {
+) -> Result<f64, Json<ErrorResponse>> {
     let transactions = load_transactions_of_contract(contract_id, language, db).await?;
 
     Ok(transactions.iter().map(|t| t.amount).sum())
@@ -129,7 +150,7 @@ pub async fn get_contracts_with_history(
     bank_id: i32,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<String, Json<ResponseData>> {
+) -> Result<String, Json<ErrorResponse>> {
     let mut contracts_with_history: Vec<ContractWithHistory> = Vec::new();
 
     let contracts = load_contracts_of_bank(bank_id, language, db).await?;
@@ -146,7 +167,7 @@ pub async fn get_contracts_with_history(
 
         let contract_with_history = ContractWithHistory {
             contract: contract.clone(),
-            contract_history: contract_history,
+            contract_history,
             total_amount_paid,
             last_payment_date,
         };
@@ -161,7 +182,7 @@ pub async fn get_transactions_with_contract(
     bank_id: i32,
     language: Language,
     mut db: Connection<DbConn>,
-) -> Result<String, Json<ResponseData>> {
+) -> Result<String, Json<ErrorResponse>> {
     let transactions = load_transactions_of_bank(bank_id, language, &mut db).await?;
 
     let mut transactions_with_contract = Vec::new();

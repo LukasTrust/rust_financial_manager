@@ -11,7 +11,7 @@ use crate::database::models::{
 };
 use crate::database::{db_connector::DbConn, models::NewBank};
 use crate::utils::appstate::LOCALIZATION;
-use crate::utils::structs::ResponseData;
+use crate::utils::structs::ErrorResponse;
 
 pub async fn insert_user(
     new_user: NewUser,
@@ -29,7 +29,7 @@ pub async fn insert_bank(
     new_bank: NewBank,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Bank, Json<ResponseData>> {
+) -> Result<Bank, Json<ErrorResponse>> {
     use crate::schema::banks;
 
     diesel::insert_into(banks::table)
@@ -44,7 +44,7 @@ pub async fn insert_bank(
                 _,
             ) = e
             {
-                return Json(ResponseData::new_error(
+                return Json(ErrorResponse::new(
                     LOCALIZATION.get_localized_string(language, "error_inserting_bank"),
                     LOCALIZATION.get_localized_string(
                         language,
@@ -53,7 +53,7 @@ pub async fn insert_bank(
                 ));
             }
             // Handle any other kind of error
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_inserting_bank"),
                 LOCALIZATION.get_localized_string(language, "error_inserting_bank_details"),
             ))
@@ -64,7 +64,7 @@ pub async fn insert_csv_converter(
     new_csv_converter: NewCSVConverter,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<CSVConverter, Json<ResponseData>> {
+) -> Result<CSVConverter, Json<ErrorResponse>> {
     use crate::schema::csv_converters;
 
     diesel::insert_into(csv_converters::table)
@@ -73,7 +73,7 @@ pub async fn insert_csv_converter(
         .await
         .map_err(|e| {
             error!("Error inserting csv converter: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_inserting_csv"),
                 LOCALIZATION.get_localized_string(language, "error_inserting_csv_details"),
             ))
@@ -84,7 +84,7 @@ pub async fn insert_contracts(
     new_contracts: &Vec<NewContract>,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Vec<Contract>, Json<ResponseData>> {
+) -> Result<Vec<Contract>, Json<ErrorResponse>> {
     use crate::schema::contracts;
 
     diesel::insert_into(contracts::table)
@@ -93,7 +93,7 @@ pub async fn insert_contracts(
         .await
         .map_err(|e| {
             error!("Error inserting contracts: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_inserting_contract"),
                 LOCALIZATION.get_localized_string(language, "error_inserting_contract_details"),
             ))
@@ -104,7 +104,7 @@ pub async fn insert_contract_histories(
     new_contract_histories: &Vec<NewContractHistory>,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<Vec<ContractHistory>, Json<ResponseData>> {
+) -> Result<Vec<ContractHistory>, Json<ErrorResponse>> {
     use crate::schema::contract_history;
 
     diesel::insert_into(contract_history::table)
@@ -113,7 +113,7 @@ pub async fn insert_contract_histories(
         .await
         .map_err(|e| {
             error!("Error inserting contract histories: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_inserting_contract_histories"),
                 LOCALIZATION
                     .get_localized_string(language, "error_inserting_contract_histories_details"),
@@ -126,7 +126,7 @@ pub async fn insert_transactions(
     existing_transactions: Vec<Transaction>,
     language: Language,
     db: &mut Connection<DbConn>,
-) -> Result<(usize, usize), Json<ResponseData>> {
+) -> Result<(usize, usize), Json<ErrorResponse>> {
     use crate::schema::transactions;
 
     info!(
@@ -154,7 +154,7 @@ pub async fn insert_transactions(
         .await
         .map_err(|e| {
             error!("Error inserting transactions: {:?}", e);
-            Json(ResponseData::new_error(
+            Json(ErrorResponse::new(
                 LOCALIZATION.get_localized_string(language, "error_inserting_transactions"),
                 LOCALIZATION.get_localized_string(language, "error_inserting_transactions_details"),
             ))
