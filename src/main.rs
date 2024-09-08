@@ -29,6 +29,7 @@ use routes::update_csv::update_csv;
 use routes::update_date_range::update_date_range;
 use routes::upload_csv::upload_csv;
 use rust_financial_manager::routes::get_data::get_graph_data;
+use rust_financial_manager::routes::settings::set_user_language;
 use rust_financial_manager::utils::appstate::AppState;
 use rust_financial_manager::{database, routes};
 
@@ -89,6 +90,8 @@ fn rocket() -> _ {
                 transaction_show,
                 transaction_not_allow_contract,
                 transaction_allow_contract,
+                // Settings
+                set_user_language,
             ],
         )
         .mount("/static", FileServer::from(relative!("static")).rank(11))

@@ -1,22 +1,27 @@
+<!-- bank_contract.tera -->
 <body>
     <div class="scroll-container">
         <div class="container-without-border">
-            <h1>Contracts</h1>
+            <h1>{{ translations.bank_contract_title }}</h1>
             <div class="container-without-border-horizontally-header">
-                <button id="merge-selected-btn" style="width: auto">Merge selected contracts</button>
-                <button id="delete-selected-btn" style="width: auto">Delete selected contracts</button>
-                <button id="scan-btn" style="width: auto">Scan for new contracts / contract changes</button>
-                <div class="container-without-border-horizontally"
-                        style="width: auto">
-                        <button id="toggle-closed-contracts"
-                            class="toggle-button">
-                            <div class="slider"></div>
-                        </button>
-                        <div class="container-without-border">
-                            <span>Show only open contracts</span>
-                            <span>Show closed contracts</span>
-                        </div>
+                <button id="merge-selected-btn" style="width: auto">
+                    {{ translations.bank_contract_merge_selected_button }}
+                </button>
+                <button id="delete-selected-btn" style="width: auto">
+                    {{ translations.bank_contract_delete_selected_button }}
+                </button>
+                <button id="scan-btn" style="width: auto">
+                    {{ translations.bank_contract_scan_button }}
+                </button>
+                <div class="container-without-border-horizontally" style="width: auto">
+                    <button id="toggle-closed-contracts" class="toggle-button">
+                        <div class="slider"></div>
+                    </button>
+                    <div class="container-without-border">
+                        <span>{{ translations.bank_contract_show_open_contracts_text }}</span>
+                        <span>{{ translations.bank_contract_show_closed_contracts_text }}</span>
                     </div>
+                </div>
             </div> 
             <div id="contract-container">
                 <!-- Contracts will be dynamically inserted here -->

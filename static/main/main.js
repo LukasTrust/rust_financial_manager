@@ -13,22 +13,13 @@ export function error(message, context = '', ...data) {
     console.error(`[${new Date().toISOString()}] [${context}] ${message}`, ...data);
 }
 
-export async function get_user_language() {
-    const response = await fetch('/get/user/language');
+export const state = {
+    language: 'English',
+};
 
-    const json = await response.json();
-
-    if (json.language) {
-        log('User language:', 'get_user_language', json.language);
-        user_language = json.language;
-    }
-    else {
-        error('Error getting user language:', 'get_user_language');
-    }
+export function setGloableLanguage(newLanguage) {
+    state.language = newLanguage;
 }
-
-
-export let user_language = 'English';
 
 document.addEventListener("DOMContentLoaded", function () {
     log('DOM content loaded. Initializing sidebar buttons and loading default content:', 'DOMContentLoaded');
@@ -72,7 +63,6 @@ export async function loadContent(url) {
             }
 
             if (url === '/dashboard' || /^\/bank\/\d+$/.test(url)) {
-                get_user_language();
                 initializeFormHandling();
                 handlePageWithGraphData();
             } else if (url === '/bank/contract') {

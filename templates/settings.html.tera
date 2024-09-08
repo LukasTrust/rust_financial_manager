@@ -1,11 +1,11 @@
 <h1>Select language</h1>
 <div class="container-without-border-horizontally" style="width: 200px">
         <div class="container-without-border">
-            <img src="/static/images/flags/english.png" img id="german-flag" alt="English Flag" class="flag" width="50" height="28">
+            <img src="/static/images/flags/english.png" img id="english-flag" alt="English Flag" class="flag" width="50" height="28">
             <p style="margin-left: 10px">English</p>
         </div>
         <div class="container-without-border">
-            <img src="/static/images/flags/german.png" img id="english-flag" alt="German Flag" class="flag" width="50" height="28">
+            <img src="/static/images/flags/german.png" img id="german-flag" alt="German Flag" class="flag" width="50" height="28">
             <p style="margin-left: 10px">German</p>
         </div>
 </div>

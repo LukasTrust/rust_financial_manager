@@ -7,7 +7,7 @@ use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, ContractHistory};
-use crate::schema::{contract_history, contracts, csv_converters, transactions};
+use crate::schema::{contract_history, contracts, csv_converters, transactions, users};
 use crate::utils::appstate::LOCALIZATION;
 
 use super::appstate::Language;
@@ -217,6 +217,26 @@ pub async fn update_contract_history(
                 LOCALIZATION.get_localized_string(language, "error_updating_contract_history"),
                 LOCALIZATION
                     .get_localized_string(language, "error_updating_contract_history_details"),
+            ))
+        })
+}
+
+pub async fn update_user_with_language(
+    user_id: i32,
+    new_language: Language,
+    db: &mut Connection<DbConn>,
+) -> Result<usize, Json<ErrorResponse>> {
+    use crate::schema::users::*;
+
+    diesel::update(users::table.find(user_id))
+        .set(language.eq(new_language.to_string()))
+        .execute(db)
+        .await
+        .map_err(|e| {
+            error!("Error updating user with language: {:?}", e);
+            Json(ErrorResponse::new(
+                LOCALIZATION.get_localized_string(new_language, "error_updating_user"),
+                LOCALIZATION.get_localized_string(new_language, "error_updating_user_details"),
             ))
         })
 }

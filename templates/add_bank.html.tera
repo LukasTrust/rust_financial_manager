@@ -1,33 +1,34 @@
+<!-- add_bank.tera -->
 <body>
 <div class="container-without-border">
-<h1>Add bank</h1>
-<form id="add_bankForm" action="/add-bank" method="post">
-    <div class="form-group">
-        <label for="name">Name</label>
-        <input type="text" id="name" name="name" required>
-    </div>
-    <div class="form-group">
-        <label for="link">Link (Optional)</label>
-        <input type="text" id="link" name="link">
-    </div>
-    <h2>Add CSV Headers (Can be added later)</h2>
-    <div class="form-group">
-        <label for="counterparty_column">Counterparty column (Optional)</label>
-        <input type="number" id="counterparty_column" name="counterparty_column" min="0" step="1">
-    </div>
-    <div class="form-group">
-        <label for="amount_column">Amount column (Optional)</label>
-        <input type="number" id="amount_column" name="amount_column" min="0" step="1">
-    </div>
-    <div class="form-group">
-        <label for="bank_balance_after_column">Balance after transaction column (Optional)</label>
-        <input type="number" id="bank_balance_after_column" name="bank_balance_after_column" min="0" step="1">
-    </div>
-    <div class="form-group">
-        <label for="date_column">Date column (Optional)</label>
-        <input type="number" id="date_column" name="date_column" min="0" step="1">
-    </div>
-    <button type="submit">Submit</button>
-</form>
+    <h1>{{ translations.add_bank_title }}</h1>
+    <form id="add_bankForm" action="/add-bank" method="post">
+        <div class="form-group">
+            <label for="name">{{ translations.add_bank_form_name_label }}</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        <div class="form-group">
+            <label for="link">{{ translations.add_bank_form_link_label }}</label>
+            <input type="text" id="link" name="link">
+        </div>
+        <h2>{{ translations.add_bank_csv_headers_title }}</h2>
+        <div class="form-group">
+            <label for="counterparty_column">{{ translations.add_bank_counterparty_column_label }}</label>
+            <input type="number" id="counterparty_column" name="counterparty_column" min="0" step="1">
+        </div>
+        <div class="form-group">
+            <label for="amount_column">{{ translations.add_bank_amount_column_label }}</label>
+            <input type="number" id="amount_column" name="amount_column" min="0" step="1">
+        </div>
+        <div class="form-group">
+            <label for="bank_balance_after_column">{{ translations.add_bank_balance_after_column_label }}</label>
+            <input type="number" id="bank_balance_after_column" name="bank_balance_after_column" min="0" step="1">
+        </div>
+        <div class="form-group">
+            <label for="date_column">{{ translations.add_bank_date_column_label }}</label>
+            <input type="number" id="date_column" name="date_column" min="0" step="1">
+        </div>
+        <button type="submit">{{ translations.add_bank_submit_button }}</button>
+    </form>
 </div>
 </body>

@@ -9,14 +9,19 @@ use serde_json::Value;
 use crate::database::db_connector::DbConn;
 use crate::database::models::{NewBank, NewCSVConverter};
 use crate::utils::appstate::LOCALIZATION;
-use crate::utils::get_utils::get_user_id_and_language;
+use crate::utils::get_utils::{get_user_id_and_language, get_user_language};
 use crate::utils::insert_utiles::{insert_bank, insert_csv_converter};
 use crate::utils::loading_utils::load_banks_of_user;
 use crate::utils::structs::{ErrorResponse, FormBank, SuccessResponse};
+use crate::utils::translation_utils::get_add_bank_localized_strings;
 
 #[get("/add-bank")]
-pub async fn add_bank() -> Template {
-    Template::render("add_bank", json!({}))
+pub async fn add_bank(cookies: &CookieJar<'_>) -> Template {
+    let cookie_user_language = get_user_language(cookies);
+
+    let localized_strings = get_add_bank_localized_strings(cookie_user_language);
+
+    Template::render("add_bank", json!({ "translations": localized_strings }))
 }
 
 #[post("/add-bank", data = "<bank_form>")]

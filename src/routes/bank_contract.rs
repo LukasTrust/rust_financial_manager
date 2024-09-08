@@ -20,11 +20,19 @@ use crate::utils::merge_contracts::{
     handle_all_closed_contracts, handle_open_and_closed_contracts,
 };
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
+use crate::utils::translation_utils::get_bank_contract_localized_strings;
 use crate::utils::update_utils::update_contract_with_new_name;
 
 #[get("/bank/contract")]
-pub async fn bank_contract() -> Result<Template, Redirect> {
-    Ok(Template::render("bank_contract", json!({})))
+pub async fn bank_contract(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
+    let cookie_user_language = get_user_language(cookies);
+
+    let localized_strings = get_bank_contract_localized_strings(cookie_user_language);
+
+    Ok(Template::render(
+        "bank_contract",
+        json!({ "translations": localized_strings }),
+    ))
 }
 
 #[get("/bank/contract/data")]
