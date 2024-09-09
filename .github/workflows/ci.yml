@@ -4,127 +4,66 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'src/**'
+      - 'tests/**'
   pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+  schedule:
+    - cron: '0 0 * * 0'  # Run the CI every Sunday at midnight
 
 jobs:
-  setup:
+  all_in_one:
     runs-on: ubuntu-latest
     container:
       image: rust:latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Rust
-        run: rustc --version && cargo --version
-      - name: Install cargo-tarpaulin and cargo-audit
-        run: cargo install cargo-tarpaulin cargo-audit
-      - name: Install Diesel CLI
-        run: |
-          cargo install diesel_cli --no-default-features --features postgres
-      - name: Add Cargo Bin to PATH
-        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH  # This adds the Cargo bin directory to the system PATH
 
-  build:
-    runs-on: ubuntu-latest
-    container:
-      image: rust:latest
-    needs: setup
-    steps:
-      - uses: actions/checkout@v3
-      - name: Cache cargo builds
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+      # Setup Rust environment and tools
+      - name: Set up Rust
+        run: |
+          rustc --version && cargo --version
+          rustup component add clippy rustfmt
+          cargo install cargo-tarpaulin cargo-audit
+          cargo install diesel_cli --no-default-features --features postgres
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      # Build the project
       - name: Build
         run: cargo build
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: build
-          path: target/debug
 
-  test:
-    runs-on: ubuntu-latest
-    container:
-      image: rust:latest
-    needs: [setup, build]
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set ROCKET_ENV to test
-        run: echo "ROCKET_ENV=test" >> $GITHUB_ENV
-      - name: Replace Database URL in Rocket.toml
-        run: sed -i 's|url = "postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@192.168.178.48/financial_manager"|url = "postgres://postgres:postgres@localhost:5432/postgres_db"|' Rocket.toml
-      - name: Run Diesel Migrations
+      # Set environment variables and run tests
+      - name: Test with PostgreSQL
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres_db
-        run: diesel migration run
-      - name: Run Tests
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres_db
-        run: cargo test
+          ROCKET_ENV: test
+        run: |
+          # Set up PostgreSQL service
+          sudo service postgresql start
+          psql -U postgres -c "CREATE DATABASE postgres_db;"
+          
+          # Run migrations
+          diesel migration run
 
-  lint_format:
-    runs-on: ubuntu-latest
-    container:
-      image: rust:latest
-    needs: setup
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install Clippy and Rustfmt
-        run: rustup component add clippy rustfmt
-      - name: Lint Code
-        run: cargo clippy -- -D warnings
-      - name: Check Formatting
-        run: cargo fmt --check
+          # Run tests
+          cargo test
 
-  coverage:
-    runs-on: ubuntu-latest
-    container:
-      image: rust:latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v3
+      # Lint and format code
+      - name: Lint and Format
+        run: |
+          cargo clippy -- -D warnings
+          cargo fmt --check
+
+      # Run code coverage
       - name: Run Coverage
         run: cargo tarpaulin --engine llvm --ignore-tests --out Xml
-      - name: Upload Coverage
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-report
-          path: cobertura.xml
 
-  docs_benchmark_audit:
-    runs-on: ubuntu-latest
-    container:
-      image: rust:latest
-    needs: [setup, test]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Generate Documentation
-        run: cargo doc --no-deps
-      - name: Run Benchmarks
-        run: cargo bench
-      - name: Run Security Audit
-        run: cargo audit
-      - name: Upload Audit Report
-        uses: actions/upload-artifact@v3
-        with:
-          name: dependency-scanning-report
-          path: gl-dependency-scanning-report.json
+      # Generate documentation, run benchmarks, and audit dependencies
+      - name: Documentation, Benchmarks, and Audit
+        run: |
+          cargo doc --no-deps
+          cargo bench
+          cargo audit
