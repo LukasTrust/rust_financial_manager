@@ -540,8 +540,6 @@ function handleAddContract(index) {
     backdrop.appendChild(modal);
 
     document.body.appendChild(backdrop);
-
-    backdrop.style.display = 'flex';
 }
 
 function addSelectedContract(index) {

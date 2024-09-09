@@ -181,5 +181,19 @@
     "dashboard_total_amount_per_year_label": "Total amount per year:",
     "dashboard_contracts_one_month_label": "Contracts one month:",
     "dashboard_contracts_three_month_label": "Contracts three months:",
-    "dashboard_contracts_six_month_label": "Contracts six months:"
+    "dashboard_contracts_six_month_label": "Contracts six months:",
+    "error_password_hashing": "Error hashing the password",
+    "error_password_hashing_details": "There was an internal error while hashing the password. Please try again.",
+    "error_old_password_does_not_match": "Old password does not match",
+    "error_old_password_does_not_match_details": "The old password does not match. Please try again.",
+    "error_new_passwords_do_not_match": "New passwords do not match each other",
+    "error_new_passwords_do_not_match_details": "The new passwords do not match each other. Please try again.",
+    "error_weak_password": "Weak password",
+    "error_weak_password_details": "Password must be at least 10 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.",
+    "password_changed": "Password changed",
+    "password_changed_details": "The password has been changed successfully.",
+    "error_deleting_user": "Error deleting user",
+    "error_deleting_user_details": "There was an internal error while deleting the user. Please try again.",
+    "account_deleted": "Account deleted",
+    "account_deleted_details": "The account has been deleted successfully. You will be redirected to the login page."
 }

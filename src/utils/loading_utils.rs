@@ -35,6 +35,27 @@ pub async fn load_user_by_id(
     user_id_for_loading: i32,
     user_language: Language,
     db: &mut Connection<DbConn>,
+) -> Result<User, Json<ErrorResponse>> {
+    use crate::schema::users as users_without_dsl;
+    use crate::schema::users::dsl::*;
+
+    users_without_dsl::table
+        .filter(id.eq(user_id_for_loading))
+        .first::<User>(db)
+        .await
+        .map_err(|e| {
+            error!("Error loading the user: {:?}", e);
+            Json(ErrorResponse::new(
+                LOCALIZATION.get_localized_string(user_language, "error_loading_user"),
+                LOCALIZATION.get_localized_string(user_language, "error_loading_user_details"),
+            ))
+        })
+}
+
+pub async fn load_user_by_name(
+    user_id_for_loading: i32,
+    user_language: Language,
+    db: &mut Connection<DbConn>,
 ) -> Result<(String, String), Json<ErrorResponse>> {
     use crate::schema::users as users_without_dsl;
     use crate::schema::users::dsl::*;

@@ -1,11 +1,48 @@
-<h1>Select language</h1>
-<div class="container-without-border-horizontally" style="width: 200px">
+<div class="container-without-border-horizontally">
+    <!-- Change Password Section -->
+    <div class="container-without-border">
         <div class="container-without-border">
-            <img src="/static/images/flags/english.png" img id="english-flag" alt="English Flag" class="flag" width="50" height="28">
-            <p style="margin-left: 10px">English</p>
+            <h2>Change Password</h2>
+
+            <form id="change_passwordForm" action="/change_password" method="post">
+                <div class="form-group">
+                    <label for="old_password">Old Password:</label>
+                    <input type="password" id="old_password" name="old_password"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label for="new_password">New Password:</label>
+                    <input type="password" id="new_password" name="new_password"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password">Confirm Password:</label>
+                    <input type="password" id="confirm_password" name="confirm_password"
+                        required>
+                </div>
+                <button type="submit">Change Password</button>
+            </form>
         </div>
+
+        <!-- Delete Account Section -->
         <div class="container-without-border">
-            <img src="/static/images/flags/german.png" img id="german-flag" alt="German Flag" class="flag" width="50" height="28">
-            <p style="margin-left: 10px">German</p>
+            <h2>Account Management</h2>
+            <button type="button" id="delete_account"
+                style="background-color: red; color: white;">Delete
+                Account</button>
         </div>
+    </div>
+
+    <div class="container-without-border">
+        <h2>Select language</h2>
+
+        <div class="container-without-border-horizontally">
+            <img src="/static/images/flags/english.png" id="english-flag"
+                width="200" height="113"
+                alt="English Flag" class="flag">
+            <img src="/static/images/flags/german.png" id="german-flag"
+                width="200" height="113"
+                alt="German Flag" class="flag">
+        </div>
+    </div>
 </div>

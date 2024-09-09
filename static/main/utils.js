@@ -11,8 +11,8 @@ export function formatDate(dateString) {
     return `${day}.${month}.${year}`;
 }
 
-export function displayCustomAlert(type, header_text, body_text, button_text = 'Close') {
-    log('Displaying custom alert:', 'displayCustomAlert', type, header_text, body_text, button_text);
+export function displayCustomAlert(type, header_text, body_text, button_text = 'Close', countdown = 0) {
+    log('Displaying custom alert:', 'displayCustomAlert', type, header_text, body_text, button_text, countdown);
 
     // Create the backdrop
     const backdrop = document.createElement('div');
@@ -43,12 +43,12 @@ export function displayCustomAlert(type, header_text, body_text, button_text = '
         <div class="container-without-border">
             <div class="container-without-border-horizontally">
                 <span class="alert-icon">${icon}</span>
-                <div style="flex-grow: 1;">
-                    <strong>${header_text}</strong>
+                <div style="flex-grow: 1;" class="alert-header-text">
+                    <strong>${header_text}</strong> <span class="alert-timer">${countdown > 0 ? `(${countdown}s)` : ''}</span>
                 </div>
             </div>
             <p>${body_text}</p>
-            <button class="alert-close">${button_text}</button>
+            ${button_text ? `<button class="alert-close" disabled>${button_text}</button>` : ''}
         </div>
     `;
 
@@ -56,12 +56,39 @@ export function displayCustomAlert(type, header_text, body_text, button_text = '
     document.body.appendChild(backdrop);
     document.body.appendChild(alert);
 
+    // Timer logic
+    if (countdown > 0) {
+        const timerElement = alert.querySelector('.alert-timer');
+        const closeButton = alert.querySelector('.alert-close');
+
+        let timerInterval = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                timerElement.textContent = `(${countdown}s)`;
+            } else {
+                clearInterval(timerInterval);
+                timerElement.textContent = ''; // Clear the timer text
+                if (closeButton) {
+                    closeButton.disabled = false; // Enable the button
+                }
+            }
+        }, 1000);
+    } else {
+        // If no countdown is set or it's zero, enable the button immediately
+        const closeButton = alert.querySelector('.alert-close');
+        if (closeButton) {
+            closeButton.disabled = false;
+        }
+    }
+
     // Add click event to the close button
     const closeButton = alert.querySelector('.alert-close');
-    closeButton.addEventListener('click', () => {
-        document.body.removeChild(alert);
-        document.body.removeChild(backdrop);
-    });
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            document.body.removeChild(alert);
+            document.body.removeChild(backdrop);
+        });
+    }
 }
 
 export async function parseJsonResponse(response) {

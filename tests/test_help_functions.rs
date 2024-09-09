@@ -29,7 +29,9 @@ use rust_financial_manager::routes::bank_transaction::{
     transaction_set_old_amount, transaction_update_contract_amount,
 };
 use rust_financial_manager::routes::get_data::get_graph_data;
-use rust_financial_manager::routes::settings::set_user_language;
+use rust_financial_manager::routes::settings::{
+    change_password, delete_account, set_user_language,
+};
 use rust_financial_manager::utils::appstate::{AppState, Language};
 use rust_financial_manager::utils::delete_utils::{delete_bank_by_name, delete_user_by_email};
 use rust_financial_manager::utils::insert_utiles::{insert_bank, insert_user};
@@ -122,6 +124,8 @@ async fn init_client() -> Client {
                 set_up_test_data,
                 // Settings
                 set_user_language,
+                change_password,
+                delete_account,
             ],
         )
         .mount("/static", FileServer::from(relative!("static")).rank(11))

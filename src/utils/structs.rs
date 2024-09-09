@@ -151,3 +151,10 @@ pub struct TransactionWithContract {
     pub transaction: Transaction,
     pub contract: Option<Contract>,
 }
+
+#[derive(Debug, Serialize, FromForm)]
+pub struct ChangePassword {
+    pub old_password: String,
+    pub new_password: String,
+    pub confirm_password: String,
+}

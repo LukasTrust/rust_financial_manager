@@ -180,5 +180,19 @@
     "dashboard_total_amount_per_year_label": "Gesamtbetrag pro Jahr:",
     "dashboard_contracts_one_month_label": "Verträge ein Monat:",
     "dashboard_contracts_three_month_label": "Verträge drei Monate:",
-    "dashboard_contracts_six_month_label": "Verträge sechs Monate:"
+    "dashboard_contracts_six_month_label": "Verträge sechs Monate:",
+    "error_password_hashing": "Fehler beim Hashen des Passworts",
+    "error_password_hashing_details": "Es gab einen internen Fehler beim Hashen des Passworts. Bitte versuchen Sie es erneut.",
+    "error_old_password_does_not_match": "Das alte Passwort stimmt nicht überein",
+    "error_old_password_does_not_match_details": "Das alte Passwort stimmt nicht überein. Bitte versuchen Sie es erneut.",
+    "error_new_passwords_do_not_match": "Die neuen Passwörter stimmen nicht überein",
+    "error_new_passwords_do_not_match_details": "Die neuen Passwörter stimmen nicht überein. Bitte versuchen Sie es erneut.",
+    "error_weak_password": "Schwaches Passwort",
+    "error_weak_password_details": "Das Passwort ist zu schwach. Bitte verwenden Sie mindestens 8 Zeichen, darunter mindestens einen Großbuchstaben, einen Kleinbuchstaben, eine Zahl und ein Sonderzeichen.",
+    "password_changed": "Password geändert",
+    "password_changed_details": "Das Passwort wurde erfolgreich geändert.",
+    "error_deleting_user": "Fehler beim Löschen des Benutzers",
+    "error_deleting_user_details": "Es gab einen internen Fehler beim Löschen des Benutzers. Bitte versuchen Sie es erneut.",
+    "account_deleted": "Konto gelöscht",
+    "account_deleted_details": "Das Konto wurde erfolgreich gelöscht. Du wirst zur Anmeldeseite weitergeleitet."
 }

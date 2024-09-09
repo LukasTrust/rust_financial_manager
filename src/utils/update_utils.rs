@@ -240,3 +240,24 @@ pub async fn update_user_with_language(
             ))
         })
 }
+
+pub async fn update_user_password(
+    user_id: i32,
+    new_password: String,
+    user_language: Language,
+    db: &mut Connection<DbConn>,
+) -> Result<usize, Json<ErrorResponse>> {
+    use crate::schema::users::*;
+
+    diesel::update(users::table.find(user_id))
+        .set(password.eq(new_password))
+        .execute(db)
+        .await
+        .map_err(|e| {
+            error!("Error updating user password: {:?}", e);
+            Json(ErrorResponse::new(
+                LOCALIZATION.get_localized_string(user_language, "error_updating_user"),
+                LOCALIZATION.get_localized_string(user_language, "error_updating_user_details"),
+            ))
+        })
+}

@@ -8,7 +8,7 @@ use rocket_dyn_templates::Template;
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::{AppState, LOCALIZATION};
 use crate::utils::get_utils::{get_user_id, get_user_id_and_language, get_user_language};
-use crate::utils::loading_utils::{load_banks_of_user, load_user_by_id};
+use crate::utils::loading_utils::{load_banks_of_user, load_user_by_name};
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::translation_utils::{
     get_base_localized_strings, get_dashboard_localized_strings,
@@ -74,7 +74,7 @@ pub async fn dashboard(
     let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
 
     let (user_first_name, user_last_name) =
-        load_user_by_id(cookie_user_id, cookie_user_language, &mut db).await?;
+        load_user_by_name(cookie_user_id, cookie_user_language, &mut db).await?;
 
     state.set_current_bank(cookie_user_id, None).await;
 

@@ -18,7 +18,10 @@ jobs:
       - name: Install cargo-tarpaulin and cargo-audit
         run: cargo install cargo-tarpaulin cargo-audit
       - name: Install Diesel CLI
-        run: cargo install diesel_cli --no-default-features --features postgres
+        run: |
+          cargo install diesel_cli --no-default-features --features postgres
+      - name: Add Cargo Bin to PATH
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH  # This adds the Cargo bin directory to the system PATH
 
   build:
     runs-on: ubuntu-latest

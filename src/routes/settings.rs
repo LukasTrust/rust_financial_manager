@@ -1,6 +1,9 @@
+use bcrypt::{hash, verify, DEFAULT_COST};
 use rocket::{
+    form::Form,
     get,
     http::{Cookie, CookieJar},
+    post,
     serde::json::Json,
 };
 use rocket_db_pools::Connection;
@@ -9,11 +12,15 @@ use crate::{
     database::db_connector::DbConn,
     utils::{
         appstate::{Language, LOCALIZATION},
+        delete_utils::delete_user_by_id,
         get_utils::get_user_id_and_language,
-        structs::{ErrorResponse, SuccessResponse},
-        update_utils::update_user_with_language,
+        loading_utils::load_user_by_id,
+        structs::{ChangePassword, ErrorResponse, SuccessResponse},
+        update_utils::{update_user_password, update_user_with_language},
     },
 };
+
+use super::register::is_strong_password;
 
 #[get["/user/set_language/<new_language>"]]
 pub async fn set_user_language(
@@ -50,5 +57,103 @@ pub async fn set_user_language(
     Ok(Json(SuccessResponse::new(
         LOCALIZATION.get_localized_string(language, "new_language_set"),
         LOCALIZATION.get_localized_string(language, "new_language_set_details"),
+    )))
+}
+
+#[post("/change_password", data = "<change_password>")]
+pub async fn change_password(
+    cookies: &CookieJar<'_>,
+    change_password: Form<ChangePassword>,
+    mut db: Connection<DbConn>,
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
+    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+
+    let user = load_user_by_id(cookie_user_id, cookie_user_language, &mut db).await?;
+
+    match verify(change_password.old_password.clone(), &user.password) {
+        Ok(true) => {
+            if change_password.new_password != change_password.confirm_password {
+                return Err(Json(ErrorResponse::new(
+                    LOCALIZATION.get_localized_string(
+                        cookie_user_language,
+                        "error_new_passwords_do_not_match",
+                    ),
+                    LOCALIZATION.get_localized_string(
+                        cookie_user_language,
+                        "error_new_passwords_do_not_match_details",
+                    ),
+                )));
+            }
+
+            if !is_strong_password(&change_password.new_password) {
+                return Err(Json(ErrorResponse::new(
+                    LOCALIZATION.get_localized_string(cookie_user_language, "error_weak_password"),
+                    LOCALIZATION
+                        .get_localized_string(cookie_user_language, "error_weak_password_details"),
+                )));
+            }
+            let hashed_password = match hash(change_password.new_password.clone(), DEFAULT_COST) {
+                Ok(h) => h,
+                Err(_) => {
+                    return Err(Json(ErrorResponse::new(
+                        LOCALIZATION
+                            .get_localized_string(cookie_user_language, "error_password_hashing"),
+                        LOCALIZATION.get_localized_string(
+                            cookie_user_language,
+                            "error_password_hashing_details",
+                        ),
+                    )));
+                }
+            };
+
+            update_user_password(
+                cookie_user_id,
+                hashed_password,
+                cookie_user_language,
+                &mut db,
+            )
+            .await?;
+
+            return Ok(Json(SuccessResponse::new(
+                LOCALIZATION.get_localized_string(cookie_user_language, "password_changed"),
+                LOCALIZATION.get_localized_string(cookie_user_language, "password_changed_details"),
+            )));
+        }
+        Ok(false) => {
+            return Err(Json(ErrorResponse::new(
+                LOCALIZATION.get_localized_string(
+                    cookie_user_language,
+                    "error_old_password_does_not_match",
+                ),
+                LOCALIZATION.get_localized_string(
+                    cookie_user_language,
+                    "error_old_password_does_not_match_details",
+                ),
+            )));
+        }
+        Err(_) => {
+            return Err(Json(ErrorResponse::new(
+                LOCALIZATION.get_localized_string(cookie_user_language, "error_password_hashing"),
+                LOCALIZATION
+                    .get_localized_string(cookie_user_language, "error_password_hashing_details"),
+            )));
+        }
+    }
+}
+
+#[get("/delete_account")]
+pub async fn delete_account(
+    cookies: &CookieJar<'_>,
+    mut db: Connection<DbConn>,
+) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
+    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+
+    delete_user_by_id(cookie_user_id, cookie_user_language, &mut db).await?;
+
+    cookies.remove_private(Cookie::build("user_id"));
+
+    Ok(Json(SuccessResponse::new(
+        LOCALIZATION.get_localized_string(cookie_user_language, "account_deleted"),
+        LOCALIZATION.get_localized_string(cookie_user_language, "account_deleted_details"),
     )))
 }
