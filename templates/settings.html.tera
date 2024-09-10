@@ -2,47 +2,47 @@
     <!-- Change Password Section -->
     <div class="container-without-border">
         <div class="container-without-border">
-            <h2>Change Password</h2>
+            <h2>{{ translations.settings_change_password_title }}</h2>
 
             <form id="change_passwordForm" action="/change_password" method="post">
                 <div class="form-group">
-                    <label for="old_password">Old Password:</label>
-                    <input type="password" id="old_password" name="old_password"
-                        required>
+                    <label for="old_password">{{ translations.settings_old_password_label }}</label>
+                    <input type="password" id="old_password" name="old_password" required>
                 </div>
                 <div class="form-group">
-                    <label for="new_password">New Password:</label>
-                    <input type="password" id="new_password" name="new_password"
-                        required>
+                    <label for="new_password">{{ translations.settings_new_password_label }}</label>
+                    <input type="password" id="new_password" name="new_password" required>
                 </div>
                 <div class="form-group">
-                    <label for="confirm_password">Confirm Password:</label>
-                    <input type="password" id="confirm_password" name="confirm_password"
-                        required>
+                    <label for="confirm_password">{{ translations.settings_confirm_password_label }}</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required>
                 </div>
-                <button type="submit">Change Password</button>
+                
+                <!-- Apply primary button style -->
+                <button type="submit" class="button btn-primary">{{ translations.settings_change_password_button }}</button>
             </form>
         </div>
 
         <!-- Delete Account Section -->
         <div class="container-without-border">
-            <h2>Account Management</h2>
-            <button type="button" id="delete_account"
-                style="background-color: red; color: white;">Delete
-                Account</button>
+            <h2>{{ translations.settings_account_management_title }}</h2>
+            <!-- Apply danger button style -->
+            <button type="button" id="delete_account" class="button btn-danger">
+                {{ translations.settings_delete_account_button }}
+            </button>
         </div>
     </div>
 
+    <!-- Language Selection Section -->
     <div class="container-without-border">
-        <h2>Select language</h2>
+        <h2>{{ translations.settings_select_language_title }}</h2>
 
         <div class="container-without-border-horizontally">
+            <!-- Flag images for language selection -->
             <img src="/static/images/flags/english.png" id="english-flag"
-                width="200" height="113"
-                alt="English Flag" class="flag">
+                width="200" height="113" alt="{{ translations.settings_english_flag_alt }}" class="flag">
             <img src="/static/images/flags/german.png" id="german-flag"
-                width="200" height="113"
-                alt="German Flag" class="flag">
+                width="200" height="113" alt="{{ translations.settings_german_flag_alt }}" class="flag">
         </div>
     </div>
 </div>

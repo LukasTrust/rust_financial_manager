@@ -4,6 +4,7 @@ use rocket::serde::json::{json, Json};
 use rocket::{get, State};
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::Template;
+use serde_json::Value;
 use std::time::Instant;
 use std::vec;
 
@@ -24,11 +25,29 @@ use crate::utils::update_utils::{
 };
 
 #[get("/bank/transaction")]
-pub async fn bank_transaction(
+pub async fn bank_transaction(cookies: &CookieJar<'_>) -> Result<Template, Json<ErrorResponse>> {
+    let start_time = Instant::now();
+    let cookie_user_language = get_user_language(cookies);
+
+    let translation_string = get_transactions_localized_strings(cookie_user_language);
+
+    warn!(
+        "Bank transaction handling completed in {:?}",
+        start_time.elapsed()
+    );
+
+    Ok(Template::render(
+        "bank_transaction",
+        json!({"translations": translation_string}),
+    ))
+}
+
+#[get("/bank/transaction/data")]
+pub async fn bank_transaction_data(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     db: Connection<DbConn>,
-) -> Result<Template, Json<ErrorResponse>> {
+) -> Result<Json<Value>, Json<ErrorResponse>> {
     let start_time = Instant::now();
     let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
 
@@ -50,10 +69,7 @@ pub async fn bank_transaction(
         start_time.elapsed()
     );
 
-    let translation_string = get_transactions_localized_strings(cookie_user_language);
-    result["translations"] = json!(translation_string);
-
-    Ok(Template::render("bank_transaction", json!(result)))
+    Ok(Json(result))
 }
 
 #[get("/bank/transaction/remove_contract/<transaction_id>")]

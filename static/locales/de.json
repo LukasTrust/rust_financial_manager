@@ -194,5 +194,15 @@
     "error_deleting_user": "Fehler beim Löschen des Benutzers",
     "error_deleting_user_details": "Es gab einen internen Fehler beim Löschen des Benutzers. Bitte versuchen Sie es erneut.",
     "account_deleted": "Konto gelöscht",
-    "account_deleted_details": "Das Konto wurde erfolgreich gelöscht. Du wirst zur Anmeldeseite weitergeleitet."
+    "account_deleted_details": "Das Konto wurde erfolgreich gelöscht. Du wirst zur Anmeldeseite weitergeleitet.",
+    "settings_change_password_title": "Passwort ändern",
+    "settings_old_password_label": "Altes Passwort:",
+    "settings_new_password_label": "Neues Passwort:",
+    "settings_confirm_password_label": "Passwort bestätigen:",
+    "settings_change_password_button": "Passwort ändern",
+    "settings_account_management_title": "Kontoverwaltung",
+    "settings_delete_account_button": "Konto löschen",
+    "settings_select_language_title": "Sprache auswählen",
+    "settings_english_flag_alt": "Englische Flagge",
+    "settings_german_flag_alt": "Deutsche Flagge"
 }

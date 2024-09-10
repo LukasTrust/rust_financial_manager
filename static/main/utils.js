@@ -1,5 +1,21 @@
 import { log, error } from './main.js';
 
+// Initialize the state from localStorage or default to 'English'
+const state = {
+    language: localStorage.getItem('language') || 'English',
+};
+
+// Function to get the current language from the state or localStorage
+export function getGlobalLanguage() {
+    return state.language;
+}
+
+// Function to set the global language and store it in localStorage
+export function setGlobalLanguage(newLanguage) {
+    state.language = newLanguage;
+    localStorage.setItem('language', newLanguage);
+}
+
 export function formatDate(dateString) {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'N/A';

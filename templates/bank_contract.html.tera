@@ -1,19 +1,21 @@
-<!-- bank_contract.tera -->
 <body>
     <div class="scroll-container">
         <div class="container-without-border">
             <h1>{{ translations.bank_contract_title }}</h1>
             <div class="container-without-border-horizontally-header">
-                <button id="merge-selected-btn" style="width: auto">
+                <!-- Buttons with consistent styling -->
+                <button id="merge-selected-btn" class="button btn-primary" style="width: auto;">
                     {{ translations.bank_contract_merge_selected_button }}
                 </button>
-                <button id="delete-selected-btn" style="width: auto">
+                <button id="delete-selected-btn" class="button btn-danger" style="width: auto;">
                     {{ translations.bank_contract_delete_selected_button }}
                 </button>
-                <button id="scan-btn" style="width: auto">
+                <button id="scan-btn" class="button btn-secondary" style="width: auto;">
                     {{ translations.bank_contract_scan_button }}
                 </button>
-                <div class="container-without-border-horizontally" style="width: auto">
+
+                <!-- Toggle for Contracts -->
+                <div class="container-without-border-horizontally" style="width: auto;">
                     <button id="toggle-closed-contracts" class="toggle-button">
                         <div class="slider"></div>
                     </button>
@@ -22,7 +24,7 @@
                         <span>{{ translations.bank_contract_show_closed_contracts_text }}</span>
                     </div>
                 </div>
-            </div> 
+            </div>
             <div id="contract-container">
                 <!-- Contracts will be dynamically inserted here -->
             </div>

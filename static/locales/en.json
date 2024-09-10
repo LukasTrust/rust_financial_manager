@@ -195,5 +195,15 @@
     "error_deleting_user": "Error deleting user",
     "error_deleting_user_details": "There was an internal error while deleting the user. Please try again.",
     "account_deleted": "Account deleted",
-    "account_deleted_details": "The account has been deleted successfully. You will be redirected to the login page."
+    "account_deleted_details": "The account has been deleted successfully. You will be redirected to the login page.",
+    "settings_change_password_title": "Change Password",
+    "settings_old_password_label": "Old Password:",
+    "settings_new_password_label": "New Password:",
+    "settings_confirm_password_label": "Confirm Password:",
+    "settings_change_password_button": "Change Password",
+    "settings_account_management_title": "Account Management",
+    "settings_delete_account_button": "Delete Account",
+    "settings_select_language_title": "Select language",
+    "settings_english_flag_alt": "English Flag",
+    "settings_german_flag_alt": "German Flag"
 }

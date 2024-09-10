@@ -7,14 +7,14 @@ use rocket_dyn_templates::Template;
 use routes::add_bank::{add_bank, add_bank_form};
 use routes::bank::bank_view;
 use routes::bank_contract::{
-    bank_contact_display, bank_contract, bank_contract_delete, bank_contract_merge,
+    bank_contact_data, bank_contract, bank_contract_delete, bank_contract_merge,
     bank_contract_name_changed, bank_scan_for_new_contracts,
 };
 use routes::bank_transaction::{
     bank_transaction, transaction_add_to_contract, transaction_allow_contract, transaction_hide,
     transaction_not_allow_contract, transaction_remove, transaction_show,
 };
-use routes::base::{base, dashboard, logout, settings};
+use routes::base::{base, dashboard, logout};
 use routes::error_page::error_page;
 use routes::error_page::not_found;
 use routes::login::{login_form, login_from_register, login_user};
@@ -26,11 +26,11 @@ use rust_financial_manager::database::db_connector::DbConn;
 use rust_financial_manager::database::models::{NewBank, NewUser, User};
 use rust_financial_manager::routes;
 use rust_financial_manager::routes::bank_transaction::{
-    transaction_set_old_amount, transaction_update_contract_amount,
+    bank_transaction_data, transaction_set_old_amount, transaction_update_contract_amount,
 };
 use rust_financial_manager::routes::get_data::get_graph_data;
 use rust_financial_manager::routes::settings::{
-    change_password, delete_account, set_user_language,
+    change_password, delete_account, set_user_language, settings,
 };
 use rust_financial_manager::utils::appstate::{AppState, Language};
 use rust_financial_manager::utils::delete_utils::{delete_bank_by_name, delete_user_by_email};
@@ -106,13 +106,14 @@ async fn init_client() -> Client {
                 get_graph_data,
                 // Bank Contract
                 bank_contract,
-                bank_contact_display,
+                bank_contact_data,
                 bank_contract_merge,
                 bank_contract_delete,
                 bank_scan_for_new_contracts,
                 bank_contract_name_changed,
                 // Bank Transaction
                 bank_transaction,
+                bank_transaction_data,
                 transaction_remove,
                 transaction_add_to_contract,
                 transaction_set_old_amount,

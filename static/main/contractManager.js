@@ -1,6 +1,53 @@
-// main.js
 import { log, error } from './main.js';
-import { formatDate, displayCustomAlert } from './utils.js';
+import { formatDate, displayCustomAlert, getGlobalLanguage } from './utils.js';
+
+const translations = {
+    English: {
+        openContractsTitle: 'Open Contracts',
+        closedContractsTitle: 'Closed Contracts',
+        showHistory: 'Show History',
+        hideHistory: 'Hide History',
+        noHistoryAvailable: 'No history available.',
+        mergeSelected: 'Please select at least 2 contracts to merge.',
+        deleteSelected: 'Please select at least 1 contract to delete.',
+        currentAmount: 'Current amount',
+        totalAmountOverTime: 'Total amount over time',
+        monthsBetweenPayment: 'Months between Payment',
+        oldAmount: 'Old Amount',
+        newAmount: 'New Amount',
+        changedAt: 'Changed At',
+        endDate: 'End date',
+        lastPaymentDate: 'Last payment date',
+        contractHistory: 'Contract History'
+    },
+    German: {
+        openContractsTitle: 'Offene Verträge',
+        closedContractsTitle: 'Abgeschlossene Verträge',
+        showHistory: 'Historie anzeigen',
+        hideHistory: 'Historie verstecken',
+        noHistoryAvailable: 'Keine Historie verfügbar.',
+        mergeSelected: 'Bitte wählen Sie mindestens 2 Verträge zum Zusammenführen aus.',
+        deleteSelected: 'Bitte wählen Sie mindestens 1 Vertrag zum Löschen aus.',
+        currentAmount: 'Current amount',
+        totalAmountOverTime: 'Total amount over time',
+        monthsBetweenPayment: 'Months between Payment',
+        oldAmount: 'Old Amount',
+        newAmount: 'New Amount',
+        changedAt: 'Changed At',
+        endDate: 'End date',
+        lastPaymentDate: 'Last payment date',
+        contractHistory: 'Contract History',
+        currentAmount: 'Aktueller Betrag',
+        totalAmountOverTime: 'Gesamtbetrag über die Zeit',
+        monthsBetweenPayment: 'Monate zwischen Zahlungen',
+        oldAmount: 'Alter Betrag',
+        newAmount: 'Neuer Betrag',
+        changedAt: 'Geändert am',
+        endDate: 'Enddatum',
+        lastPaymentDate: 'Letztes Zahlungsdatum',
+        contractHistory: 'Vertragsgeschichte',
+    }
+};
 
 const closedContractsWrapper = document.createElement('div');
 const openContractsWrapper = document.createElement('div');
@@ -77,7 +124,7 @@ function updateContractsView(contractsData) {
         if (!openContractsTitle) {
             openContractsTitle = document.createElement('h3');
             openContractsTitle.id = 'open-contracts-title';
-            openContractsTitle.textContent = 'Open Contracts';
+            openContractsTitle.textContent = translations[getGlobalLanguage()].openContractsTitle;
         }
         container.appendChild(openContractsTitle);
         container.appendChild(openContractsWrapper);
@@ -86,7 +133,7 @@ function updateContractsView(contractsData) {
         if (!closedContractsTitle) {
             closedContractsTitle = document.createElement('h3');
             closedContractsTitle.id = 'closed-contracts-title';
-            closedContractsTitle.textContent = 'Closed Contracts';
+            closedContractsTitle.textContent = translations[getGlobalLanguage()].closedContractsTitle;
         }
         const toggleButton = document.getElementById('toggle-closed-contracts');
         const slider = toggleButton.querySelector('.slider');
@@ -94,7 +141,6 @@ function updateContractsView(contractsData) {
         const displayStyle = slider.classList.contains('active') ? 'flex' : 'none';
 
         closedContractsTitle.style.display = displayStyle;
-        closedContractsTitle.textContent = 'Closed Contracts';
         container.appendChild(closedContractsTitle);
         container.appendChild(closedContractsWrapper);
 
@@ -121,7 +167,8 @@ function attachContractEventListeners() {
                     const index = target.getAttribute('data-index');
                     const historyElement = document.getElementById(`contract-history-${index}`);
                     const isHidden = historyElement.classList.toggle('hidden');
-                    target.textContent = isHidden ? 'Show History' : 'Hide History';
+                    const lang = getGlobalLanguage();
+                    target.textContent = isHidden ? translations[lang].showHistory : translations[lang].hideHistory;
                     target.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
                     return;
                 }
@@ -307,8 +354,17 @@ function generateContractHTML(contractWithHistory, index) {
     const { contract, contract_history, total_amount_paid, last_payment_date } = contractWithHistory;
     const currentAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
     const totalAmountClass = total_amount_paid < 0 ? 'negative' : 'positive';
-    const dateLabel = contract.end_date ? 'End date' : 'Last payment date';
-    const dateValue = contract.end_date ? formatDate(contract.end_date) : formatDate(last_payment_date);
+    const lang = getGlobalLanguage();
+
+    // Localized strings
+    const dateLabel = contract.end_date
+        ? translations[lang].endDate
+        : translations[lang].lastPaymentDate;
+    const showHistoryText = translations[lang].showHistory;
+
+    const dateValue = contract.end_date
+        ? formatDate(contract.end_date)
+        : formatDate(last_payment_date);
 
     const html = `
         <div class="display" id="display-${index}" data-id="${contract.id}">
@@ -316,13 +372,13 @@ function generateContractHTML(contractWithHistory, index) {
                 <p>✏️</p>
                 <input type="text" class="contract-name" value="${contract.name}" data-index="${index}" />
             </div>
-            <p>Current amount: <span class="${currentAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
-            <p>Total amount over time: <span class="${totalAmountClass}">$${total_amount_paid.toFixed(2)}</span></p>
-            <p>Months between Payment: ${contract.months_between_payment}</p>
+            <p>${translations[lang].currentAmount}: <span class="${currentAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
+            <p>${translations[lang].totalAmountOverTime}: <span class="${totalAmountClass}">$${total_amount_paid.toFixed(2)}</span></p>
+            <p>${translations[lang].monthsBetweenPayment}: ${contract.months_between_payment}</p>
             <p>${dateLabel}: <span>${dateValue}</span></p>
-            <button class="toggle-history-btn" data-index="${index}">Show History</button>
+            <button class="toggle-history-btn" data-index="${index}">${showHistoryText}</button>
             <div id="contract-history-${index}" class="hidden contract-history">
-                <h4>Contract History:</h4>
+                <h4>${translations[lang].contractHistory}:</h4>
                 <ul>${generateHistoryHTML(contract_history)}</ul>
             </div>
         </div>
@@ -338,13 +394,15 @@ function generateHistoryHTML(contractHistory) {
     const start = performance.now();
     log('Generating history HTML', 'generateHistoryHTML');
 
+    const lang = getGlobalLanguage();
+
     const html = contractHistory.length === 0
-        ? '<li>No history available.</li>'
+        ? `<li>${translations[lang].noHistoryAvailable}</li>`
         : contractHistory.map(({ old_amount, new_amount, changed_at }) => `
             <li>
-                <p>Old Amount: <span class="${old_amount < 0 ? 'negative' : 'positive'}">$${old_amount.toFixed(2)}</span></p>
-                <p>New Amount: <span class="${new_amount < 0 ? 'negative' : 'positive'}">$${new_amount.toFixed(2)}</span></p>
-                <p>Changed At: ${formatDate(changed_at)}</p>
+                <p>${translations[lang].oldAmount}: <span class="${old_amount < 0 ? 'negative' : 'positive'}">$${old_amount.toFixed(2)}</span></p>
+                <p>${translations[lang].newAmount}: <span class="${new_amount < 0 ? 'negative' : 'positive'}">$${new_amount.toFixed(2)}</span></p>
+                <p>${translations[lang].changedAt}: ${formatDate(changed_at)}</p>
             </li>
         `).join('');
 

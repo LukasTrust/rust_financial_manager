@@ -1,4 +1,3 @@
-<!-- transactions.tera -->
 <body>
     <div class="scroll-container">
         <div class="container-without-border">
@@ -6,18 +5,19 @@
 
             <!-- Static header and table structure -->
             <div class="container-without-border-horizontally-header">
-                <label for="date-range">{{ translations.transactions_select_date_range_label }}</label>
-                <input type="text" id="date-range" class="flatpickr">
+                <label for="date-range" class="date-label">{{ translations.transactions_select_date_range_label }}</label>
+                <input type="text" id="date-range" class="date-input flatpickr" placeholder="{{ translations.transactions_select_date_range_label }}">
+
                 <label for="contract-filter">{{ translations.transactions_filter_by_contract_label }}</label>
-                <select style="max-width: 300px" id="contract-filter">
+                <select id="contract-filter" class="input-select">
                     <option value>{{ translations.transactions_all_contracts_option }}</option>
                     <!-- Options will be dynamically populated by JS -->
                 </select>
-                <input style="width: auto; height: 15px" type="text"
-                       id="transaction-search"
-                       placeholder="{{ translations.transactions_search_placeholder }}">
 
-                <div class="container-without-border-horizontally" style="width: auto">
+                <input type="text" id="transaction-search" class="input-search" placeholder="{{ translations.transactions_search_placeholder }}">
+
+                <!-- Toggle for Hidden Transactions -->
+                <div class="container-without-border-horizontally" style="width: auto;">
                     <button id="toggle-hidden-transaction" class="toggle-button">
                         <div class="slider"></div>
                     </button>
@@ -28,6 +28,7 @@
                 </div>
             </div>
 
+            <!-- Transactions Table -->
             <table class="transaction-table">
                 <thead>
                     <tr>
@@ -46,9 +47,4 @@
             </table>
         </div>
     </div>
-
-    <!-- JSON data for transactions -->
-    <script id="transactions-data" type="application/json">
-        {{ transactions | safe }}
-    </script>
 </body>

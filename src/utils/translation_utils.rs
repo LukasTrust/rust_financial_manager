@@ -164,3 +164,30 @@ pub fn get_dashboard_localized_strings(language: Language) -> HashMap<&'static s
 
     localized_strings
 }
+
+pub fn get_settings_localized_strings(language: Language) -> HashMap<&'static str, String> {
+    // List all the keys needed for the Settings view localization.
+    let keys = vec![
+        "settings_change_password_title",
+        "settings_old_password_label",
+        "settings_new_password_label",
+        "settings_confirm_password_label",
+        "settings_change_password_button",
+        "settings_account_management_title",
+        "settings_delete_account_button",
+        "settings_select_language_title",
+        "settings_english_flag_alt",
+        "settings_german_flag_alt",
+    ];
+
+    // Create a HashMap to store the localized strings.
+    let mut localized_strings = HashMap::new();
+
+    // Retrieve and insert each localized string into the HashMap.
+    for key in keys {
+        let localized_string = LOCALIZATION.get_localized_string(language, key);
+        localized_strings.insert(key, localized_string);
+    }
+
+    localized_strings
+}

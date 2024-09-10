@@ -4,23 +4,46 @@ use rocket::{
     get,
     http::{Cookie, CookieJar},
     post,
-    serde::json::Json,
+    serde::json::{json, Json},
+    State,
 };
 use rocket_db_pools::Connection;
+use rocket_dyn_templates::Template;
 
 use crate::{
     database::db_connector::DbConn,
     utils::{
-        appstate::{Language, LOCALIZATION},
+        appstate::{AppState, Language, LOCALIZATION},
         delete_utils::delete_user_by_id,
         get_utils::get_user_id_and_language,
         loading_utils::load_user_by_id,
         structs::{ChangePassword, ErrorResponse, SuccessResponse},
+        translation_utils::get_settings_localized_strings,
         update_utils::{update_user_password, update_user_with_language},
     },
 };
 
 use super::register::is_strong_password;
+
+/// Display the settings page.
+/// The settings page allows the user to manage their bank accounts and transactions.
+/// The user is redirected to the login page if they are not logged in.
+#[get("/settings")]
+pub async fn settings(
+    cookies: &CookieJar<'_>,
+    state: &State<AppState>,
+) -> Result<Template, Json<ErrorResponse>> {
+    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+
+    state.set_current_bank(cookie_user_id, None).await;
+
+    let localized_strings = get_settings_localized_strings(cookie_user_language);
+
+    Ok(Template::render(
+        "settings",
+        json!({"translations": localized_strings,}),
+    ))
+}
 
 #[get["/user/set_language/<new_language>"]]
 pub async fn set_user_language(

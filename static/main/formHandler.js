@@ -106,7 +106,7 @@ function createBankButtonContainer(bank) {
 // Function to create the main bank button
 function createBankButton(bank) {
     const bankButton = document.createElement('button');
-    bankButton.classList.add('bank-button');
+    bankButton.classList.add('bank-button', 'button', 'btn-secondary');
     bankButton.textContent = bank.name;
     bankButton.setAttribute('url', `/bank/${bank.id}`);
 
@@ -123,7 +123,7 @@ function createBankButton(bank) {
 // Function to create sub-buttons for a bank
 function createSubButtonsContainer() {
     const subButtonsContainer = document.createElement('div');
-    subButtonsContainer.classList.add('bank-sub-buttons');
+    subButtonsContainer.classList.add('button', 'bank-sub-buttons');
     subButtonsContainer.style.display = 'none';
 
     const contractButton = createSubButton('Contract', `/bank/contract`);

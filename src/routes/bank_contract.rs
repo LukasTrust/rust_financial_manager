@@ -36,7 +36,7 @@ pub async fn bank_contract(cookies: &CookieJar<'_>) -> Result<Template, Redirect
 }
 
 #[get("/bank/contract/data")]
-pub async fn bank_contact_display(
+pub async fn bank_contact_data(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,

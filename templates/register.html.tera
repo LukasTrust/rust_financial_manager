@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,8 @@
     <link rel="stylesheet" href="/static/styles.css">
     <script src="/static/register.js" defer></script>
 </head>
-<body>
+
+<body style="width: 80%">
     <div class="container-with-border">
         <h2>Register:</h2>
         <div id="error" class="error"></div>
@@ -28,10 +30,12 @@
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit">Register</button>
+            
+            <!-- Apply consistent width using the .button and .btn-primary classes -->
+            <button type="submit" class="button btn-primary">Register</button>
         </form>
-            <p class="login-link">Already have an account? <a href="/">Login</a></p>
-        </div>
+        <p class="login-link">Already have an account? <a href="/">Login</a></p>
     </div>
 </body>
+
 </html>

@@ -7,7 +7,7 @@ use rocket_dyn_templates::Template;
 
 use crate::database::db_connector::DbConn;
 use crate::utils::appstate::{AppState, LOCALIZATION};
-use crate::utils::get_utils::{get_user_id, get_user_id_and_language, get_user_language};
+use crate::utils::get_utils::{get_user_id_and_language, get_user_language};
 use crate::utils::loading_utils::{load_banks_of_user, load_user_by_name};
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::translation_utils::{
@@ -19,11 +19,7 @@ use crate::utils::translation_utils::{
 /// The user is redirected to the login page if they are not logged in.
 /// The user's bank accounts and transactions are loaded from the database and displayed on the dashboard.
 #[get("/base")]
-pub async fn base(
-    mut db: Connection<DbConn>,
-    cookies: &CookieJar<'_>,
-    state: &State<AppState>,
-) -> Template {
+pub async fn base(mut db: Connection<DbConn>, cookies: &CookieJar<'_>) -> Template {
     let result = get_user_id_and_language(cookies);
 
     if result.is_err() {
@@ -47,8 +43,6 @@ pub async fn base(
     }
 
     let banks = banks.unwrap();
-
-    state.set_current_bank(cookie_user_id, None).await;
 
     let localized_strings = get_base_localized_strings(cookie_user_language);
 
@@ -93,21 +87,6 @@ pub async fn dashboard(
                     "success": SuccessResponse::new(String::new(), message),
         }),
     ))
-}
-
-/// Display the settings page.
-/// The settings page allows the user to manage their bank accounts and transactions.
-/// The user is redirected to the login page if they are not logged in.
-#[get("/settings")]
-pub async fn settings(
-    cookies: &CookieJar<'_>,
-    state: &State<AppState>,
-) -> Result<Template, Json<ErrorResponse>> {
-    let cookie_user_id = get_user_id(cookies)?;
-
-    state.set_current_bank(cookie_user_id, None).await;
-
-    Ok(Template::render("settings", json!({})))
 }
 
 /// Display the login page.

@@ -1,4 +1,4 @@
-import { formatDate, displayCustomAlert } from './utils.js';
+import { formatDate, displayCustomAlert, getGlobalLanguage } from './utils.js';
 import { log, error } from './main.js';
 
 let filteredData = [];
@@ -8,32 +8,87 @@ let dateRange = { start: null, end: null };
 let showOrHideTransaction = false;
 let contracts = [];
 
-export const loadTransactions = () => {
-    const start = performance.now();
-    try {
-        const transactionsDataScript = document.getElementById('transactions-data');
-        if (!transactionsDataScript) {
-            error('No transaction data found.', 'loadTransactions');
-        }
+const translations = {
+    English: {
+        allowContract: 'Allow contract',
+        notAllowContract: 'Not allow contract',
+        removeContract: 'Remove contract',
+        addContract: 'Add contract',
+        hide: 'Hide',
+        display: 'Display',
+        contractNotAllowed: 'Contract not allowed',
+        pickContractHeader: 'Pick a contract from this list:',
+        selectContractBody: 'Please select a contract from the list below:',
+        addButton: 'Add',
+        cancelButton: 'Cancel',
+        contractAmountMismatch: 'The contract amount does not match the transaction amount. Please select an option:',
+        newContractAmountOption: 'Set a new contract amount<br>(updates current amount and bases new transactions on it)',
+        oldContractAmountOption: 'Mark as an old contract amount<br>(adds to contract history)',
+        addToContractOption: 'Add to the contract<br>(included in calculations, but not in history)',
+        submitButton: 'Submit'
+    },
+    German: {
+        allowContract: 'Vertrag erlauben',
+        notAllowContract: 'Vertrag nicht erlauben',
+        removeContract: 'Vertrag entfernen',
+        addContract: 'Vertrag hinzufügen',
+        hide: 'Verbergen',
+        display: 'Anzeigen',
+        contractNotAllowed: 'Vertrag nicht erlaubt',
+        pickContractHeader: 'Wählen Sie einen Vertrag aus dieser Liste:',
+        selectContractBody: 'Bitte wählen Sie einen Vertrag aus der folgenden Liste:',
+        addButton: 'Hinzufügen',
+        cancelButton: 'Abbrechen',
+        contractAmountMismatch: 'Der Vertragsbetrag stimmt nicht mit dem Transaktionsbetrag überein. Bitte wählen Sie eine Option:',
+        newContractAmountOption: 'Einen neuen Vertragsbetrag festlegen<br>(aktualisiert den aktuellen Betrag und basiert neue Transaktionen darauf)',
+        oldContractAmountOption: 'Als alten Vertragsbetrag markieren<br>(fügt der Vertragshistorie hinzu)',
+        addToContractOption: 'Zum Vertrag hinzufügen<br>(in Berechnungen enthalten, aber nicht in der Historie)',
+        submitButton: 'Einreichen'
+    }
+};
 
-        transactionsData = JSON.parse(transactionsDataScript.textContent);
-        if (!Array.isArray(transactionsData)) {
-            error('Invalid transaction data found.', 'loadTransactions');
+export async function loadTransactions() {
+    const start = performance.now();
+
+    await get_transaction_data();
+
+    filteredData = transactionsData;
+
+    fillContractFilter();
+    setupEventListeners();
+    filterTransactions();
+
+    const end = performance.now();
+    log(`loadTransactions execution time: ${(end - start).toFixed(2)}ms`, 'loadTransactions');
+}
+
+async function get_transaction_data() {
+    const start = performance.now();
+    log('Getting transaction data', 'get_transaction_data');
+
+    try {
+        const response = await fetch('/bank/transaction/data', { method: 'GET' });
+
+        if (!response.ok) throw new Error('Failed to send request to the server');
+
+        const data = await response.json();
+
+        if (data.error) {
+            displayCustomAlert('error', data.header, data.error);
             return;
         }
 
-        filteredData = transactionsData;
-
-        fillContractFilter();
-        setupEventListeners();
-        filterTransactions();
+        if (data.transactions) {
+            transactionsData = JSON.parse(data.transactions);
+        }
     } catch (err) {
-        error('An error occurred during loadTransactions', 'loadTransactions', err);
+        error('Error while getting transaction data:', 'get_transaction_data', err);
+        displayCustomAlert('error', 'Error', 'Failed to get transaction data');
     } finally {
         const end = performance.now();
-        log(`loadTransactions execution time: ${(end - start).toFixed(2)}ms`, 'loadTransactions');
+        log(`get_transaction_data execution time: ${(end - start).toFixed(2)}ms`, 'get_transaction_data');
     }
-};
+}
 
 function fillContractFilter() {
     const contractFilter = document.getElementById('contract-filter');
@@ -56,6 +111,7 @@ function generateTransactionHTML({ transaction, contract }, index) {
     const amountClass = transaction.amount < 0 ? 'negative' : 'positive';
     const balanceClass = transaction.bank_balance_after < 0 ? 'negative' : 'positive';
     const rowClass = transaction.is_hidden ? 'hidden_transaction' : '';
+    const t = translations[getGlobalLanguage()] || translations['en'];
 
     let displayStyle = 'table-row';
     if (transaction.is_hidden) {
@@ -63,8 +119,8 @@ function generateTransactionHTML({ transaction, contract }, index) {
     }
 
     let contractAllowed = transaction.contract_not_allowed ?
-        `<button class="table_button allow-contract-btn" data-index="${index}">Allow Contract</button>` :
-        `<button class="table_button not-allow-contract" data-index="${index}">Not Allow Contract</button>`;
+        `<button class="table_button button btn-secondary allow-contract-btn" data-index="${index}">${t.allowContract}</button>` :
+        `<button class="table_button button btn-secondary not-allow-contract" data-index="${index}">${t.notAllowContract}</button>`;
 
     let contractName = '';
     let contractAmount = '';
@@ -76,17 +132,17 @@ function generateTransactionHTML({ transaction, contract }, index) {
         contractAmount = `<span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span>`;
         dropdownMenu = `
             <div class="dropdown-content" style="display:none;">
-                <button class="table_button remove-contract-btn" data-index="${index}">Remove Contract</button>
+                <button class="table_button button btn-secondary remove-contract-btn" data-index="${index}">${t.removeContract}</button>
                 ${contractAllowed}
-                <button class="table_button hide-btn" data-index="${index}">${transaction.is_hidden ? 'Display' : 'Hide'}</button>
+                <button class="table_button button btn-secondary hide-btn" data-index="${index}">${transaction.is_hidden ? t.display : t.hide}</button>
             </div>`;
     } else {
         dropdownMenu = `
-            <div class="dropdown-content" style="display:none;">
-                <button class="table_button add-contract-btn" data-index="${index}">Add Contract</button>
-                ${contractAllowed}
-                <button class="table_button hide-btn" data-index="${index}">${transaction.is_hidden ? 'Display' : 'Hide'}</button>
-            </div>`;
+        <div class="dropdown-content" style="display:none;">
+            <button class="table_button button btn-secondary add-contract-btn" data-index="${index}">${t.addContract}</button>
+            ${contractAllowed}
+            <button class="table_button button btn-secondary hide-btn" data-index="${index}">${transaction.is_hidden ? t.display : t.hide}</button>
+        </div>`;
     }
 
     let emptyCellIcon = contract ? '📄' : '';
@@ -114,7 +170,6 @@ function generateTransactionHTML({ transaction, contract }, index) {
 
     return html;
 }
-
 
 function setupEventListeners() {
     const start = performance.now();
@@ -315,7 +370,7 @@ function filterTransactions() {
     sortData();
 }
 // Generalized function to handle transaction operations
-function handleTransactionOperation(url, errorMessage) {
+function handleTransactionOperation(url) {
     return fetch(url, {
         method: 'GET',
         headers: {
@@ -334,10 +389,6 @@ function handleTransactionOperation(url, errorMessage) {
                     return false;
                 }
 
-                return false;
-            } else {
-                error(`Error ${errorMessage}:`, url, response);
-                displayCustomAlert('error', `Error ${errorMessage}.`, `An error occurred while trying to ${errorMessage}.`);
                 return false;
             }
         })
@@ -399,7 +450,7 @@ function handleHideTransaction(index) {
             const hideButton = row.querySelector('.hide-btn');
             hideButton.classList.remove('hide-btn');
             hideButton.classList.add('show-btn');
-            hideButton.textContent = 'Display';
+            hideButton.textContent = translations[getGlobalLanguage()].display;
         }
     });
 }
@@ -422,7 +473,7 @@ function handleShowTransaction(index) {
             const showButton = row.querySelector('.show-btn');
             showButton.classList.remove('show-btn');
             showButton.classList.add('hide-btn');
-            showButton.textContent = 'Hide';
+            showButton.textContent = translations[getGlobalLanguage()].hide;
         }
     });
 }
@@ -457,7 +508,7 @@ function handleNotAllowContract(index) {
             const notAllowButton = row.querySelector('.not-allow-contract');
             notAllowButton.classList.remove('not-allow-contract');
             notAllowButton.classList.add('allow-contract-btn');
-            notAllowButton.textContent = 'Allow Contract';
+            notAllowButton.textContent = translations[getGlobalLanguage()].allowContract;
 
             updateTransactionTable();
         }
@@ -465,6 +516,8 @@ function handleNotAllowContract(index) {
 }
 
 function handleAddContract(index) {
+    const t = translations[getGlobalLanguage()];
+
     // Check if the modal already exists; if so, remove it
     const existingModal = document.getElementById('contractModal');
     if (existingModal) {
@@ -490,7 +543,7 @@ function handleAddContract(index) {
     icon.textContent = 'ℹ️';
 
     const headerText = document.createElement('strong');
-    headerText.textContent = 'Pick a contract from this list:';
+    headerText.textContent = t.pickContractHeader; // Localized header text
 
     // Flex-grow div to push the header to the left
     const flexDiv = document.createElement('div');
@@ -503,9 +556,11 @@ function handleAddContract(index) {
 
     // Create body text
     const bodyText = document.createElement('p');
-    bodyText.textContent = 'Please select a contract from the list below:';
+    bodyText.textContent = t.selectContractBody; // Localized body text
 
+    // Create the select element with contract options
     const select = document.createElement('select');
+    select.classList.add('input-search');
     select.id = 'contractSelect';
     contracts.forEach(contract => {
         const option = document.createElement('option');
@@ -514,20 +569,24 @@ function handleAddContract(index) {
         select.add(option);
     });
 
+    // Create button container with localized buttons
     const buttonContainer = document.createElement('div');
     buttonContainer.classList.add('container-without-border-horizontally-header');
 
     const addButton = document.createElement('button');
-    addButton.textContent = 'Add';
+    addButton.textContent = t.addButton;
+    addButton.classList.add('button', 'btn-secondary');
     addButton.onclick = () => addSelectedContract(index);
 
     const cancelButton = document.createElement('button');
-    cancelButton.textContent = 'Cancel';
+    cancelButton.textContent = t.cancelButton;
+    cancelButton.classList.add('button', 'btn-secondary');
     cancelButton.onclick = closeModal;
 
     buttonContainer.appendChild(addButton);
     buttonContainer.appendChild(cancelButton);
 
+    // Create and append the final container
     const container = document.createElement('div');
     container.className = 'container-without-border';
     container.appendChild(horizontalContainer);
@@ -536,13 +595,13 @@ function handleAddContract(index) {
     container.appendChild(buttonContainer);
 
     modal.appendChild(container);
-
     backdrop.appendChild(modal);
-
     document.body.appendChild(backdrop);
 }
 
 function addSelectedContract(index) {
+    const t = translations[getGlobalLanguage()];
+
     const selectedContractId = document.getElementById('contractSelect').value;
     const selectedContract = contracts.find(contract => contract.id == selectedContractId);
     const transaction = filteredData[index].transaction;
@@ -553,19 +612,28 @@ function addSelectedContract(index) {
         const modal = document.createElement('div');
         modal.className = 'alert alert-info';
         modal.classList.add('container-without-border');
-        modal.style.width = '700px';
 
-        const bodyText = document.createElement('p');
-        bodyText.textContent = 'The contract amount does not match the transaction amount. Please select an option:';
+        const headerContainer = document.createElement('div');
+        headerContainer.classList.add('container-without-border-horizontally');
+
+        const icon = document.createElement('span');
+        icon.className = 'alert-icon';
+        icon.textContent = 'ℹ️';
+
+        const headerText = document.createElement('strong');
+        headerText.textContent = t.contractAmountMismatch;
+
+        headerContainer.appendChild(icon);
+        headerContainer.appendChild(headerText);
 
         const radioContainer = document.createElement('div');
-        radioContainer.className = 'container-without-border-horizontally';
+        radioContainer.className = 'container-without-border';
 
         // Create radio button choices
         const options = [
-            { id: 'new-contract-amount', label: 'Set a new contract amount<br>(updates current amount and bases new transactions on it)' },
-            { id: 'old-contract-amount', label: 'Mark as an old contract amount<br>(adds to contract history)' },
-            { id: 'just-add-to-contract', label: 'Add to the contract<br>(included in calculations, but not in history)' }
+            { id: 'new-contract-amount', label: t.newContractAmountOption },
+            { id: 'old-contract-amount', label: t.oldContractAmountOption },
+            { id: 'just-add-to-contract', label: t.addToContractOption }
         ];
 
         options.forEach(option => {
@@ -578,7 +646,6 @@ function addSelectedContract(index) {
             const label = document.createElement('label');
             label.htmlFor = option.id;
             label.innerHTML = option.label;
-            label.style.textWrap = 'wrap';
 
             const optionContainer = document.createElement('div');
             optionContainer.classList.add('container-without-border-horizontally');
@@ -593,6 +660,7 @@ function addSelectedContract(index) {
         buttonContainer.classList.add('container-without-border-horizontally');
 
         const submitButton = document.createElement('button');
+        submitButton.classList.add('button', 'btn-secondary');
         submitButton.textContent = 'Submit';
         submitButton.onclick = () => {
             const selectedOption = document.querySelector('input[name="contractAmountChoice"]:checked');
@@ -602,13 +670,14 @@ function addSelectedContract(index) {
         };
 
         const cancelButton = document.createElement('button');
-        cancelButton.textContent = 'Cancel';
+        cancelButton.classList.add('button', 'btn-secondary');
+        cancelButton.textContent = t.cancelButton;
         cancelButton.onclick = closeModal;
 
         buttonContainer.appendChild(submitButton);
         buttonContainer.appendChild(cancelButton);
 
-        modal.appendChild(bodyText);
+        modal.appendChild(headerContainer);
         modal.appendChild(radioContainer);
         modal.appendChild(buttonContainer);
 
@@ -639,25 +708,21 @@ function addSelectedContract(index) {
 function handleContractChoice(choice, index, selectedContractId) {
     const transaction = filteredData[index].transaction;
     let url = '';
-    let errorMessage = '';
 
     // Determine URL and error message based on user choice
     switch (choice) {
         case 'new-contract-amount':
             url = `/bank/transaction/update_contract_amount/${transaction.id}/${selectedContractId}`;
-            errorMessage = 'update contract amount';
             break;
         case 'old-contract-amount':
             url = `/bank/transaction/set_old_amount/${transaction.id}/${selectedContractId}`;
-            errorMessage = 'set old amount';
             break;
         case 'just-add-to-contract':
             url = `/bank/transaction/add_contract/${transaction.id}/${selectedContractId}`;
-            errorMessage = 'add contract';
             break;
     }
 
-    handleTransactionOperation(url, errorMessage).then(success => {
+    handleTransactionOperation(url).then(success => {
         if (success) {
             const selectedContract = contracts.find(contract => contract.id == selectedContractId);
             filteredData[index].contract = selectedContract;

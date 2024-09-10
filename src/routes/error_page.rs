@@ -2,13 +2,13 @@ use log::info;
 use rocket::{catch, get, response::Redirect, uri, Request};
 use rocket_dyn_templates::{context, Template};
 
-#[get("/error?<error_title>&<error_message>")]
-pub fn error_page(error_title: String, error_message: String) -> Template {
-    info!("Error page displayed: {}", error_title);
+#[get("/error?<error_header>&<error_message>")]
+pub fn error_page(error_header: String, error_message: String) -> Template {
+    info!("Error page displayed: {}", error_header);
     info!("Error message: {}", error_message);
     Template::render(
         "error_page",
-        context! {error_message: error_message, error_title: error_title},
+        context! {error_header: error_header, error_message: error_message},
     )
 }
 
@@ -21,9 +21,9 @@ pub fn not_found(req: &Request<'_>) -> Redirect {
     )
 }
 
-pub fn show_error_page(error_title: String, error_message: String) -> Box<Redirect> {
+pub fn show_error_page(error_header: String, error_message: String) -> Box<Redirect> {
     Box::new(Redirect::to(uri!(error_page(
-        error_title = error_title,
+        error_header = error_header,
         error_message = error_message
     ))))
 }

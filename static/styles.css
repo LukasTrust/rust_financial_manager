@@ -2,31 +2,35 @@
     display: flex;
     height: 100vh;
     width: 100vw;
+    background-color: #fafafa;
+}
+
+.sidebar-left,
+.sidebar-right {
+    background-color: #eaeaea;
+    padding: 20px;
+    padding-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .sidebar-left {
-    background-color: #e0e0e0;
-    width: 200px;
-    padding: 20px;
+    width: 220px;
 }
 
 .sidebar-right {
-    background-color: #e0e0e0;
-    width: 100px;
-    padding: 20px;
-    flex-direction: column;
+    width: 120px;
 }
 
-button {
-    padding: 10px;
+.button {
+    padding: 12px;
     margin-bottom: 10px;
-    background-color: #007BFF;
-    color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
+    font-size: 14px;
     cursor: pointer;
-    max-height: 50px;
-    width: inherit;
+    transition: all 0.3s ease;
 }
 
 .balance_graph {
@@ -40,6 +44,7 @@ button:hover {
 .main-content {
     flex-grow: 1;
     padding: 20px;
+    padding-bottom: 30px;
 }
 
 form {
@@ -55,19 +60,25 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 0;
-    background-color: #f0f0f0;
+    background-color: #f3f4f6;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
 }
 
 .container-with-border {
     background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 100%;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
     max-width: 400px;
-    min-width: 400px;
+    width: 100%;
     box-sizing: border-box;
+}
+
+.container-without-border,
+.container-without-border-horizontally,
+.container-without-border-horizontally-header {
+    gap: 15px;
 }
 
 .container-without-border {
@@ -76,7 +87,6 @@ body {
     background-color: transparent;
     width: 100%;
     justify-content: flex-start;
-    gap: 10px;
 }
 
 .container-without-border-horizontally {
@@ -86,7 +96,6 @@ body {
     justify-content: flex-start;
     background-color: transparent;
     width: 100%;
-    gap: 20px;
 }
 
 .container-without-border-horizontally-header {
@@ -95,7 +104,6 @@ body {
     align-items: center;
     background-color: transparent;
     width: 100%;
-    gap: 20px;
 }
 
 
@@ -138,7 +146,13 @@ body {
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+}
+
+.form-group input,
+button {
+    width: inherit;
+    box-sizing: border-box;
 }
 
 .form-group label {
@@ -148,10 +162,16 @@ body {
 
 .form-group input {
     width: 100%;
-    padding: 10px;
-    box-sizing: border-box;
+    padding: 12px;
     border: 1px solid #ccc;
     border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    border-color: #007BFF;
+    outline: none;
 }
 
 .positive {
@@ -197,13 +217,11 @@ label {
     margin-bottom: 5px;
 }
 
-/* Style for the label */
 .date-label {
     padding-top: 10px;
     font-weight: bold;
 }
 
-/* Style for the input field */
 .date-input {
     width: auto;
     padding: 5px;
@@ -216,7 +234,6 @@ label {
     transition: border-color 0.3s, box-shadow 0.3s;
 }
 
-/* Style for the input field when focused */
 .date-input:focus {
     border-color: #66afe9;
     box-shadow: 0 0 8px rgba(102, 175, 233, 0.6);
@@ -224,7 +241,6 @@ label {
     background-color: #fff;
 }
 
-/* Style for input placeholder */
 .date-input::placeholder {
     color: #aaa;
     font-style: italic;
@@ -244,7 +260,6 @@ label {
     width: 100%;
     padding: 10px;
     overflow-y: auto;
-    /* Adds scrollbar only when needed */
     max-height: calc(100vh - 80px);
 }
 
@@ -278,7 +293,6 @@ label {
 .display h3,
 .display p {
     margin: 0 0 10px 0;
-    /* Adds space between elements */
 }
 
 .display button {
@@ -292,8 +306,8 @@ label {
     transition: background-color 0.3s ease;
 }
 
-.display button:hover {
-    background-color: #0056b3;
+.button:hover {
+    filter: brightness(0.9);
 }
 
 .display button:focus {
@@ -316,7 +330,6 @@ label {
 .bank-sub-buttons {
     position: relative;
     padding-left: 30px;
-    /* Space for the vertical line */
 }
 
 .bank-sub-buttons::before {
@@ -324,12 +337,9 @@ label {
     position: absolute;
     top: -10px;
     left: 10px;
-    /* Align with the center of the main button */
     width: 2px;
     height: calc(100% + 10px);
-    /* Extends the line to cover the entire sub-buttons area */
     background-color: #ccc;
-    /* Line color */
 }
 
 .sub-buttons-container {
@@ -339,13 +349,10 @@ label {
 
 .sub-buttons-container button {
     width: 100%;
-    /* Full width */
     margin: 0;
-    /* Remove margin */
 }
 
 .transaction-table {
-    width: 100%;
     border-collapse: collapse;
 }
 
@@ -370,8 +377,9 @@ label {
 }
 
 .transaction-table th {
-    background-color: #f4f4f4;
+    background-color: #f0f0f0;
     font-weight: bold;
+    padding: 10px;
 }
 
 .hidden_transaction {
@@ -389,7 +397,7 @@ label {
 .toggle-button {
     position: relative;
     width: 60px;
-    height: 40px;
+    height: 50px;
     background-color: #f0f0f0;
     border: 2px solid #bbb;
     border-radius: 20px;
@@ -401,8 +409,6 @@ label {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
     rotate: 90deg;
-    touch-action: manipulation;
-    /* Improves mobile interaction */
 }
 
 .toggle-button:hover {
@@ -427,20 +433,6 @@ label {
     transform: translate(-50%, -50%) translateX(100%);
 }
 
-.toggle-button span {
-    position: relative;
-    z-index: 1;
-    font-family: 'Arial', sans-serif;
-    color: #333;
-    font-weight: bold;
-    letter-spacing: 0.5px;
-    transition: color 0.3s ease;
-    text-align: center;
-    pointer-events: none;
-    /* Ensures text doesn't interfere with interaction */
-}
-
-/* Backdrop to gray out the page when the alert is active */
 .alert-backdrop {
     position: fixed;
     top: 0;
@@ -448,18 +440,13 @@ label {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.4);
-    /* Slightly transparent gray */
     z-index: 999;
-    /* Ensure it's above all content */
     pointer-events: auto;
-    /* Enable interaction */
     display: flex;
-    /* Flex to center modal content */
     align-items: center;
     justify-content: center;
 }
 
-/* Common alert styles */
 .alert {
     padding: 15px 20px;
     margin: 20px 0;
@@ -468,42 +455,31 @@ label {
     align-items: center;
     justify-content: space-between;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    width: 80%;
+    max-width: 400px;
     color: #fff;
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 1000;
-    width: 80%;
-    width: 400px;
 }
 
-/* Error alert */
 .alert-error {
     background-color: #e57373;
-    /* Softer red */
     border-left: 6px solid #d32f2f;
-    /* Slightly darker red for contrast */
 }
 
-/* Info alert */
 .alert-info {
     background-color: #64b5f6;
-    /* Softer blue */
     border-left: 6px solid #1976d2;
-    /* Slightly darker blue for contrast */
 }
 
-/* Success alert */
 .alert-success {
     background-color: #81c784;
-    /* Softer green */
     border-left: 6px solid #388e3c;
-    /* Slightly darker green for contrast */
 }
 
-/* Icon styles */
 .alert-icon {
     margin-right: 10px;
     font-size: 20px;
@@ -547,4 +523,31 @@ label {
 .flag {
     margin: 0 10px;
     cursor: pointer;
+}
+
+.btn-primary {
+    background-color: #007BFF;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
 }

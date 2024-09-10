@@ -1,5 +1,33 @@
-import { error, log, setGloableLanguage } from './main.js';
-import { displayCustomAlert, parseJsonResponse } from './utils.js';
+import { error, log } from './main.js';
+import { displayCustomAlert, parseJsonResponse, getGlobalLanguage, setGlobalLanguage } from './utils.js';
+
+const localizedStrings = {
+    English: {
+        delete_account_header: "Delete Account",
+        delete_account_confirmation: "Are you sure you want to delete your account? This action cannot be undone.",
+        delete_account_button: "Delete Account",
+        cancel_button: "Cancel",
+        change_password_header: "Change Password",
+        success_message: "Operation successful",
+        language_set_success: "Language set to ",
+        language_set_error: "Failed to set language"
+    },
+    German: {
+        delete_account_header: "Konto löschen",
+        delete_account_confirmation: "Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+        delete_account_button: "Konto löschen",
+        cancel_button: "Abbrechen",
+        change_password_header: "Passwort ändern",
+        success_message: "Aktion erfolgreich",
+        language_set_success: "Sprache geändert zu ",
+        language_set_error: "Fehler beim Einstellen der Sprache"
+    }
+};
+
+// Function to get the localized string.
+function getLocalizedString(key) {
+    return localizedStrings[getGlobalLanguage()][key];
+}
 
 export function initializeSettings() {
     const startTime = performance.now();
@@ -45,7 +73,8 @@ function setLanguage(new_language) {
                 let json = await response.json();
 
                 if (json.success) {
-                    setGloableLanguage(new_language);
+                    setGlobalLanguage(new_language);
+
                     // Reload the page to update the language
                     window.location.reload();
                 }
@@ -122,33 +151,31 @@ function handleDeleteButton() {
     icon.textContent = 'ℹ️';
 
     const headerText = document.createElement('strong');
-    headerText.textContent = 'Delete Account';
+    headerText.textContent = getLocalizedString('delete_account_header');
 
-    // Flex-grow div to push the header to the left
     const flexDiv = document.createElement('div');
     flexDiv.style.flexGrow = '1';
     flexDiv.appendChild(headerText);
 
-    // Append icon and headerText to horizontalContainer
     horizontalContainer.appendChild(icon);
     horizontalContainer.appendChild(flexDiv);
 
     // Create body text
     const bodyText = document.createElement('p');
-    bodyText.textContent = 'Are you sure you want to delete your account? This action cannot be undone.';
+    bodyText.textContent = getLocalizedString('delete_account_confirmation');
 
     const buttonContainer = document.createElement('div');
     buttonContainer.classList.add('container-without-border-horizontally-header');
 
     // Create delete button
     const deleteButton = document.createElement('button');
-    deleteButton.textContent = 'Delete Account';
+    deleteButton.textContent = getLocalizedString('delete_account_button');
     deleteButton.style.backgroundColor = 'red';
     deleteButton.onclick = sendDeleteRequest;
 
     // Create cancel button
     const cancelButton = document.createElement('button');
-    cancelButton.textContent = 'Cancel';
+    cancelButton.textContent = getLocalizedString('cancel_button');
     cancelButton.onclick = closeModal;
 
     buttonContainer.appendChild(deleteButton);

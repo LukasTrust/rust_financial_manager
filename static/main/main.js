@@ -13,14 +13,6 @@ export function error(message, context = '', ...data) {
     console.error(`[${new Date().toISOString()}] [${context}] ${message}`, ...data);
 }
 
-export const state = {
-    language: 'English',
-};
-
-export function setGloableLanguage(newLanguage) {
-    state.language = newLanguage;
-}
-
 let old_url = localStorage.getItem('old_url') || '/dashboard';
 
 document.addEventListener("DOMContentLoaded", function () {
