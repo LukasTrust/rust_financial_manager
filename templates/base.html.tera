@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ translations.base_dashboard }}</title>
+    <title>Rust Financial Manager</title>
+    <link rel="icon" href="/static/images/favicon.png">
     <link rel="stylesheet" href="/static/styles.css">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -16,13 +17,20 @@
         <div class="sidebar-left">
             <h2>{{ translations.base_dashboard }}</h2>
             <!-- Apply button styles -->
-            <button class="button btn-primary" url="/dashboard">{{ translations.base_dashboard }}</button>
-            <button class="button btn-secondary" url="/add-bank">{{ translations.base_add_new_bank }}</button>
+            <button class="button btn-primary" url="/dashboard">
+                <img src="/static/images/dashboard.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
+                {{ translations.base_dashboard }}
+            </button>
+            <button class="button btn-secondary" url="/add-bank">
+                <img src="/static/images/add.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
+                {{ translations.base_add_new_bank }}
+            </button>
             <div id="banks">
                 {% for bank in banks %}
                 <div data-bank-id="{{ bank.id }}">
                     <!-- Apply button styles -->
                     <button class="button btn-secondary" url="/bank/{{ bank.id }}" style="width: 100%">
+                        <img src="/static/images/bank.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
                         {{ bank.name }}
                     </button>
                     <div class="bank-sub-buttons" style="display: none;">
@@ -36,8 +44,14 @@
         <div class="main-content" id="main-content"></div>
         <div class="sidebar-right">
             <!-- Apply button styles -->
-            <button class="button btn-secondary" url="/settings">{{ translations.base_settings }}</button>
-            <button class="button btn-danger" url="/logout">{{ translations.base_logout }}</button>
+            <button class="button btn-secondary" url="/settings">
+                <img src="/static/images/settings.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
+                {{ translations.base_settings }}
+            </button>
+            <button class="button btn-danger" url="/logout">
+                <img src="/static/images/logout.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
+                {{ translations.base_logout }}
+            </button>
         </div>
     </div>
     <!-- Include JavaScript modules -->

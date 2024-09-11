@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Rust Financial Manager</title>
+    <link rel="icon" href="/static/images/favicon.png">
     <link rel="stylesheet" href="/static/styles.css">
     <script src="/static/login.js" defer></script>
 </head>
@@ -12,7 +13,10 @@
 <body style="width: 80%">
     <div class="container-with-border">
         <div class="container-without-border">
-            <h1>Rust Financial Manager</h1>
+            <div class="container-without-border-horizontally-header">
+                <img src="/static/images/favicon.png" alt="Logo" style="max-width: 100px; height: auto;">
+                <h1>Rust Financial Manager</h1>
+            </div>
             <p id="success" class="success"></p>
             <p id="error" class="error"></p>
         </div>
@@ -29,7 +33,10 @@
             </div>
             
             <!-- Primary button style applied to the login button -->
-            <button type="submit" class="button btn-primary">Login</button>
+            <button type="submit" class="button btn-primary">
+                <img src="/static/images/login.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
+                Login
+            </button>       
         </form>
         <p class="signup-link">Don't have an account? <a href="/register">Sign up</a></p>
     </div>

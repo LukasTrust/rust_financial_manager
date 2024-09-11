@@ -105,11 +105,28 @@ function createBankButtonContainer(bank) {
 
 // Function to create the main bank button
 function createBankButton(bank) {
+    // Create button element
     const bankButton = document.createElement('button');
     bankButton.classList.add('bank-button', 'button', 'btn-secondary');
-    bankButton.textContent = bank.name;
     bankButton.setAttribute('url', `/bank/${bank.id}`);
 
+    // Create img element for the icon
+    const iconImage = document.createElement('img');
+    iconImage.src = "/static/images/add.png";
+    iconImage.alt = "Icon";
+    iconImage.style.width = "16px";
+    iconImage.style.height = "16px";
+    iconImage.style.verticalAlign = "middle";
+    iconImage.style.marginRight = "5px";
+
+    // Append the icon to the button
+    bankButton.appendChild(iconImage);
+
+    // Create text node for bank name and append it
+    const buttonText = document.createTextNode(bank.name);
+    bankButton.appendChild(buttonText);
+
+    // Add click event listener
     bankButton.addEventListener("click", function () {
         loadContent(this.getAttribute("url"));
 
