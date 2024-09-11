@@ -5,15 +5,12 @@ on:
     branches:
       - master
     paths:
-      
       - 'src/**'
       - 'tests/**'
   pull_request:
     paths:
       - 'src/**'
       - 'tests/**'
-  schedule:
-    - cron: '0 0 * * 0'  # Run the CI every Sunday at midnight
 
 jobs:
   all_in_one:
@@ -32,6 +29,12 @@ jobs:
           cargo install cargo-tarpaulin cargo-audit
           cargo install diesel_cli --no-default-features --features postgres
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      # Install PostgreSQL
+      - name: Install PostgreSQL
+        run: |
+          apt-get update
+          apt-get install -y postgresql
 
       # Build the project
       - name: Build
