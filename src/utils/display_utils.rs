@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use log::info;
+use log::{info, warn};
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
@@ -18,6 +18,8 @@ pub async fn generate_graph_data(
     start_date: &NaiveDate,
     end_date: &NaiveDate,
 ) -> String {
+    let start = std::time::Instant::now();
+
     // Convert the transactions_with_discrepancy into a HashMap for quick lookup
     let discrepancy_map: HashMap<i32, f64> = discrepancies
         .iter()
@@ -109,142 +111,169 @@ pub async fn generate_graph_data(
     // Return the plot data as JSON
     let plot_data = json!(plot_data);
 
+    warn!("Graph data generation took: {:?}", start.elapsed());
+
     serde_json::to_string(&plot_data).unwrap()
 }
 
 pub fn generate_performance_value(
-    banks: &[Bank],
     transactions: &[Transaction],
     contracts: &[Contract],
     start_date: &NaiveDate,
     end_date: &NaiveDate,
 ) -> (PerformanceData, Vec<Discrepancy>) {
-    let mut total_sum = 0.0;
-    let mut total_transactions = 0;
-    let mut total_discrepancy = 0.0;
-    let mut starting_balance = 0.0;
-    let mut ending_balance = 0.0;
-    let mut transactions_with_discrepancy = vec![];
-    let mut total_contracts = 0;
-    let mut one_month_contract_amount = 0.0;
-    let mut three_month_contract_amount = 0.0;
-    let mut six_month_contract_amount = 0.0;
-    let mut total_amount_per_year = 0.0;
+    let start = std::time::Instant::now();
 
-    info!("Generating performance data for {} banks", banks.len());
+    // Filter transactions within the date range
+    let mut filtered_transactions: Vec<&Transaction> = transactions
+        .iter()
+        .filter(|t| t.date >= *start_date && t.date <= *end_date)
+        .collect();
 
-    for bank in banks {
-        let contracts_of_bank = contracts
-            .iter()
-            .filter(|c| c.bank_id == bank.id && c.end_date.is_none())
-            .collect::<Vec<&Contract>>();
+    let transactions_count = filtered_transactions.len();
 
-        total_contracts += contracts_of_bank.len();
+    let mut filtered_contracts: Vec<&Contract> = contracts
+        .iter()
+        .filter(|c| c.end_date.map_or(true, |ed| ed <= *end_date))
+        .collect();
 
-        for contract in contracts_of_bank {
-            match contract.months_between_payment {
-                1 => {
-                    total_amount_per_year += contract.current_amount * 12.0;
-                    one_month_contract_amount += contract.current_amount
+    let contracts_count = filtered_contracts.len();
+
+    if (transactions_count == 0) || (contracts_count == 0) {
+        return (PerformanceData::default(), vec![]);
+    } else if transactions_count == 0 {
+        return handle_only_contracts(contracts_count, &mut filtered_contracts);
+    } else if contracts_count == 0 {
+        return handle_only_transactions(transactions_count, &mut filtered_transactions);
+    }
+
+    let result_only_transactions =
+        handle_only_transactions(transactions_count, &mut filtered_transactions);
+
+    let transactions_with_discrepancy = result_only_transactions.1;
+
+    let result_only_contracts = handle_only_contracts(contracts_count, &mut filtered_contracts);
+
+    let contracts_amount_per_time_span: f64 =
+        filtered_transactions.iter().fold(0.0, |acc, transaction| {
+            if let Some(contract_id) = transaction.contract_id {
+                if filtered_contracts.iter().any(|c| c.id == contract_id) {
+                    acc + transaction.amount
+                } else {
+                    acc
                 }
-                3 => {
-                    total_amount_per_year += contract.current_amount * 4.0;
-                    three_month_contract_amount += contract.current_amount
-                }
-                6 => {
-                    total_amount_per_year += contract.current_amount * 2.0;
-                    six_month_contract_amount += contract.current_amount
-                }
-                _ => {}
-            }
-        }
-
-        let transaction_of_bank = transactions
-            .iter()
-            .filter(|t| t.bank_id == bank.id)
-            .collect::<Vec<&Transaction>>();
-
-        let mut previous_balance = 0.0;
-
-        info!("Processing transactions for bank: {}", bank.name);
-
-        // Filter transactions within the date range
-        let mut transactions_for_start_end: Vec<&Transaction> = transaction_of_bank
-            .iter()
-            .filter(|&t| t.date >= *start_date && t.date <= *end_date)
-            .cloned()
-            .collect::<Vec<&Transaction>>();
-
-        // Sort filtered transactions by date
-        transactions_for_start_end.sort_by(|a, b| {
-            match a.date.cmp(&b.date) {
-                std::cmp::Ordering::Equal => b.id.cmp(&a.id), // If dates are equal, sort by id in descending order
-                other => other,                               // Otherwise, sort by date
+            } else {
+                acc
             }
         });
 
-        if let Some(first_transaction) = transactions_for_start_end.first() {
-            info!("First transaction: {:?}", first_transaction);
-            starting_balance += first_transaction.bank_balance_after;
-        }
+    let performance_data = PerformanceData::new(
+        result_only_transactions.0,
+        result_only_contracts.0,
+        contracts_amount_per_time_span,
+    );
 
-        if let Some(last_transaction) = transactions_for_start_end.last() {
-            info!("Last transaction: {:?}", last_transaction);
-            ending_balance += last_transaction.bank_balance_after + last_transaction.amount;
-        }
-
-        for (index, transaction) in transactions_for_start_end.iter().enumerate() {
-            total_sum += transaction.amount;
-            total_transactions += 1;
-
-            if index > 0 && index < transactions_for_start_end.len() - 1 {
-                let discrepancy =
-                    previous_balance - (transaction.bank_balance_after - transaction.amount);
-                if !(-0.01..=0.01).contains(&discrepancy) {
-                    info!(
-                        "Discrepancy found in transaction: {} with amount: {}",
-                        transaction.id, discrepancy
-                    );
-                    total_discrepancy += discrepancy;
-                    transactions_with_discrepancy.push(Discrepancy {
-                        transaction_id: transaction.id,
-                        discrepancy_amount: discrepancy,
-                    });
-                }
-            }
-
-            previous_balance = transaction.bank_balance_after;
-        }
-    }
-
-    let net_gain_loss = ending_balance - starting_balance;
-
-    let performance_percentage = if starting_balance != 0.0 {
-        (net_gain_loss / starting_balance) * 100.0
-    } else {
-        0.0
-    };
-
-    let average_transaction_amount = if total_transactions > 0 {
-        total_sum / total_transactions as f64
-    } else {
-        0.0
-    };
-
-    let performance_data = PerformanceData {
-        total_transactions,
-        average_transaction_amount,
-        net_gain_loss,
-        performance_percentage,
-        total_discrepancy,
-        total_contracts,
-        one_month_contract_amount,
-        three_month_contract_amount,
-        six_month_contract_amount,
-        total_amount_per_year,
-    };
-
-    info!("Performance data: {:?}", performance_data);
+    warn!("Performance value calculation took: {:?}", start.elapsed());
 
     (performance_data, transactions_with_discrepancy)
+}
+
+fn handle_only_transactions(
+    transactions_count: usize,
+    filtered_transactions: &mut Vec<&Transaction>,
+) -> (PerformanceData, Vec<Discrepancy>) {
+    let mut transactions_total_amount = 0.0;
+    let mut transactions_max_amount = f64::MIN;
+    let mut transactions_min_amount = f64::MAX;
+
+    // Calculate total, max, and min amounts in a single pass
+    for transaction in filtered_transactions.iter() {
+        let amount = transaction.amount;
+        transactions_total_amount += amount;
+        transactions_max_amount = transactions_max_amount.max(amount);
+        transactions_min_amount = transactions_min_amount.min(amount);
+    }
+
+    let transactions_average_amount = transactions_total_amount / transactions_count as f64;
+
+    // Find first and last transactions by date
+    filtered_transactions.sort_by(|a, b| a.date.cmp(&b.date));
+    let first_transaction = filtered_transactions.first().unwrap();
+
+    let last_transaction = filtered_transactions.last().unwrap();
+
+    let transactions_net_gain_loss =
+        last_transaction.bank_balance_after - first_transaction.bank_balance_after;
+
+    let mut transactions_total_discrepancy = 0.0;
+    let mut transactions_with_discrepancy = vec![];
+
+    // Sort by date, then by ID descending for same-date transactions
+    filtered_transactions.sort_by(|a, b| {
+        match a.date.cmp(&b.date) {
+            std::cmp::Ordering::Equal => b.id.cmp(&a.id), // Sort by ID descending if dates are equal
+            other => other,                               // Otherwise, sort by date
+        }
+    });
+
+    let mut previous_balance = filtered_transactions.first().unwrap().bank_balance_after;
+
+    // Calculate discrepancies
+    for (_, transaction) in filtered_transactions.iter().enumerate().skip(1) {
+        let discrepancy = previous_balance - (transaction.bank_balance_after - transaction.amount);
+        if !(-0.01..=0.01).contains(&discrepancy) {
+            transactions_total_discrepancy += discrepancy;
+            transactions_with_discrepancy.push(Discrepancy {
+                transaction_id: transaction.id,
+                discrepancy_amount: discrepancy,
+            });
+        }
+        previous_balance = transaction.bank_balance_after;
+    }
+
+    let performance_data = PerformanceData::new_only_transaction(
+        transactions_count,
+        transactions_average_amount,
+        transactions_max_amount,
+        transactions_min_amount,
+        transactions_net_gain_loss,
+        transactions_total_discrepancy,
+    );
+
+    (performance_data, transactions_with_discrepancy)
+}
+
+fn handle_only_contracts(
+    contracts_count: usize,
+    filtered_contracts: &mut Vec<&Contract>,
+) -> (PerformanceData, Vec<Discrepancy>) {
+    // Calculate contract statistics
+    let contracts_total_amount: f64 = filtered_contracts.iter().map(|c| c.current_amount).sum();
+    let contracts_average_amount = contracts_total_amount / contracts_count as f64;
+    let contracts_max_amount = filtered_contracts
+        .iter()
+        .map(|c| c.current_amount)
+        .fold(f64::MIN, f64::max);
+    let contracts_min_amount = filtered_contracts
+        .iter()
+        .map(|c| c.current_amount)
+        .fold(f64::MAX, f64::min);
+
+    let contracts_amount_per_year: f64 = filtered_contracts
+        .iter()
+        .map(|contract| {
+            let months_between = contract.months_between_payment as f64;
+            contract.current_amount / months_between * 12.0
+        })
+        .sum();
+
+    let performance_data = PerformanceData::new_only_contract(
+        contracts_count,
+        contracts_average_amount,
+        contracts_max_amount,
+        contracts_min_amount,
+        contracts_amount_per_year,
+    );
+
+    (performance_data, vec![])
 }

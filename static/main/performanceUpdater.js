@@ -1,13 +1,17 @@
 export function formatAndColorNumbers() {
     const elements = [
-        document.getElementById("net_gain_loss"),
-        document.getElementById("performance_percentage"),
-        document.getElementById("average_transaction_amount"),
-        document.getElementById("total_discrepancy"),
-        document.getElementById("total_amount_per_year"),
-        document.getElementById("one_month_contract_amount"),
-        document.getElementById("three_month_contract_amount"),
-        document.getElementById("six_month_contract_amount"),
+        document.getElementById("transactions_count"),
+        document.getElementById("transactions_average_amount"),
+        document.getElementById("transactions_max_amount"),
+        document.getElementById("transactions_min_amount"),
+        document.getElementById("transactions_net_gain_loss"),
+        document.getElementById("transactions_total_discrepancy"),
+        document.getElementById("contracts_count"),
+        document.getElementById("contracts_average_amount"),
+        document.getElementById("contracts_max_amount"),
+        document.getElementById("contracts_min_amount"),
+        document.getElementById("contracts_amount_per_time_span"),
+        document.getElementById("contracts_amount_per_year"),
     ];
 
     elements.forEach(element => {
@@ -29,6 +33,14 @@ export function formatAndColorNumbers() {
                 iconName = "no-change.png";
             }
 
+            if (element.id === "transactions_count" ||
+                element.id === "contracts_count" ||
+                element.id === "contract_coverage_rate") {
+
+                // Skip to the nexxt element
+                return;
+            }
+
             // Remove any existing icon if present
             if (element.previousElementSibling && element.previousElementSibling.tagName === "IMG") {
                 element.previousElementSibling.remove();
@@ -41,8 +53,10 @@ export function formatAndColorNumbers() {
 
             // Format the text content
             let formattedText;
-            if (element.id === "performance_percentage") {
-                formattedText = `${value} %`;
+            if (element.id === "transactions_count" ||
+                element.id === "contracts_count" ||
+                element.id === "contract_coverage_rate") {
+                formattedText = `${value}`;
             } else {
                 formattedText = `${value} €`;
             }
@@ -63,16 +77,18 @@ export function update_performance(performance_value) {
     if (!performance_value || typeof performance_value !== 'object') return;
 
     const elements = {
-        total_transactions: performance_value.total_transactions,
-        net_gain_loss: performance_value.net_gain_loss,
-        performance_percentage: performance_value.performance_percentage,
-        average_transaction_amount: performance_value.average_transaction_amount,
-        total_discrepancy: performance_value.total_discrepancy,
-        total_contracts: performance_value.total_contracts,
-        total_amount_per_year: performance_value.total_amount_per_year,
-        one_month_contract_amount: performance_value.one_month_contract_amount,
-        three_month_contract_amount: performance_value.three_month_contract_amount,
-        six_month_contract_amount: performance_value.six_month_contract_amount
+        transactions_total_discrepancy: performance_value.transactions_total_discrepancy,
+        transactions_count: performance_value.transactions_count,
+        transactions_average_amount: performance_value.transactions_average_amount,
+        transactions_max_amount: performance_value.transactions_max_amount,
+        contracts_count: performance_value.contracts_count,
+        contracts_average_amount: performance_value.contracts_average_amount,
+        transactions_min_amount: performance_value.transactions_min_amount,
+        transactions_net_gain_loss: performance_value.transactions_net_gain_loss,
+        contracts_max_amount: performance_value.contracts_max_amount,
+        contracts_min_amount: performance_value.contracts_min_amount,
+        contracts_amount_per_time_span: performance_value.contracts_amount_per_time_span,
+        contracts_amount_per_year: performance_value.contracts_amount_per_year,
     };
 
     // Iterate over each element and update its content

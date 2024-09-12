@@ -188,43 +188,42 @@ button {
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* Center items horizontally */
     justify-content: center;
-    /* Center items vertically */
     background: #ffffff;
-    /* Use a pure white background for a clean look */
     border: 1px solid #e0e0e0;
-    /* Lighter border color */
     border-radius: 12px;
-    /* Increased rounded corners for a softer look */
     padding: 20px;
-    /* More padding for better spacing */
-    margin: 15px;
-    /* Slightly larger margin between boxes */
+    gap: 15px;
     box-sizing: border-box;
     text-align: center;
-    width: 18%;
+    width: 15%;
     height: auto;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
-    /* Softer shadow */
     transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
 }
 
 .box span {
     font-weight: bold;
     font-size: 1.4em;
-    /* Slightly larger font for better readability */
     color: #333;
-    /* Darker color for the text */
 }
 
 .box:hover {
     transform: translateY(-8px);
-    /* Increased hover lift */
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-    /* Stronger shadow on hover */
     background-color: #f0f0f0;
-    /* Subtle background color change on hover */
+}
+
+.box span.positive {
+    color: #4CAF50;
+}
+
+.box span.negative {
+    color: #F44336;
+}
+
+.box span.no-change {
+    color: #FFC107;
 }
 
 img {
@@ -232,21 +231,6 @@ img {
     height: 16px;
     vertical-align: middle;
     margin-right: 5px;
-}
-
-.box span.positive {
-    color: #4CAF50;
-    /* Green color for positive values */
-}
-
-.box span.negative {
-    color: #F44336;
-    /* Red color for negative values */
-}
-
-.box span.no-change {
-    color: #FFC107;
-    /* Amber color for no change values */
 }
 
 .signup-link {
@@ -302,7 +286,6 @@ label {
     overflow-y: auto;
     box-sizing: border-box;
 }
-
 
 .display {
     border: 1px solid #ddd;

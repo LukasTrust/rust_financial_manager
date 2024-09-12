@@ -116,13 +116,8 @@ pub async fn get_performance_value_and_graph_data(
         last_date = input_last_date.unwrap();
     }
 
-    let performance_value = generate_performance_value(
-        banks,
-        &all_transactions,
-        &all_contracts,
-        &first_date,
-        &last_date,
-    );
+    let performance_value =
+        generate_performance_value(&all_transactions, &all_contracts, &first_date, &last_date);
 
     let graph_data = generate_graph_data(
         banks,

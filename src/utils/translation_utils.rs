@@ -70,7 +70,7 @@ pub fn get_transactions_localized_strings(language: Language) -> HashMap<&'stati
     // List all the keys needed for the Transactions view localization.
     let keys = vec![
         "transactions_title",
-        "transactions_select_date_range_label",
+        "select_date_range_label",
         "transactions_filter_by_contract_label",
         "transactions_all_contracts_option",
         "transactions_search_placeholder",
@@ -101,19 +101,9 @@ pub fn get_transactions_localized_strings(language: Language) -> HashMap<&'stati
 pub fn get_bank_localized_strings(language: Language) -> HashMap<&'static str, String> {
     // List all the keys needed for the Bank view localization.
     let keys = vec![
-        "bank_transaction_data_title",
-        "bank_number_of_transactions_label",
-        "bank_average_amount_label",
-        "bank_net_gain_loss_label",
-        "bank_performance_label",
-        "bank_discrepancy_label",
-        "bank_contract_data_title",
-        "bank_number_of_contracts_label",
-        "bank_total_amount_per_year_label",
-        "bank_contracts_one_month_label",
-        "bank_contracts_three_month_label",
-        "bank_contracts_six_month_label",
-        "bank_select_date_range_label",
+        "select_date_range_label",
+        "transaction_data_title",
+        "contracts_data_title",
         "bank_upload_button",
         "bank_update_csv_conversion_title",
         "bank_counterparty_column_label",
@@ -121,6 +111,18 @@ pub fn get_bank_localized_strings(language: Language) -> HashMap<&'static str, S
         "bank_balance_after_column_label",
         "bank_date_column_label",
         "bank_change_button",
+        "transaction_count",
+        "transaction_average_amount_label",
+        "transaction_max_amount_label",
+        "transaction_min_amount_label",
+        "transaction_net_gain_loss_label",
+        "transactions_total_discrepancy_label",
+        "contracts_count_label",
+        "contracts_average_amount_label",
+        "contracts_max_amount_label",
+        "contracts_min_amount_label",
+        "contracts_amount_per_time_span_label",
+        "contracts_amount_per_year_label",
     ];
 
     // Create a HashMap to store the localized strings.
@@ -138,19 +140,21 @@ pub fn get_bank_localized_strings(language: Language) -> HashMap<&'static str, S
 pub fn get_dashboard_localized_strings(language: Language) -> HashMap<&'static str, String> {
     // List all the keys needed for the Dashboard view localization.
     let keys = vec![
-        "dashboard_select_date_range_label",
-        "dashboard_transaction_data_title",
-        "dashboard_number_of_transactions_label",
-        "dashboard_average_amount_label",
-        "dashboard_net_gain_loss_label",
-        "dashboard_performance_label",
-        "dashboard_discrepancy_label",
-        "dashboard_contract_data_title",
-        "dashboard_number_of_contracts_label",
-        "dashboard_total_amount_per_year_label",
-        "dashboard_contracts_one_month_label",
-        "dashboard_contracts_three_month_label",
-        "dashboard_contracts_six_month_label",
+        "select_date_range_label",
+        "transaction_data_title",
+        "contracts_data_title",
+        "transaction_count",
+        "transaction_average_amount_label",
+        "transaction_max_amount_label",
+        "transaction_min_amount_label",
+        "transaction_net_gain_loss_label",
+        "transactions_total_discrepancy_label",
+        "contracts_count_label",
+        "contracts_average_amount_label",
+        "contracts_max_amount_label",
+        "contracts_min_amount_label",
+        "contracts_amount_per_time_span_label",
+        "contracts_amount_per_year_label",
     ];
 
     // Create a HashMap to store the localized strings.

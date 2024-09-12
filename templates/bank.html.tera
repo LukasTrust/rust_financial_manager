@@ -1,5 +1,4 @@
 <div class="scroll-container">
-
     <div class="container-without-border-horizontally">
         <!-- Bank Information Section -->
         <div class="container-without-border">
@@ -11,51 +10,54 @@
             <div id="balance_graph" class="balance_graph"></div>
 
             <!-- Transaction Data Section -->
-            <h2>{{ translations.bank_transaction_data_title }}</h2>
-            <div class="container-without-border-horizontally">
+            <h2>{{ translations.transaction_data_title }}</h2>
+            <div class="display-container">
+                <div class="box">{{ translations.transaction_count }}
+                    <span id="transactions_count"></span>
+                </div>
                 <div class="box">{{
-                    translations.bank_number_of_transactions_label
+                    translations.transaction_average_amount_label }}
+                    <span id="transactions_average_amount"></span>
+                </div>
+                <div class="box">{{ translations.transaction_max_amount_label }}
+                    <span id="transactions_max_amount"></span>
+                </div>
+                <div class="box">{{ translations.transaction_min_amount_label }}
+                    <span id="transactions_min_amount"></span>
+                </div>
+                <div class="box">{{ translations.transaction_net_gain_loss_label
                     }}
-                    <span id="total_transactions"></span>
+                    <span id="transactions_net_gain_loss"></span>
                 </div>
-                <div class="box">{{ translations.bank_average_amount_label
-                    }}
-                    <span id="average_transaction_amount"></span>
-                </div>
-                <div class="box">{{ translations.bank_net_gain_loss_label
-                    }}
-                    <span id="net_gain_loss"></span>
-                </div>
-                <div class="box">{{ translations.bank_performance_label }}
-                    <span id="performance_percentage"></span>
-                </div>
-                <div class="box">{{ translations.bank_discrepancy_label }}
-                    <span id="total_discrepancy"></span>
+                <div class="box">{{
+                    translations.transactions_total_discrepancy_label }}
+                    <span id="transactions_total_discrepancy"></span>
                 </div>
             </div>
 
             <!-- Contract Data Section -->
-            <h2>{{ translations.bank_contract_data_title }}</h2>
-            <div class="container-without-border-horizontally">
-                <div class="box">{{
-                    translations.bank_number_of_contracts_label}}
-                    <span id="total_contracts"></span>
+            <h2>{{ translations.contracts_data_title }}</h2>
+            <div class="display-container">
+                <div class="box">{{ translations.contracts_count_label }}
+                    <span id="contracts_count"></span>
+                </div>
+                <div class="box">{{ translations.contracts_average_amount_label
+                    }}
+                    <span id="contracts_average_amount"></span>
+                </div>
+                <div class="box">{{ translations.contracts_max_amount_label }}
+                    <span id="contracts_max_amount"></span>
+                </div>
+                <div class="box">{{ translations.contracts_min_amount_label }}
+                    <span id="contracts_min_amount"></span>
                 </div>
                 <div class="box">{{
-                    translations.bank_total_amount_per_year_label}}
-                    <span id="total_amount_per_year"></span>
+                    translations.contracts_amount_per_time_span_label }}
+                    <span id="contracts_amount_per_time_span"></span>
                 </div>
-                <div class="box">{{
-                    translations.bank_contracts_one_month_label}}
-                    <span id="one_month_contract_amount"></span>
-                </div>
-                <div class="box">{{
-                    translations.bank_contracts_three_month_label}}
-                    <span id="three_month_contract_amount"></span>
-                </div>
-                <div class="box">{{
-                    translations.bank_contracts_six_month_label}}
-                    <span id="six_month_contract_amount"></span>
+                <div class="box">{{ translations.contracts_amount_per_year_label
+                    }}
+                    <span id="contracts_amount_per_year"></span>
                 </div>
             </div>
         </div>
@@ -65,9 +67,9 @@
             <!-- Date Range Picker -->
             <div class="form-group" style="width: 100%">
                 <label for="dateRange" class="date-label">{{
-                    translations.bank_select_date_range_label }}</label>
+                    translations.select_date_range_label }}</label>
                 <input type="text" id="dateRange" class="date-input"
-                    placeholder="{{ translations.bank_select_date_range_label }}">
+                    placeholder="{{ translations.select_date_range_label }}">
             </div>
 
             <!-- CSV Upload Form -->

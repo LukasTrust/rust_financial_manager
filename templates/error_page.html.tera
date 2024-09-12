@@ -1,16 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error</title>
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-    <div class="container-with-border">
-            <h1>{{ error_header }}</h1>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Error</title>
+        <link rel="stylesheet" href="/static/styles.css">
+    </head>
+    <body>
+        <div class="container-with-border">
+            <div class="container-without-border-horizontally-header">
+                <img src="/static/images/error.png" alt="Icon"
+                    style="width: 30px; height: 30px">
+                <h1>{{ error_header }}</h1>
+            </div>
             <p>{{ error_message }}</p>
             <p><a href="/">Return to the login</a></p>
-    </div>
-</body>
+        </div>
+    </body>
 </html>

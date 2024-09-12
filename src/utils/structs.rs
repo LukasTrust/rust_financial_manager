@@ -85,31 +85,94 @@ pub struct DateRangeForm {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct PerformanceData {
-    pub total_transactions: usize,
-    pub average_transaction_amount: f64,
-    pub net_gain_loss: f64,
-    pub performance_percentage: f64,
-    pub total_discrepancy: f64,
-    pub total_contracts: usize,
-    pub one_month_contract_amount: f64,
-    pub three_month_contract_amount: f64,
-    pub six_month_contract_amount: f64,
-    pub total_amount_per_year: f64,
+    transactions_count: usize,
+    transactions_average_amount: f64,
+    transactions_max_amount: f64,
+    transactions_min_amount: f64,
+    transactions_net_gain_loss: f64,
+    transactions_total_discrepancy: f64,
+    contracts_count: usize,
+    contracts_average_amount: f64,
+    contracts_max_amount: f64,
+    contracts_min_amount: f64,
+    contracts_amount_per_time_span: f64,
+    contracts_amount_per_year: f64,
+}
+
+impl PerformanceData {
+    pub fn new(
+        only_transaction: PerformanceData,
+        only_contract: PerformanceData,
+        contracts_amount_per_time_span: f64,
+    ) -> PerformanceData {
+        PerformanceData {
+            transactions_count: only_transaction.transactions_count,
+            transactions_average_amount: only_transaction.transactions_average_amount,
+            transactions_max_amount: only_transaction.transactions_max_amount,
+            transactions_min_amount: only_transaction.transactions_min_amount,
+            transactions_net_gain_loss: only_transaction.transactions_net_gain_loss,
+            transactions_total_discrepancy: only_transaction.transactions_total_discrepancy,
+            contracts_count: only_contract.contracts_count,
+            contracts_average_amount: only_contract.contracts_average_amount,
+            contracts_max_amount: only_contract.contracts_max_amount,
+            contracts_min_amount: only_contract.contracts_min_amount,
+            contracts_amount_per_time_span,
+            contracts_amount_per_year: only_contract.contracts_amount_per_year,
+        }
+    }
+
+    pub fn new_only_transaction(
+        transactions_count: usize,
+        transactions_average_amount: f64,
+        transactions_max_amount: f64,
+        transactions_min_amount: f64,
+        transactions_net_gain_loss: f64,
+        transactions_total_discrepancy: f64,
+    ) -> PerformanceData {
+        PerformanceData {
+            transactions_count,
+            transactions_average_amount,
+            transactions_max_amount,
+            transactions_min_amount,
+            transactions_net_gain_loss,
+            transactions_total_discrepancy,
+            ..Default::default()
+        }
+    }
+
+    pub fn new_only_contract(
+        contracts_count: usize,
+        contracts_average_amount: f64,
+        contracts_max_amount: f64,
+        contracts_min_amount: f64,
+        contracts_amount_per_year: f64,
+    ) -> PerformanceData {
+        PerformanceData {
+            contracts_count,
+            contracts_average_amount,
+            contracts_max_amount,
+            contracts_min_amount,
+            contracts_amount_per_year,
+            ..Default::default()
+        }
+    }
 }
 
 impl Default for PerformanceData {
-    fn default() -> Self {
+    fn default() -> PerformanceData {
         PerformanceData {
-            total_transactions: 0,
-            average_transaction_amount: 0.0,
-            net_gain_loss: 0.0,
-            performance_percentage: 0.0,
-            total_discrepancy: 0.0,
-            total_contracts: 0,
-            one_month_contract_amount: 0.0,
-            three_month_contract_amount: 0.0,
-            six_month_contract_amount: 0.0,
-            total_amount_per_year: 0.0,
+            transactions_count: 0,
+            transactions_average_amount: 0.0,
+            transactions_max_amount: 0.0,
+            transactions_min_amount: 0.0,
+            transactions_net_gain_loss: 0.0,
+            transactions_total_discrepancy: 0.0,
+            contracts_count: 0,
+            contracts_average_amount: 0.0,
+            contracts_max_amount: 0.0,
+            contracts_min_amount: 0.0,
+            contracts_amount_per_time_span: 0.0,
+            contracts_amount_per_year: 0.0,
         }
     }
 }
