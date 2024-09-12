@@ -12,44 +12,76 @@ export function formatAndColorNumbers() {
 
     elements.forEach(element => {
         if (element) {
-            let value = parseFloat(element.textContent).toFixed(2);
+            let value = parseFloat(element.textContent);
 
-            if (element.id === "performance_percentage") {
-                element.textContent = `${value} %`;
+            // Check if value is a valid number
+            if (isNaN(value)) return;
+
+            value = value.toFixed(2); // Format to two decimal places
+
+            // Determine the icon based on the value
+            let iconName;
+            if (value > 0) {
+                iconName = "positive.png";
+            } else if (value < 0) {
+                iconName = "negative.png";
             } else {
-                element.textContent = `${value} €`;
+                iconName = "no-change.png";
             }
 
-            element.classList.toggle("positive", value >= 0);
+            // Remove any existing icon if present
+            if (element.previousElementSibling && element.previousElementSibling.tagName === "IMG") {
+                element.previousElementSibling.remove();
+            }
+
+            // Create the icon image element
+            const icon = document.createElement("img");
+            icon.src = `/static/images/${iconName}`;
+            icon.alt = "Icon";
+
+            // Format the text content
+            let formattedText;
+            if (element.id === "performance_percentage") {
+                formattedText = `${value} %`;
+            } else {
+                formattedText = `${value} €`;
+            }
+
+            // Clear current content and add the icon and formatted text in order
+            element.innerHTML = ''; // Clear existing content
+            element.appendChild(icon); // Add the icon first
+            element.insertAdjacentText('beforeend', formattedText); // Add the formatted text after the icon
+
+            // Apply CSS classes for positive or negative values
+            element.classList.toggle("positive", value > 0);
             element.classList.toggle("negative", value < 0);
         }
     });
 }
 
 export function update_performance(performance_value) {
-    const total_transactions = document.getElementById("total_transactions");
-    const net_gain_loss = document.getElementById("net_gain_loss");
-    const performance_percentage = document.getElementById("performance_percentage");
-    const average_transaction_amount = document.getElementById("average_transaction_amount");
-    const total_discrepancy = document.getElementById("total_discrepancy");
+    if (!performance_value || typeof performance_value !== 'object') return;
 
-    const total_contracts = document.getElementById("total_contracts");
-    const total_amount_per_year = document.getElementById("total_amount_per_year");
-    const one_month_contract_amount = document.getElementById("one_month_contract_amount");
-    const three_month_contract_amount = document.getElementById("three_month_contract_amount");
-    const six_month_contract_amount = document.getElementById("six_month_contract_amount");
+    const elements = {
+        total_transactions: performance_value.total_transactions,
+        net_gain_loss: performance_value.net_gain_loss,
+        performance_percentage: performance_value.performance_percentage,
+        average_transaction_amount: performance_value.average_transaction_amount,
+        total_discrepancy: performance_value.total_discrepancy,
+        total_contracts: performance_value.total_contracts,
+        total_amount_per_year: performance_value.total_amount_per_year,
+        one_month_contract_amount: performance_value.one_month_contract_amount,
+        three_month_contract_amount: performance_value.three_month_contract_amount,
+        six_month_contract_amount: performance_value.six_month_contract_amount
+    };
 
-    total_transactions.textContent = performance_value.total_transactions;
-    net_gain_loss.textContent = performance_value.net_gain_loss;
-    performance_percentage.textContent = performance_value.performance_percentage;
-    average_transaction_amount.textContent = performance_value.average_transaction_amount;
-    total_discrepancy.textContent = performance_value.total_discrepancy;
-
-    total_contracts.textContent = performance_value.total_contracts;
-    total_amount_per_year.textContent = performance_value.total_amount_per_year;
-    one_month_contract_amount.textContent = performance_value.one_month_contract_amount;
-    three_month_contract_amount.textContent = performance_value.three_month_contract_amount;
-    six_month_contract_amount.textContent = performance_value.six_month_contract_amount;
+    // Iterate over each element and update its content
+    Object.keys(elements).forEach(id => {
+        const element = document.getElementById(id);
+        if (element && elements[id] !== undefined) {
+            element.textContent = elements[id];
+        }
+    });
 
     formatAndColorNumbers();
 }

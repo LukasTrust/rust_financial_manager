@@ -1,22 +1,31 @@
  <div class="scroll-container">
     <div class="container-without-border">
-        <h1>{{ translations.transactions_title }}</h1>
+        <h1>
+            <img src="/static/images/transaction.png" alt="Icon"
+                style="width: 30px; height: 30px">
+            {{ translations.transactions_title }}</h1>
 
         <!-- Static header and table structure -->
         <div class="container-without-border-horizontally-header">
-            <label for="date-range" class="date-label">{{
-                translations.transactions_select_date_range_label }}</label>
+
+            <label for="date-range" class="date-label">
+                {{translations.transactions_select_date_range_label }}
+            </label>
+            <img src="/static/images/calendar.png" alt="Icon">
             <input type="text" id="date-range" class="date-input flatpickr"
                 placeholder="{{ translations.transactions_select_date_range_label }}">
 
-            <label for="contract-filter">{{
-                translations.transactions_filter_by_contract_label }}</label>
+            <label for="contract-filter">
+                {{translations.transactions_filter_by_contract_label }}
+            </label>
+            <img src="/static/images/filter.png" alt="Icon">
             <select id="contract-filter" class="input-select">
-                <option value>{{ translations.transactions_all_contracts_option
-                    }}</option>
-                <!-- Options will be dynamically populated by JS -->
+                <option value>
+                    {{ translations.transactions_all_contracts_option }}
+                </option>
             </select>
 
+            <img src="/static/images/search.png" alt="Icon">
             <input type="text" id="transaction-search" class="input-search"
                 placeholder="{{ translations.transactions_search_placeholder }}">
 
@@ -27,10 +36,12 @@
                     <div class="slider"></div>
                 </button>
                 <div class="container-without-border">
-                    <span>{{ translations.transactions_hide_hidden_text
-                        }}</span>
-                    <span>{{ translations.transactions_show_hidden_text
-                        }}</span>
+                    <span>
+                        {{ translations.transactions_hide_hidden_text }}
+                    </span>
+                    <span>
+                        {{ translations.transactions_show_hidden_text }}
+                    </span>
                 </div>
             </div>
         </div>
@@ -39,27 +50,92 @@
         <table class="transaction-table">
             <thead>
                 <tr>
-                    <th data-key="icon" class="sortable">{{
-                        translations.transactions_icon_header
-                        }}<span>↑</span></th>
-                    <th data-key="counterparty" class="sortable">{{
-                        translations.transactions_counterparty_header
-                        }}<span>↑</span></th>
-                    <th data-key="amount" class="sortable">{{
-                        translations.transactions_amount_header
-                        }}<span>↑</span></th>
-                    <th data-key="bank_balance_after" class="sortable">{{
-                        translations.transactions_balance_header
-                        }}<span>↑</span></th>
-                    <th data-key="date" class="sortable">{{
-                        translations.transactions_date_header
-                        }}<span>↑</span></th>
-                    <th data-key="name" class="sortable">{{
-                        translations.transactions_contract_name_header
-                        }}<span>↑</span></th>
-                    <th data-key="current_amount" class="sortable">{{
-                        translations.transactions_contract_amount_header
-                        }}<span>↑</span></th>
+                    <th data-key="icon" class="sortable">
+                        {{ translations.transactions_icon_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+
+                    </th>
+                    <th data-key="counterparty" class="sortable">
+                        {{ translations.transactions_counterparty_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+
+                    </th>
+                    <th data-key="amount" class="sortable">
+                        {{ translations.transactions_amount_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+
+                    </th>
+                    <th data-key="bank_balance_after" class="sortable">
+                        {{ translations.transactions_balance_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+
+                    </th>
+                    <th data-key="date" class="sortable">
+                        {{ translations.transactions_date_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+
+                    </th>
+                    <th data-key="name" class="sortable">
+                        {{ translations.transactions_contract_name_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+
+                    </th>
+                    <th data-key="current_amount" class="sortable">
+                        {{ translations.transactions_contract_amount_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="transaction-table-body">
+                <!-- Rows will be generated and inserted here -->
+            </tbody>
+        </table>
+        <table class="transaction-table">
+            <thead>
+                <tr>
+                    <th data-key="icon" class="sortable">
+                        {{ translations.transactions_icon_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+                    </th>
+                    <th data-key="counterparty" class="sortable">
+                        {{ translations.transactions_counterparty_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+                    </th>
+                    <th data-key="amount" class="sortable">
+                        {{ translations.transactions_amount_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+                    </th>
+                    <th data-key="bank_balance_after" class="sortable">
+                        {{ translations.transactions_balance_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+                    </th>
+                    <th data-key="date" class="sortable">
+                        {{ translations.transactions_date_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+                    </th>
+                    <th data-key="name" class="sortable">
+                        {{ translations.transactions_contract_name_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+                    </th>
+                    <th data-key="current_amount" class="sortable">
+                        {{ translations.transactions_contract_amount_header }}
+                        <img src="/static/images/up.png" alt="Sort up"
+                            class="sort-icon">
+                    </th>
                 </tr>
             </thead>
             <tbody id="transaction-table-body">

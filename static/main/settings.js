@@ -146,9 +146,11 @@ function handleDeleteButton() {
     horizontalContainer.className = 'container-without-border-horizontally';
 
     // Add icon and header text
-    const icon = document.createElement('span');
-    icon.className = 'alert-icon';
-    icon.textContent = 'ℹ️';
+    const icon = document.createElement('img');
+    icon.src = '/static/images/info.png';
+    icon.alt = 'Icon';
+    icon.style.width = '30px';
+    icon.style.height = '30px';
 
     const headerText = document.createElement('strong');
     headerText.textContent = getLocalizedString('delete_account_header');

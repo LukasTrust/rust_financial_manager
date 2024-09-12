@@ -145,11 +145,11 @@ function generateTransactionHTML({ transaction, contract }, index) {
         </div>`;
     }
 
-    let emptyCellIcon = contract ? '📄' : '';
-
-    if (emptyCellIcon === '' && transaction.contract_not_allowed) {
-        emptyCellIcon = '🚫';
-    }
+    const emptyCellIcon = contract
+        ? `<img src="/static/images/contract.png" alt="${t.contractAltText || 'Contract'}" class="icon">`
+        : (transaction.contract_not_allowed
+            ? `<img src="/static/images/not-allowed.png" alt="${t.notAllowedAltText || 'Not Allowed'}" class="icon">`
+            : '');
 
     const html = `
         <tr class="transaction-row ${rowClass}" style="display: ${displayStyle}" data-index="${index}">
@@ -282,14 +282,12 @@ function sortData() {
     // Helper function to get the value based on sortConfig.key
     function getValue(item) {
         if (sortConfig.key === 'icon') {
-            // Define how to evaluate the icon
-            let iconValue = '';
             if (item.contract) {
-                iconValue = '📄';
+                return 1
             } else if (item.transaction.contract_not_allowed) {
-                iconValue = '🚫';
+                return 2;
             }
-            return iconValue;
+            return 0;
         }
 
         return item.transaction?.[sortConfig.key] ?? item.contract?.[sortConfig.key];
@@ -318,9 +316,9 @@ function sortData() {
         return 0;
     });
 
-    const noVisableTransaction = filteredData.find(item => !item.transaction.is_hidden);
+    const noVisibleTransaction = filteredData.find(item => !item.transaction.is_hidden);
 
-    if (!noVisableTransaction && !showOrHideTransaction) {
+    if (!noVisibleTransaction && !showOrHideTransaction) {
         showHiddenTransactions();
     }
 
@@ -331,12 +329,10 @@ function sortData() {
 
 function updateSortIcons() {
     document.querySelectorAll('.sortable').forEach(header => {
-        const icon = header.querySelector('span');
+        const icon = header.firstElementChild;
 
         if (header.dataset.key === sortConfig.key) {
-            icon.textContent = sortConfig.ascending ? '↑' : '↓';
-        } else {
-            icon.textContent = '↑';
+            icon.src = sortConfig.ascending ? "/static/images/up.png" : "/static/images/down.png";
         }
     });
 };
@@ -538,9 +534,9 @@ function handleAddContract(index) {
     horizontalContainer.className = 'container-without-border-horizontally';
 
     // Add icon and header text
-    const icon = document.createElement('span');
-    icon.className = 'alert-icon';
-    icon.textContent = 'ℹ️';
+    const icon = document.createElement('img');
+    icon.src = '/static/images/info.png';
+    icon.alt = 'Icon';
 
     const headerText = document.createElement('strong');
     headerText.textContent = t.pickContractHeader; // Localized header text
@@ -565,8 +561,8 @@ function handleAddContract(index) {
     contracts.forEach(contract => {
         const option = document.createElement('option');
         option.value = contract.id;
-        option.text = contract.name;
-        select.add(option);
+        option.textContent = contract.name; // Use textContent for consistency
+        select.appendChild(option);
     });
 
     // Create button container with localized buttons
@@ -574,14 +570,20 @@ function handleAddContract(index) {
     buttonContainer.classList.add('container-without-border-horizontally-header');
 
     const addButton = document.createElement('button');
-    addButton.textContent = t.addButton;
+    addButton.innerHTML = `
+        <img src="/static/images/add.png" alt="${t.addButton}" class="button-icon">
+        <span>${t.addButton}</span>
+    `; // Image and text for add button
     addButton.classList.add('button', 'btn-secondary');
-    addButton.onclick = () => addSelectedContract(index);
+    addButton.addEventListener('click', () => addSelectedContract(index)); // Use addEventListener for consistency
 
     const cancelButton = document.createElement('button');
-    cancelButton.textContent = t.cancelButton;
+    cancelButton.innerHTML = `
+        <img src="/static/images/back.png" alt="${t.cancelButton}" class="button-icon">
+        <span>${t.cancelButton}</span>
+    `; // Image and text for cancel button
     cancelButton.classList.add('button', 'btn-secondary');
-    cancelButton.onclick = closeModal;
+    cancelButton.addEventListener('click', closeModal); // Use addEventListener for consistency
 
     buttonContainer.appendChild(addButton);
     buttonContainer.appendChild(cancelButton);
@@ -616,9 +618,11 @@ function addSelectedContract(index) {
         const headerContainer = document.createElement('div');
         headerContainer.classList.add('container-without-border-horizontally');
 
-        const icon = document.createElement('span');
-        icon.className = 'alert-icon';
-        icon.textContent = 'ℹ️';
+        const icon = document.createElement('img');
+        icon.src = '/static/images/info.png';
+        icon.alt = 'Icon';
+        icon.style.width = '30px';
+        icon.style.height = '30px';
 
         const headerText = document.createElement('strong');
         headerText.textContent = t.contractAmountMismatch;

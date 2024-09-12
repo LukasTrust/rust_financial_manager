@@ -1,4 +1,18 @@
 import { update_performance } from './performanceUpdater.js';
+import { getGlobalLanguage } from './utils.js';
+
+const localizedStrings = {
+    English: {
+        chart_title: 'Bank Account Balances',
+        date: 'Date',
+        balance: 'Balance',
+    },
+    German: {
+        chart_title: 'Bankkontostände',
+        date: 'Datum',
+        balance: 'Kontostand',
+    }
+};
 
 export function initializeChartAndDatePicker(plotData) {
     update_graph(plotData);
@@ -36,9 +50,9 @@ function update_graph(plotData) {
     const data = JSON.parse(plotData);
 
     const layout = {
-        title: 'Bank Account Balances',
-        xaxis: { title: 'Date', type: 'date' },
-        yaxis: { title: 'Balance' },
+        title: localizedStrings[getGlobalLanguage()].chart_title,
+        xaxis: { title: localizedStrings[getGlobalLanguage()].date, type: 'date' },
+        yaxis: { title: localizedStrings[getGlobalLanguage()].balance },
         hovermode: 'closest',
         plot_bgcolor: 'rgba(0,0,0,0)',
         paper_bgcolor: 'rgba(0,0,0,0)',

@@ -1,41 +1,46 @@
-<body>
-    <div class="scroll-container">
-        <div class="container-without-border">
-            <h1>{{ translations.bank_contract_title }}</h1>
-            <div class="container-without-border-horizontally-header">
-                <!-- Buttons with consistent styling -->
-                <button id="merge-selected-btn" class="button btn-primary"
-                    style="width: auto;">
-                    {{ translations.bank_contract_merge_selected_button }}
-                </button>
-                <button id="delete-selected-btn" class="button btn-danger"
-                    style="width: auto;">
-                    {{ translations.bank_contract_delete_selected_button }}
-                </button>
-                <button id="scan-btn" class="button btn-secondary"
-                    style="width: auto;">
-                    {{ translations.bank_contract_scan_button }}
-                </button>
+ <div class="scroll-container">
+    <div class="container-without-border">
+        <h1>
+            <img src="/static/images/contract.png" alt="Icon"
+                style="width: 30px; height: 30px">
+            {{ translations.bank_contract_title }}
+        </h1>
+        <div class="container-without-border-horizontally-header">
+            <!-- Buttons with consistent styling -->
+            <button id="merge-selected-btn" class="button btn-primary"
+                style="width: auto;">
+                <img src="/static/images/merge.png" alt="Icon">
+                {{ translations.bank_contract_merge_selected_button }}
+            </button>
+            <button id="delete-selected-btn" class="button btn-danger"
+                style="width: auto;">
+                <img src="/static/images/delete.png" alt="Icon">
+                {{ translations.bank_contract_delete_selected_button }}
+            </button>
+            <button id="scan-btn" class="button btn-secondary"
+                style="width: auto;">
+                <img src="/static/images/search.png" alt="Icon">
+                {{ translations.bank_contract_scan_button }}
+            </button>
 
-                <!-- Toggle for Contracts -->
-                <div class="container-without-border-horizontally"
-                    style="width: auto;">
-                    <button id="toggle-closed-contracts" class="toggle-button">
-                        <div class="slider"></div>
-                    </button>
-                    <div class="container-without-border">
-                        <span>{{
-                            translations.bank_contract_show_open_contracts_text
-                            }}</span>
-                        <span>{{
-                            translations.bank_contract_show_closed_contracts_text
-                            }}</span>
-                    </div>
+            <!-- Toggle for Contracts -->
+            <div class="container-without-border-horizontally"
+                style="width: auto;">
+                <button id="toggle-closed-contracts" class="toggle-button">
+                    <div class="slider"></div>
+                </button>
+                <div class="container-without-border">
+                    <span>
+                        {{translations.bank_contract_show_open_contracts_text}}
+                    </span>
+                    <span>
+                        {{translations.bank_contract_show_closed_contracts_text}}
+                    </span>
                 </div>
             </div>
-            <div id="contract-container">
-                <!-- Contracts will be dynamically inserted here -->
-            </div>
+        </div>
+        <div id="contract-container">
+            <!-- Contracts will be dynamically inserted here -->
         </div>
     </div>
-</body>
+</div>

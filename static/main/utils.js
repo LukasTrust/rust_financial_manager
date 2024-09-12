@@ -28,7 +28,7 @@ export function formatDate(dateString) {
 }
 
 export function displayCustomAlert(type, header_text, body_text, button_text = 'Close', countdown = 0) {
-    log('Displaying custom alert:', 'displayCustomAlert', type, header_text, body_text, button_text, countdown);
+    console.log('Displaying custom alert:', type, header_text, body_text, button_text, countdown);
 
     // Create the backdrop
     const backdrop = document.createElement('div');
@@ -39,26 +39,26 @@ export function displayCustomAlert(type, header_text, body_text, button_text = '
     alert.className = `alert alert-${type}`;
 
     // Create the icon based on the type
-    let icon;
+    let iconSrc;
     switch (type) {
         case 'error':
-            icon = '❌';
+            iconSrc = '/static/images/error.png';
             break;
         case 'info':
-            icon = 'ℹ️';
+            iconSrc = '/static/images/info.png';
             break;
         case 'success':
-            icon = '✅';
+            iconSrc = '/static/images/success.png';
             break;
         default:
-            icon = 'ℹ️';
+            iconSrc = '/static/images/info.png';
     }
 
-    // Construct the HTML structure
+    // Construct the HTML structure with image icons
     alert.innerHTML = `
         <div class="container-without-border">
-            <div class="container-without-border-horizontally">
-                <span class="alert-icon">${icon}</span>
+            <div class="container-without-border-horizontally-header">
+                <img src="${iconSrc}" alt="${type}" style="width: 30px; height: 30px">
                 <div style="flex-grow: 1;" class="alert-header-text">
                     <strong>${header_text}</strong> <span class="alert-timer">${countdown > 0 ? `(${countdown}s)` : ''}</span>
                 </div>
@@ -77,7 +77,7 @@ export function displayCustomAlert(type, header_text, body_text, button_text = '
         const timerElement = alert.querySelector('.alert-timer');
         const closeButton = alert.querySelector('.alert-close');
 
-        let timerInterval = setInterval(() => {
+        const timerInterval = setInterval(() => {
             countdown--;
             if (countdown > 0) {
                 timerElement.textContent = `(${countdown}s)`;
@@ -89,6 +89,9 @@ export function displayCustomAlert(type, header_text, body_text, button_text = '
                 }
             }
         }, 1000);
+
+        // Cleanup on alert removal
+        alert.addEventListener('remove', () => clearInterval(timerInterval));
     } else {
         // If no countdown is set or it's zero, enable the button immediately
         const closeButton = alert.querySelector('.alert-close');

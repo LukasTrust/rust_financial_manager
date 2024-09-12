@@ -14,7 +14,7 @@
     <div class="container-with-border">
         <div class="container-without-border">
             <div class="container-without-border-horizontally-header">
-                <img src="/static/images/favicon.png" alt="Logo" style="max-width: 100px; height: auto;">
+                <img src="/static/images/favicon.png" alt="Logo" style="width: 100px; height: auto;">
                 <h1>Rust Financial Manager</h1>
             </div>
             <p id="success" class="success"></p>
@@ -34,7 +34,7 @@
             
             <!-- Primary button style applied to the login button -->
             <button type="submit" class="button btn-primary">
-                <img src="/static/images/login.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
+                <img src="/static/images/login.png" alt="Icon" ">
                 Login
             </button>       
         </form>

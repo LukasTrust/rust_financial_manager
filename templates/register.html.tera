@@ -34,7 +34,7 @@
             
             <!-- Apply consistent width using the .button and .btn-primary classes -->
             <button type="submit" class="button btn-primary">
-                <img src="/static/images/register.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
+                <img src="/static/images/register.png" alt="Icon" ">
                 Register
             </button>
         </form>

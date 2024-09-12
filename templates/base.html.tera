@@ -1,61 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rust Financial Manager</title>
-    <link rel="icon" href="/static/images/favicon.png">
-    <link rel="stylesheet" href="/static/styles.css">
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Rust Financial Manager</title>
+        <link rel="icon" href="/static/images/favicon.png">
+        <link rel="stylesheet" href="/static/styles.css">
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <link rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    </head>
 
-<body>
-    <div class="full-page-container">
-        <div class="sidebar-left">
-            <h2>{{ translations.base_dashboard }}</h2>
-            <!-- Apply button styles -->
-            <button class="button btn-primary" url="/dashboard">
-                <img src="/static/images/dashboard.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
-                {{ translations.base_dashboard }}
-            </button>
-            <button class="button btn-secondary" url="/add-bank">
-                <img src="/static/images/add.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
-                {{ translations.base_add_new_bank }}
-            </button>
-            <div id="banks">
-                {% for bank in banks %}
-                <div data-bank-id="{{ bank.id }}">
-                    <!-- Apply button styles -->
-                    <button class="button btn-secondary" url="/bank/{{ bank.id }}" style="width: 100%">
-                        <img src="/static/images/bank.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
-                        {{ bank.name }}
-                    </button>
-                    <div class="bank-sub-buttons" style="display: none;">
-                        <button class="button btn-secondary" style="width: 100%" url="/bank/contract">{{ translations.base_contracts }}</button>
-                        <button class="button btn-secondary" style="width: 100%" url="/bank/transaction">{{ translations.base_transactions }}</button>
+    <body>
+        <div class="full-page-container">
+            <div class="sidebar-left">
+                <h2>{{ translations.base_dashboard }}</h2>
+                <!-- Dashboard Button -->
+                <button class="button btn-primary" url="/dashboard">
+                    <img src="/static/images/dashboard.png" alt="Icon">
+                    {{ translations.base_dashboard }}
+                </button>
+                <!-- Add New Bank Button -->
+                <button class="button btn-secondary" url="/add-bank">
+                    <img src="/static/images/add.png" alt="Icon">
+                    {{ translations.base_add_new_bank }}
+                </button>
+                <!-- List of Banks -->
+                <div id="banks">
+                    {% for bank in banks %}
+                    <div data-bank-id="{{ bank.id }}">
+                        <button class="button btn-secondary"
+                            url="/bank/{{ bank.id }}" style="width: 100%">
+                            <img src="/static/images/bank.png" alt="Icon">
+                            {{ bank.name }}
+                        </button>
+                        <div class="bank-sub-buttons" style="display: none;">
+                            <button class="button btn-secondary"
+                                style="width: 100%" url="/bank/contract">{{
+                                translations.base_contracts }}</button>
+                            <button class="button btn-secondary"
+                                style="width: 100%" url="/bank/transaction">{{
+                                translations.base_transactions }}</button>
+                        </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
+                <!-- Settings and Logout Buttons at the Bottom -->
+                <div class="bottom-buttons">
+                    <button class="button btn-secondary" url="/settings">
+                        <img src="/static/images/settings.png" alt="Icon">
+                        {{ translations.base_settings }}
+                    </button>
+                    <button class="button btn-danger" url="/logout">
+                        <img src="/static/images/logout.png" alt="Icon">
+                        {{ translations.base_logout }}
+                    </button>
+                </div>
             </div>
+            <div class="main-content" id="main-content"></div>
         </div>
-        <div class="main-content" id="main-content"></div>
-        <div class="sidebar-right">
-            <!-- Apply button styles -->
-            <button class="button btn-secondary" url="/settings">
-                <img src="/static/images/settings.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
-                {{ translations.base_settings }}
-            </button>
-            <button class="button btn-danger" url="/logout">
-                <img src="/static/images/logout.png" alt="Icon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">
-                {{ translations.base_logout }}
-            </button>
-        </div>
-    </div>
-    <!-- Include JavaScript modules -->
-    <script type="module" src="/static/main/main.js"></script>
-</body>
+        <!-- Include JavaScript modules -->
+        <script type="module" src="/static/main/main.js"></script>
+    </body>
 
 </html>

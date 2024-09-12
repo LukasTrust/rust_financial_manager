@@ -7,18 +7,18 @@ const translations = {
         closedContractsTitle: 'Closed Contracts',
         showHistory: 'Show History',
         hideHistory: 'Hide History',
-        noHistoryAvailable: 'No history available.',
+        noHistoryAvailable: 'No History Available.',
         mergeSelected: 'Please select at least 2 contracts to merge.',
         deleteSelected: 'Please select at least 1 contract to delete.',
-        currentAmount: 'Current amount',
-        totalAmountOverTime: 'Total amount over time',
-        monthsBetweenPayment: 'Months between Payment',
+        currentAmount: 'Current Amount',
+        totalAmountOverTime: 'Total Amount Over Time',
+        monthsBetweenPayment: 'Months Between Payment',
         oldAmount: 'Old Amount',
         newAmount: 'New Amount',
         changedAt: 'Changed At',
-        endDate: 'End date',
-        lastPaymentDate: 'Last payment date',
-        contractHistory: 'Contract History'
+        endDate: 'End Date',
+        lastPaymentDate: 'Last Payment Date',
+        contractHistory: 'Contract History',
     },
     German: {
         openContractsTitle: 'Offene Verträge',
@@ -28,15 +28,6 @@ const translations = {
         noHistoryAvailable: 'Keine Historie verfügbar.',
         mergeSelected: 'Bitte wählen Sie mindestens 2 Verträge zum Zusammenführen aus.',
         deleteSelected: 'Bitte wählen Sie mindestens 1 Vertrag zum Löschen aus.',
-        currentAmount: 'Current amount',
-        totalAmountOverTime: 'Total amount over time',
-        monthsBetweenPayment: 'Months between Payment',
-        oldAmount: 'Old Amount',
-        newAmount: 'New Amount',
-        changedAt: 'Changed At',
-        endDate: 'End date',
-        lastPaymentDate: 'Last payment date',
-        contractHistory: 'Contract History',
         currentAmount: 'Aktueller Betrag',
         totalAmountOverTime: 'Gesamtbetrag über die Zeit',
         monthsBetweenPayment: 'Monate zwischen Zahlungen',
@@ -168,8 +159,18 @@ function attachContractEventListeners() {
                     const historyElement = document.getElementById(`contract-history-${index}`);
                     const isHidden = historyElement.classList.toggle('hidden');
                     const lang = getGlobalLanguage();
-                    target.textContent = isHidden ? translations[lang].showHistory : translations[lang].hideHistory;
+                    const icon = target.querySelector('img');
+
+                    // Update the button text based on the state
+                    target.childNodes[1].textContent = isHidden ? translations[lang].showHistory : translations[lang].hideHistory;
                     target.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
+
+                    // Update the icon based on the state
+                    icon.src = isHidden
+                        ? '/static/images/show.png'
+                        : '/static/images/hide.png';
+                    icon.setAttribute('data-state', isHidden ? 'show' : 'hide');
+
                     return;
                 }
 
@@ -362,6 +363,8 @@ function generateContractHTML(contractWithHistory, index) {
         : translations[lang].lastPaymentDate;
     const showHistoryText = translations[lang].showHistory;
 
+    const showImageSrc = '/static/images/show.png';
+
     const dateValue = contract.end_date
         ? formatDate(contract.end_date)
         : formatDate(last_payment_date);
@@ -369,14 +372,17 @@ function generateContractHTML(contractWithHistory, index) {
     const html = `
         <div class="display" id="display-${index}" data-id="${contract.id}">
             <div class="container-without-border-horizontally-header">
-                <p>✏️</p>
+                <img src="/static/images/edit.png" alt="Edit Icon" class="edit-icon" />
                 <input type="text" class="contract-name" value="${contract.name}" data-index="${index}" />
             </div>
             <p>${translations[lang].currentAmount}: <span class="${currentAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
             <p>${translations[lang].totalAmountOverTime}: <span class="${totalAmountClass}">$${total_amount_paid.toFixed(2)}</span></p>
             <p>${translations[lang].monthsBetweenPayment}: ${contract.months_between_payment}</p>
             <p>${dateLabel}: <span>${dateValue}</span></p>
-            <button class="toggle-history-btn" data-index="${index}">${showHistoryText}</button>
+            <button class="toggle-history-btn" data-index="${index}">
+                <img src="${showImageSrc}" alt="Toggle History" data-state="show">
+                ${showHistoryText}
+            </button>
             <div id="contract-history-${index}" class="hidden contract-history">
                 <h4>${translations[lang].contractHistory}:</h4>
                 <ul>${generateHistoryHTML(contract_history)}</ul>
