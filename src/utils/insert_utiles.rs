@@ -46,10 +46,7 @@ pub async fn insert_bank(
             {
                 return Json(ErrorResponse::new(
                     LOCALIZATION.get_localized_string(language, "error_inserting_bank"),
-                    LOCALIZATION.get_localized_string(
-                        language,
-                        "error_inserting_bank_details_already_exists",
-                    ),
+                    LOCALIZATION.get_localized_string(language, "error_inserting_bank_exists"),
                 ));
             }
             // Handle any other kind of error

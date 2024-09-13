@@ -6,7 +6,7 @@
 
         <h2>
             <img src="/static/images/edit.png" alt="Icon"
-                style="width: 30px; height: 30px; vertical-align: middle; margin-right: 5px;">
+                class="icon-big">
             {{ translations.settings_select_language_title }}
         </h2>
 
@@ -20,7 +20,7 @@
         <div class="container-without-border">
             <h2>
                 <img src="/static/images/edit.png" alt="Icon"
-                    style="width: 30px; height: 30px; vertical-align: middle; margin-right: 5px;">
+                    class="icon-big">
                 {{ translations.settings_change_password_title }}
             </h2>
 

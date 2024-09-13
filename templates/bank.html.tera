@@ -4,7 +4,7 @@
         <div class="container-without-border">
             <h1>
                 <img src="/static/images/bank.png" alt="Icon"
-                    style="width: 30px; height: 30px; vertical-align: middle; margin-right: 5px;">
+                    class="icon-big">
                 {{ bank.name }}
             </h1>
             <div id="balance_graph" class="balance_graph"></div>
@@ -62,8 +62,12 @@
             </div>
         </div>
 
+        <div
+            style="border-left: 2px solid #ccc; min-height: 52dvw; margin-top: 20px"></div>
+
         <!-- Form Panel Container -->
-        <div style="margin-top: 5%; margin-right: 20px;">
+        <div
+            style="margin-top: 5%; margin-right: 20px;">
             <!-- Date Range Picker -->
             <div class="form-group" style="width: 100%">
                 <label for="dateRange" class="date-label">{{
@@ -85,7 +89,8 @@
             </form>
 
             <!-- CSV Conversion Update Form -->
-            <h2>{{ translations.bank_update_csv_conversion_title }}</h2>
+            <label class="date-label">{{
+                translations.bank_update_csv_conversion_title }}</label>
             <form action="/update_csv" method="post" class="form-group">
                 <label for="counterparty_column">{{
                     translations.bank_counterparty_column_label }}</label>

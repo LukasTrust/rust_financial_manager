@@ -27,6 +27,7 @@ diesel::table! {
         parse_name -> Text,
         current_amount -> Float8,
         months_between_payment -> Int4,
+        start_date -> Date,
         end_date -> Nullable<Date>,
     }
 }

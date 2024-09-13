@@ -2,7 +2,7 @@
     <h1>
         <div class="container-without-border-horizontally-header">
             <img src="/static/images/bank.png" alt="Icon"
-                style="width: 30px; height: 30px">
+                class="icon-big">
             {{ translations.add_bank_title }}
         </div>
     </h1>

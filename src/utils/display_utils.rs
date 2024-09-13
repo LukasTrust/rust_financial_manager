@@ -124,6 +124,9 @@ pub fn generate_performance_value(
 ) -> (PerformanceData, Vec<Discrepancy>) {
     let start = std::time::Instant::now();
 
+    info!("start_date: {}", start_date);
+    info!("end_date: {}", end_date);
+
     // Filter transactions within the date range
     let mut filtered_transactions: Vec<&Transaction> = transactions
         .iter()
@@ -134,7 +137,7 @@ pub fn generate_performance_value(
 
     let mut filtered_contracts: Vec<&Contract> = contracts
         .iter()
-        .filter(|c| c.end_date.map_or(true, |ed| ed <= *end_date))
+        .filter(|c| c.start_date >= *start_date && c.end_date.map_or(true, |d| d >= *end_date))
         .collect();
 
     let contracts_count = filtered_contracts.len();
@@ -180,7 +183,7 @@ pub fn generate_performance_value(
 
 fn handle_only_transactions(
     transactions_count: usize,
-    filtered_transactions: &mut Vec<&Transaction>,
+    filtered_transactions: &mut [&Transaction],
 ) -> (PerformanceData, Vec<Discrepancy>) {
     let mut transactions_total_amount = 0.0;
     let mut transactions_max_amount = f64::MIN;
@@ -245,7 +248,7 @@ fn handle_only_transactions(
 
 fn handle_only_contracts(
     contracts_count: usize,
-    filtered_contracts: &mut Vec<&Contract>,
+    filtered_contracts: &mut [&Contract],
 ) -> (PerformanceData, Vec<Discrepancy>) {
     // Calculate contract statistics
     let contracts_total_amount: f64 = filtered_contracts.iter().map(|c| c.current_amount).sum();

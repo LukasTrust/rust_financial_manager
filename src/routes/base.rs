@@ -25,7 +25,7 @@ pub async fn base(mut db: Connection<DbConn>, cookies: &CookieJar<'_>) -> Templa
     if result.is_err() {
         return Template::render(
             "error_page",
-            json!({"error_header": "Error loading user", "error_message": "There was an internal error. Please login again."}),
+            json!({"error_header": "User ID not found in cookies.", "error_message": "Please login again."}),
         );
     }
 

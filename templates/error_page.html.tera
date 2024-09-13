@@ -10,7 +10,7 @@
         <div class="container-with-border">
             <div class="container-without-border-horizontally-header">
                 <img src="/static/images/error.png" alt="Icon"
-                    style="width: 30px; height: 30px">
+                    class="icon-big">
                 <h1>{{ error_header }}</h1>
             </div>
             <p>{{ error_message }}</p>

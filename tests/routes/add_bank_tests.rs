@@ -22,7 +22,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
         let response_string = response.into_string().await.unwrap();
 
-        assert!(response_string.contains("Add bank"));
+        assert!(response_string.contains("Add Bank"));
         assert!(response_string.contains("Submit"));
     }
 

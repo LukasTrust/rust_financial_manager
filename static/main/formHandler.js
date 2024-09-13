@@ -25,7 +25,7 @@ async function handleFormSubmission(form) {
             }
 
             if (result.success) {
-                if (result.header === 'Successfully read the csv file' || result.header === 'CSV-Datei erfolgreich gelesen') {
+                if (result.header === 'Successfully read the CSV file' || result.header === 'CSV-Datei erfolgreich gelesen') {
                     await handlePageWithGraphData();
                 }
 
@@ -155,6 +155,7 @@ function createSubButtonsContainer() {
 // Function to create a single sub-button
 function createSubButton(text, url) {
     const button = document.createElement('button');
+    button.classList.add('button', 'btn-secondary');
     button.textContent = text;
     button.setAttribute('url', url);
     button.style.width = '100%';

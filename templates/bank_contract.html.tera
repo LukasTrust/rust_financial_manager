@@ -2,7 +2,7 @@
     <div class="container-without-border">
         <h1>
             <img src="/static/images/contract.png" alt="Icon"
-                style="width: 30px; height: 30px">
+                class="icon-big">
             {{ translations.bank_contract_title }}
         </h1>
         <div class="container-without-border-horizontally-header">

@@ -72,6 +72,7 @@ pub struct NewContract {
     pub parse_name: String,
     pub current_amount: f64,
     pub months_between_payment: i32,
+    pub start_date: NaiveDate,
 }
 
 #[derive(Queryable, Insertable, Debug, Clone, Serialize)]
@@ -83,6 +84,7 @@ pub struct Contract {
     pub parse_name: String,
     pub current_amount: f64,
     pub months_between_payment: i32,
+    pub start_date: NaiveDate,
     pub end_date: Option<NaiveDate>,
 }
 

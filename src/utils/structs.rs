@@ -8,11 +8,8 @@ use serde::Serialize;
 use crate::database::models::{Contract, ContractHistory};
 
 pub type DataTuple = (f64, String, f64, Option<f64>);
-pub type DataList = Vec<DataTuple>;
-pub type DataMap = BTreeMap<NaiveDate, DataList>;
-pub type ContractData = (f64, NaiveDate, i32);
-pub type ContractList = Vec<ContractData>;
-pub type ContractMapById = HashMap<i64, ContractList>;
+pub type DataMap = BTreeMap<NaiveDate, Vec<DataTuple>>;
+pub type ContractMapById = HashMap<i64, Vec<Transaction>>;
 pub type CounterpartyMap = HashMap<String, ContractMapById>;
 
 #[derive(FromForm)]

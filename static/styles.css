@@ -13,7 +13,6 @@
     flex-direction: column;
     justify-content: space-between;
     width: 220px;
-    padding: 20px;
 }
 
 .bottom-buttons {
@@ -231,6 +230,11 @@ img {
     height: 16px;
     vertical-align: middle;
     margin-right: 5px;
+}
+
+.icon-big {
+    width: 30px;
+    height: 30px;
 }
 
 .signup-link {

@@ -264,15 +264,11 @@ fn group_transactions_by_counterparty_and_amount(
     for transaction in transactions {
         let counterparty = transaction.counterparty.clone();
         let amount = transaction.amount;
-        let date = transaction.date;
         let amount_key = (amount * 100.0) as i64;
 
         let inner_map = counterparty_map.entry(counterparty.clone()).or_default();
 
-        inner_map
-            .entry(amount_key)
-            .or_default()
-            .push((amount, date, transaction.id));
+        inner_map.entry(amount_key).or_default().push(transaction);
     }
 
     counterparty_map.retain(|_, inner_map| {
@@ -298,18 +294,18 @@ async fn create_contracts_from_transactions(
     for (counterparty, amount_groups) in grouped_transactions {
         for (amount_key, transactions) in amount_groups {
             let mut sorted_transactions = transactions.clone();
-            sorted_transactions.sort_by_key(|(_, date, _)| *date);
+            sorted_transactions.sort_by_key(|transaction| transaction.date);
 
             let mut i = 0;
             while i < sorted_transactions.len() {
-                let mut transaction_ids = vec![sorted_transactions[i].2];
+                let mut transaction_ids = vec![sorted_transactions[i].id];
                 let mut months_pattern = None;
                 let mut j = i + 1;
                 let mut last_valid_index = i;
 
                 while j < sorted_transactions.len() {
-                    let date_i = sorted_transactions[last_valid_index].1;
-                    let date_j = sorted_transactions[j].1;
+                    let date_i = sorted_transactions[last_valid_index].date;
+                    let date_j = sorted_transactions[j].date;
 
                     if let Some(months) = months_between(date_i, date_j) {
                         if [1, 2, 3, 6, 12].contains(&months)
@@ -320,7 +316,7 @@ async fn create_contracts_from_transactions(
                             } else if months_pattern != Some(months) && months > allowable_gap {
                                 break;
                             }
-                            transaction_ids.push(sorted_transactions[j].2);
+                            transaction_ids.push(sorted_transactions[j].id);
                             last_valid_index = j; // Only update the last valid index
                         } else {
                             break;
@@ -341,6 +337,7 @@ async fn create_contracts_from_transactions(
                             parse_name: counterparty.clone(),
                             current_amount: amount_key as f64 / 100.0,
                             months_between_payment: months,
+                            start_date: sorted_transactions[i].date,
                         };
 
                         contract_insertions.push(contract);

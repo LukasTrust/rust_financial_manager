@@ -16,7 +16,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
         let response_string = response.into_string().await.unwrap();
 
-        assert!(response_string.contains("User ID not found in cookies"));
+        assert!(response_string.contains("User ID not found in cookies."));
         assert!(response_string.contains("Please login again."));
     }
 
@@ -56,7 +56,7 @@ mod tests {
         let response_string = response.into_string().await.unwrap();
 
         assert!(response_string.contains("Welcome, John Doe!"));
-        assert!(response_string.contains("Number of transaction:"));
+        assert!(response_string.contains("Number of transactions:"));
         assert!(response_string.contains("Number of contracts:"));
     }
 

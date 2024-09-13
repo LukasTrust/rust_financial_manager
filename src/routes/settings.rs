@@ -137,30 +137,24 @@ pub async fn change_password(
             )
             .await?;
 
-            return Ok(Json(SuccessResponse::new(
+            Ok(Json(SuccessResponse::new(
                 LOCALIZATION.get_localized_string(cookie_user_language, "password_changed"),
                 LOCALIZATION.get_localized_string(cookie_user_language, "password_changed_details"),
-            )));
+            )))
         }
-        Ok(false) => {
-            return Err(Json(ErrorResponse::new(
-                LOCALIZATION.get_localized_string(
-                    cookie_user_language,
-                    "error_old_password_does_not_match",
-                ),
-                LOCALIZATION.get_localized_string(
-                    cookie_user_language,
-                    "error_old_password_does_not_match_details",
-                ),
-            )));
-        }
-        Err(_) => {
-            return Err(Json(ErrorResponse::new(
-                LOCALIZATION.get_localized_string(cookie_user_language, "error_password_hashing"),
-                LOCALIZATION
-                    .get_localized_string(cookie_user_language, "error_password_hashing_details"),
-            )));
-        }
+        Ok(false) => Err(Json(ErrorResponse::new(
+            LOCALIZATION
+                .get_localized_string(cookie_user_language, "error_old_password_does_not_match"),
+            LOCALIZATION.get_localized_string(
+                cookie_user_language,
+                "error_old_password_does_not_match_details",
+            ),
+        ))),
+        Err(_) => Err(Json(ErrorResponse::new(
+            LOCALIZATION.get_localized_string(cookie_user_language, "error_password_hashing"),
+            LOCALIZATION
+                .get_localized_string(cookie_user_language, "error_password_hashing_details"),
+        ))),
     }
 }
 

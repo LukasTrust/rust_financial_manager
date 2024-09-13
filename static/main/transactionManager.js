@@ -621,8 +621,7 @@ function addSelectedContract(index) {
         const icon = document.createElement('img');
         icon.src = '/static/images/info.png';
         icon.alt = 'Icon';
-        icon.style.width = '30px';
-        icon.style.height = '30px';
+        icon.classList.add('icon-big');
 
         const headerText = document.createElement('strong');
         headerText.textContent = t.contractAmountMismatch;
