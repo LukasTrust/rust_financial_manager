@@ -217,7 +217,6 @@ button {
 .box::after {
     content: attr(data-hint);
     position: absolute;
-    bottom: -5px;
     /* Position tooltip just below the box with a 5px gap */
     left: 50%;
     transform: translateX(-50%);
@@ -604,4 +603,33 @@ label {
 
 .btn-danger:hover {
     background-color: #c82333;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 180px;
+    background-color: #333;
+    color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    text-align: center;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: -90%;
+    /* Position the tooltip above the button */
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
 }

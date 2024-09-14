@@ -7,21 +7,33 @@
         </h1>
         <div class="container-without-border-horizontally-header">
             <!-- Buttons with consistent styling -->
-            <button id="merge-selected-btn" class="button btn-primary"
-                style="width: auto;">
-                <img src="/static/images/merge.png" alt="Icon">
-                {{ translations.bank_contract_merge_selected_button }}
-            </button>
-            <button id="delete-selected-btn" class="button btn-danger"
-                style="width: auto;">
-                <img src="/static/images/delete.png" alt="Icon">
-                {{ translations.bank_contract_delete_selected_button }}
-            </button>
-            <button id="scan-btn" class="button btn-secondary"
-                style="width: auto;">
-                <img src="/static/images/search.png" alt="Icon">
-                {{ translations.bank_contract_scan_button }}
-            </button>
+            <div class="tooltip">
+                <button id="merge-selected-btn" class="button btn-primary"
+                    style="width: auto;">
+                    <img src="/static/images/merge.png" alt="Merge Icon">
+                    {{ translations.bank_contract_merge_selected_button }}
+                </button>
+                <span class="tooltiptext">{{
+                    translations.button_contract_merge_hint }}</span>
+            </div>
+            <div class="tooltip">
+                <button id="delete-selected-btn" class="button btn-danger"
+                    style="width: auto;">
+                    <img src="/static/images/delete.png" alt="Delete Icon">
+                    {{ translations.bank_contract_delete_selected_button }}
+                </button>
+                <span class="tooltiptext">{{
+                    translations.button_contract_delete_hint }}</span>
+            </div>
+            <div class="tooltip">
+                <button id="scan-btn" class="button btn-secondary"
+                    style="width: auto;">
+                    <img src="/static/images/search.png" alt="Search Icon">
+                    {{ translations.bank_contract_scan_button }}
+                </button>
+                <span class="tooltiptext">{{
+                    translations.button_contract_scan_hint }}</span>
+            </div>
 
             <!-- Toggle for Contracts -->
             <div class="container-without-border-horizontally"
@@ -30,12 +42,11 @@
                     <div class="slider"></div>
                 </button>
                 <div class="container-without-border">
-                    <span>
-                        {{translations.bank_contract_show_open_contracts_text}}
-                    </span>
-                    <span>
-                        {{translations.bank_contract_show_closed_contracts_text}}
-                    </span>
+                    <span>{{ translations.bank_contract_show_open_contracts_text
+                        }}</span>
+                    <span>{{
+                        translations.bank_contract_show_closed_contracts_text
+                        }}</span>
                 </div>
             </div>
         </div>

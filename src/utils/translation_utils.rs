@@ -54,6 +54,9 @@ pub fn get_bank_contract_localized_strings(language: Language) -> HashMap<&'stat
         "bank_contract_toggle_closed_contracts_button",
         "bank_contract_show_open_contracts_text",
         "bank_contract_show_closed_contracts_text",
+        "button_contract_merge_hint",
+        "button_contract_delete_hint",
+        "button_contract_scan_hint",
     ];
 
     let mut localized_strings = HashMap::new();

@@ -208,5 +208,8 @@
     "transaction_data_title": "Transaktionsdaten:",
     "contracts_data_title": "Vertragsdaten:",
     "heighest_amount": "Transaktion mit dem höchsten Betrag:",
-    "lowest_amount": "Transaktion mit dem niedrigsten Betrag:"
+    "lowest_amount": "Transaktion mit dem niedrigsten Betrag:",
+    "button_contract_merge_hint": "Wählen Sie zwei oder mehr Verträge aus, um sie zusammenzuführen.",
+    "button_contract_delete_hint": "Wählen Sie einen oder mehrere Verträge aus, um sie zu löschen.",
+    "button_contract_scan_hint": "Scannen Sie nach neuen Verträgen oder Vertragsänderungen."
 }

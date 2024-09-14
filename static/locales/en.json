@@ -208,5 +208,8 @@
     "transaction_data_title": "Transaction data:",
     "contracts_data_title": "Contracts data:",
     "heighest_amount": "Transaction with the highest amount:",
-    "lowest_amount": "Transaction with the lowest amount:"
+    "lowest_amount": "Transaction with the lowest amount:",
+    "button_contract_merge_hint": "Select two or more contracts to merge them.",
+    "button_contract_delete_hint": "Select one or more contracts to delete them.",
+    "button_contract_scan_hint": "Scan for new contracts or contract changes."
 }

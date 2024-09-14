@@ -22,8 +22,10 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
         let response_string = response.into_string().await.unwrap();
 
+        log::info!("{}", response_string);
+
         assert!(response_string.contains("Add Bank"));
-        assert!(response_string.contains("Submit"));
+        assert!(response_string.contains("Create Bank"));
     }
 
     #[tokio::test]
