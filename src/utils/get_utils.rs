@@ -123,6 +123,7 @@ pub async fn get_performance_value_and_graph_data(
         banks,
         &all_transactions,
         &performance_value.1,
+        language,
         &first_date,
         &last_date,
     )

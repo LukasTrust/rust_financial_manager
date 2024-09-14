@@ -25,7 +25,6 @@ export function update_performance(performance_value) {
     });
 
     formatAndColorNumbers();
-    updateHints(performance_value);
 }
 
 function formatAndColorNumbers() {
@@ -89,37 +88,6 @@ function formatAndColorNumbers() {
             // Apply CSS classes for positive or negative values
             element.classList.toggle("positive", value > 0);
             element.classList.toggle("negative", value < 0);
-        }
-    });
-}
-
-function updateHints(performance_value) {
-    const boxElements = [
-        document.getElementById("transactions_count_box"),
-        document.getElementById("transactions_average_amount_box"),
-        document.getElementById("transactions_max_amount_box"),
-        document.getElementById("transactions_min_amount_box"),
-        document.getElementById("transactions_net_gain_loss_box"),
-        document.getElementById("transactions_total_discrepancy_box"),
-        document.getElementById("contracts_count_box"),
-        document.getElementById("contracts_amount_per_month_box"),
-        document.getElementById("contracts_total_positive_amount_box"),
-        document.getElementById("contracts_total_negative_amount_box"),
-        document.getElementById("contracts_amount_per_time_span_box"),
-        document.getElementById("contracts_amount_per_year_box"),
-    ];
-
-    // Iterate through each box element and assign the corresponding hint from the data
-    boxElements.forEach(box => {
-        if (box) {
-            // Get the ID of the box and find the corresponding hint in the `hints` object
-            const boxId = box.id;
-            const hintKey = boxId.replace("_box", "_hint");  // Remove the "_box" to match the key in the `hints` object
-
-            // If a hint exists for this box, add it as a data-hint attribute
-            if (performance_value[hintKey]) {
-                box.setAttribute("data-hint", performance_value[hintKey]);
-            }
         }
     });
 }

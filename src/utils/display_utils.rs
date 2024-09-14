@@ -3,9 +3,15 @@ use log::{info, warn};
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
-use crate::{database::models::Contract, utils::structs::DataMap};
+use crate::{
+    database::models::Contract,
+    utils::{appstate::LOCALIZATION, structs::DataMap},
+};
 
-use super::structs::{Bank, Discrepancy, PerformanceData, Transaction};
+use super::{
+    appstate::Language,
+    structs::{Bank, Discrepancy, PerformanceData, Transaction},
+};
 
 /// Generate balance graph data for plotting.
 /// The balance graph data is generated from the bank accounts and transactions.
@@ -15,10 +21,18 @@ pub async fn generate_graph_data(
     banks: &[Bank],
     transactions: &[Transaction],
     discrepancies: &[Discrepancy],
+    language: Language,
     start_date: &NaiveDate,
     end_date: &NaiveDate,
 ) -> String {
     let start = std::time::Instant::now();
+
+    let date_string = LOCALIZATION.get_localized_string(language, "transactions_date_header");
+    let amount_string = LOCALIZATION.get_localized_string(language, "transactions_amount_header");
+    let balance_string = LOCALIZATION.get_localized_string(language, "new_balance_header");
+    let discrepancy_string = LOCALIZATION.get_localized_string(language, "discrepancy_header");
+    let heighest_amount_string = LOCALIZATION.get_localized_string(language, "heighest_amount");
+    let lowest_amount_string = LOCALIZATION.get_localized_string(language, "lowest_amount");
 
     // Convert the transactions_with_discrepancy into a HashMap for quick lookup
     let discrepancy_map: HashMap<i32, f64> = discrepancies
@@ -47,6 +61,16 @@ pub async fn generate_graph_data(
             .filter(|t| t.date >= *start_date && t.date <= *end_date)
             .collect();
 
+        // Determine the minimum and maximum amounts
+        let min_amount = filtered_transactions
+            .iter()
+            .map(|t| t.amount)
+            .fold(f64::INFINITY, f64::min);
+        let max_amount = filtered_transactions
+            .iter()
+            .map(|t| t.amount)
+            .fold(f64::NEG_INFINITY, f64::max);
+
         for transaction in filtered_transactions.iter().rev() {
             // Check if the transaction is in the discrepancy map
             let discrepancy_amount = discrepancy_map.get(&transaction.id).cloned();
@@ -63,31 +87,49 @@ pub async fn generate_graph_data(
         let mut series_data = vec![];
         for (date, transactions) in data {
             for (balance, counterparty, amount, discrepancy_amount) in transactions {
-                let color = if discrepancy_amount.is_some() {
+                // Determine color based on amount
+                let color = if amount == min_amount {
                     "red"
+                } else if amount == max_amount {
+                    "green"
                 } else {
+                    // Optionally, you can interpolate between red and green
+                    // For simplicity, using a fixed color for non-min/max amounts
                     "blue"
                 };
 
                 // Adjust hover text based on discrepancy
-                let hover_text = if let Some(discrepancy_amount) = discrepancy_amount {
+                let mut hover_text = if let Some(discrepancy_amount) = discrepancy_amount {
                     format!(
-                            "{}<br>Date:{}<br>Amount: {} €<br>New balance: {} €<br>Discrepancy Amount: {} €",
-                            counterparty,
-                            date.format("%d.%m.%Y"),
-                            amount,
-                            balance,
-                            discrepancy_amount
-                        )
+                        "{}<br>{}:{}<br>{}: {} €<br>{}: {} €<br>{}: {} €",
+                        counterparty,
+                        date_string,
+                        date.format("%d.%m.%Y"),
+                        amount_string,
+                        amount,
+                        balance_string,
+                        balance,
+                        discrepancy_string,
+                        discrepancy_amount
+                    )
                 } else {
                     format!(
-                        "{}<br>Date:{}<br>Amount: {} €<br>New balance: {} €",
+                        "{}<br>{}:{}<br>{}: {} €<br>{}: {} €",
                         counterparty,
+                        date_string,
                         date.format("%d.%m.%Y"),
+                        amount_string,
                         amount,
+                        balance_string,
                         balance
                     )
                 };
+
+                if amount == min_amount {
+                    hover_text = format!("{}<br>{}", lowest_amount_string, hover_text);
+                } else if amount == max_amount {
+                    hover_text = format!("{}<br>{}", heighest_amount_string, hover_text);
+                }
 
                 series_data.push((date.to_string(), balance, hover_text, color.to_string()));
             }

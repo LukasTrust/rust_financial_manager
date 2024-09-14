@@ -8,36 +8,36 @@
     </h1>
     <form id="add_bankForm" action="/add-bank" method="post">
         <div class="form-group">
-            <label for="name">{{ translations.add_bank_form_name_label
+            <label for="name">{{ translations.add_bank_form_name
                 }}</label>
             <input type="text" id="name" name="name" required>
         </div>
         <div class="form-group">
-            <label for="link">{{ translations.add_bank_form_link_label
+            <label for="link">{{ translations.add_bank_form_link
                 }}</label>
             <input type="text" id="link" name="link">
         </div>
         <h2>{{ translations.add_bank_csv_headers_title }}</h2>
         <div class="form-group">
             <label for="counterparty_column">{{
-                translations.add_bank_counterparty_column_label }}</label>
+                translations.add_bank_counterparty_column }}</label>
             <input type="number" id="counterparty_column"
                 name="counterparty_column" min="0" step="1">
         </div>
         <div class="form-group">
             <label for="amount_column">{{
-                translations.add_bank_amount_column_label }}</label>
+                translations.add_bank_amount_column }}</label>
             <input type="number" id="amount_column" name="amount_column" min="0"
                 step="1">
         </div>
         <div class="form-group">
             <label for="bank_balance_after_column">{{
-                translations.add_bank_balance_after_column_label }}</label>
+                translations.add_bank_balance_after_column }}</label>
             <input type="number" id="bank_balance_after_column"
                 name="bank_balance_after_column" min="0" step="1">
         </div>
         <div class="form-group">
-            <label for="date_column">{{ translations.add_bank_date_column_label
+            <label for="date_column">{{ translations.add_bank_date_column
                 }}</label>
             <input type="number" id="date_column" name="date_column" min="0"
                 step="1">

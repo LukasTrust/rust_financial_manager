@@ -531,12 +531,13 @@ function handleAddContract(index) {
 
     // Create the inner container with horizontal layout
     const horizontalContainer = document.createElement('div');
-    horizontalContainer.className = 'container-without-border-horizontally';
+    horizontalContainer.className = 'container-without-border-horizontally-header';
 
     // Add icon and header text
     const icon = document.createElement('img');
     icon.src = '/static/images/info.png';
     icon.alt = 'Icon';
+    icon.classList.add('icon-big');
 
     const headerText = document.createElement('strong');
     headerText.textContent = t.pickContractHeader; // Localized header text
@@ -616,7 +617,7 @@ function addSelectedContract(index) {
         modal.classList.add('container-without-border');
 
         const headerContainer = document.createElement('div');
-        headerContainer.classList.add('container-without-border-horizontally');
+        headerContainer.classList.add('container-without-border-horizontally-header');
 
         const icon = document.createElement('img');
         icon.src = '/static/images/info.png';
@@ -651,7 +652,7 @@ function addSelectedContract(index) {
             label.innerHTML = option.label;
 
             const optionContainer = document.createElement('div');
-            optionContainer.classList.add('container-without-border-horizontally');
+            optionContainer.classList.add('container-without-border-horizontally-header');
             optionContainer.appendChild(radio);
             optionContainer.appendChild(label);
 
@@ -660,7 +661,7 @@ function addSelectedContract(index) {
 
         // Add submit and cancel buttons
         const buttonContainer = document.createElement('div');
-        buttonContainer.classList.add('container-without-border-horizontally');
+        buttonContainer.classList.add('container-without-border-horizontally-header');
 
         const submitButton = document.createElement('button');
         submitButton.classList.add('button', 'btn-secondary');

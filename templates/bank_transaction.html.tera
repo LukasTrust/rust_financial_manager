@@ -9,14 +9,14 @@
         <div class="container-without-border-horizontally-header">
 
             <label for="date-range" class="date-label">
-                {{translations.select_date_range_label }}
+                {{translations.select_date_range }}
             </label>
             <img src="/static/images/calendar.png" alt="Icon">
             <input type="text" id="date-range" class="date-input flatpickr"
-                placeholder="{{ translations.select_date_range_label }}">
+                placeholder="{{ translations.select_date_range }}">
 
             <label for="contract-filter">
-                {{translations.transactions_filter_by_contract_label }}
+                {{translations.transactions_filter_by_contract }}
             </label>
             <img src="/static/images/filter.png" alt="Icon">
             <select id="contract-filter" class="input-select">

@@ -143,7 +143,7 @@ function handleDeleteButton() {
     modal.className = 'alert alert-info';
 
     const horizontalContainer = document.createElement('div');
-    horizontalContainer.className = 'container-without-border-horizontally';
+    horizontalContainer.className = 'container-without-border-horizontally-header';
 
     // Add icon and header text
     const icon = document.createElement('img');
@@ -171,12 +171,13 @@ function handleDeleteButton() {
     // Create delete button
     const deleteButton = document.createElement('button');
     deleteButton.textContent = getLocalizedString('delete_account_button');
-    deleteButton.style.backgroundColor = 'red';
+    deleteButton.classList.add('btn-danger', 'button', 'btn-secondary')
     deleteButton.onclick = sendDeleteRequest;
 
     // Create cancel button
     const cancelButton = document.createElement('button');
     cancelButton.textContent = getLocalizedString('cancel_button');
+    cancelButton.classList.add('button', 'btn-secondary')
     cancelButton.onclick = closeModal;
 
     buttonContainer.appendChild(deleteButton);

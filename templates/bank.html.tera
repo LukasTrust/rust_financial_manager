@@ -12,25 +12,35 @@
             <!-- Transaction Data Section -->
             <h2>{{ translations.transaction_data_title }}</h2>
             <div class="display-container">
-                <div class="box">{{ translations.transaction_count }}
+                <div class="box"
+                    data-hint="{{translations.transactions_count_hint}}">
+                    {{ translations.transactions_count }}
                     <span id="transactions_count"></span>
                 </div>
-                <div class="box">{{
-                    translations.transaction_average_amount_label }}
+
+                <div class="box"
+                    data-hint="{{translations.transactions_average_amount_hint}}">
+                    {{ translations.transactions_average_amount }}
                     <span id="transactions_average_amount"></span>
                 </div>
-                <div class="box">{{ translations.transaction_max_amount_label }}
+                <div class="box"
+                    data-hint="{{translations.transactions_max_amount_hint}}">
+                    {{ translations.transactions_max_amount }}
                     <span id="transactions_max_amount"></span>
                 </div>
-                <div class="box">{{ translations.transaction_min_amount_label }}
+                <div class="box"
+                    data-hint="{{translations.transactions_min_amount_hint}}">
+                    {{ translations.transactions_min_amount }}
                     <span id="transactions_min_amount"></span>
                 </div>
-                <div class="box">{{ translations.transaction_net_gain_loss_label
-                    }}
+                <div class="box"
+                    data-hint="{{translations.transactions_net_gain_loss_hint}}">
+                    {{ translations.transactions_net_gain_loss }}
                     <span id="transactions_net_gain_loss"></span>
                 </div>
-                <div class="box">{{
-                    translations.transactions_total_discrepancy_label }}
+                <div class="box"
+                    data-hint="{{translations.transactions_total_discrepancy_hint}}">
+                    {{ translations.transactions_total_discrepancy }}
                     <span id="transactions_total_discrepancy"></span>
                 </div>
             </div>
@@ -38,24 +48,34 @@
             <!-- Contract Data Section -->
             <h2>{{ translations.contracts_data_title }}</h2>
             <div class="display-container">
-                <div class="box">{{ translations.contracts_count_label }}
+                <div class="box"
+                    data-hint="{{translations.contracts_count_hint}}">
+                    {{ translations.contracts_count }}
                     <span id="contracts_count"></span>
                 </div>
-                <div class="box">{{ translations.contracts_total_positive_amount }}
+                <div class="box"
+                    data-hint="{{translations.contracts_total_positive_amount_hint}}">
+                    {{ translations.contracts_total_positive_amount }}
                     <span id="contracts_total_positive_amount"></span>
                 </div>
-                <div class="box">{{ translations.contracts_total_negative_amount }}
+                <div class="box"
+                    data-hint="{{translations.contracts_total_negative_amount_hint}}">
+                    {{ translations.contracts_total_negative_amount }}
                     <span id="contracts_total_negative_amount"></span>
                 </div>
-                <div class="box">{{
-                    translations.contracts_amount_per_time_span_label }}
+                <div class="box"
+                    data-hint="{{translations.contracts_amount_per_time_span_hint}}">
+                    {{ translations.contracts_amount_per_time_span }}
                     <span id="contracts_amount_per_time_span"></span>
                 </div>
-                <div class="box">{{ translations.contracts_amount_per_month }}
-            <span id="contracts_amount_per_month"></span>
-        </div>
-                <div class="box">{{ translations.contracts_amount_per_year_label
-                    }}
+                <div class="box"
+                    data-hint="{{translations.contracts_amount_per_month_hint}}">
+                    {{ translations.contracts_amount_per_month }}
+                    <span id="contracts_amount_per_month"></span>
+                </div>
+                <div class="box"
+                    data-hint="{{translations.contracts_amount_per_year_hint}}">
+                    {{ translations.contracts_amount_per_year }}
                     <span id="contracts_amount_per_year"></span>
                 </div>
             </div>
@@ -70,9 +90,9 @@
             <!-- Date Range Picker -->
             <div class="form-group" style="width: 100%">
                 <label for="dateRange" class="date-label">{{
-                    translations.select_date_range_label }}</label>
+                    translations.select_date_range }}</label>
                 <input type="text" id="dateRange" class="date-input"
-                    placeholder="{{ translations.select_date_range_label }}">
+                    placeholder="{{ translations.select_date_range }}">
             </div>
 
             <!-- CSV Upload Form -->
@@ -92,20 +112,20 @@
                 translations.bank_update_csv_conversion_title }}</label>
             <form action="/update_csv" method="post" class="form-group">
                 <label for="counterparty_column">{{
-                    translations.bank_counterparty_column_label }}</label>
+                    translations.bank_counterparty_column }}</label>
                 <input type="number" id="counterparty_column"
                     name="counterparty_column">
 
                 <label for="amount_column">{{
-                    translations.bank_amount_column_label }}</label>
+                    translations.bank_amount_column }}</label>
                 <input type="number" id="amount_column" name="amount_column">
 
                 <label for="bank_balance_after_column">{{
-                    translations.bank_balance_after_column_label }}</label>
+                    translations.bank_balance_after_column }}</label>
                 <input type="number" id="bank_balance_after_column"
                     name="bank_balance_after_column">
 
-                <label for="date_column">{{ translations.bank_date_column_label
+                <label for="date_column">{{ translations.bank_date_column
                     }}</label>
                 <input type="number" id="date_column" name="date_column">
 

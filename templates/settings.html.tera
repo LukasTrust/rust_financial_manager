@@ -28,19 +28,19 @@
                 method="post">
                 <div class="form-group">
                     <label for="old_password">{{
-                        translations.settings_old_password_label }}</label>
+                        translations.settings_old_password }}</label>
                     <input type="password" id="old_password" name="old_password"
                         required>
                 </div>
                 <div class="form-group">
                     <label for="new_password">{{
-                        translations.settings_new_password_label }}</label>
+                        translations.settings_new_password }}</label>
                     <input type="password" id="new_password" name="new_password"
                         required>
                 </div>
                 <div class="form-group">
                     <label for="confirm_password">{{
-                        translations.settings_confirm_password_label }}</label>
+                        translations.settings_confirm_password }}</label>
                     <input type="password" id="confirm_password"
                         name="confirm_password" required>
                 </div>
