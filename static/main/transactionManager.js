@@ -531,7 +531,7 @@ function handleAddContract(index) {
 
     // Create the inner container with horizontal layout
     const horizontalContainer = document.createElement('div');
-    horizontalContainer.className = 'container-without-border-horizontally-header';
+    horizontalContainer.className = 'container-without-border-horizontally-center';
 
     // Add icon and header text
     const icon = document.createElement('img');
@@ -568,7 +568,7 @@ function handleAddContract(index) {
 
     // Create button container with localized buttons
     const buttonContainer = document.createElement('div');
-    buttonContainer.classList.add('container-without-border-horizontally-header');
+    buttonContainer.classList.add('container-without-border-horizontally-center');
 
     const addButton = document.createElement('button');
     addButton.innerHTML = `
@@ -617,7 +617,7 @@ function addSelectedContract(index) {
         modal.classList.add('container-without-border');
 
         const headerContainer = document.createElement('div');
-        headerContainer.classList.add('container-without-border-horizontally-header');
+        headerContainer.classList.add('container-without-border-horizontally-center');
 
         const icon = document.createElement('img');
         icon.src = '/static/images/info.png';
@@ -652,7 +652,7 @@ function addSelectedContract(index) {
             label.innerHTML = option.label;
 
             const optionContainer = document.createElement('div');
-            optionContainer.classList.add('container-without-border-horizontally-header');
+            optionContainer.classList.add('container-without-border-horizontally-center');
             optionContainer.appendChild(radio);
             optionContainer.appendChild(label);
 
@@ -661,7 +661,7 @@ function addSelectedContract(index) {
 
         // Add submit and cancel buttons
         const buttonContainer = document.createElement('div');
-        buttonContainer.classList.add('container-without-border-horizontally-header');
+        buttonContainer.classList.add('container-without-border-horizontally-center');
 
         const submitButton = document.createElement('button');
         submitButton.classList.add('button', 'btn-secondary');

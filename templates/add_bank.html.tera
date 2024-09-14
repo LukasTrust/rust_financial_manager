@@ -1,6 +1,6 @@
 <div class="container-without-border">
     <h1>
-        <div class="container-without-border-horizontally-header">
+        <div class="container-without-border-horizontally-center">
             <img src="/static/images/bank.png" alt="Icon"
                 class="icon-big">
             {{ translations.add_bank_title }}

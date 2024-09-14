@@ -371,7 +371,7 @@ function generateContractHTML(contractWithHistory, index) {
 
     const html = `
         <div class="display" id="display-${index}" data-id="${contract.id}">
-            <div class="container-without-border-horizontally-header">
+            <div class="container-without-border-horizontally-center">
                 <img src="/static/images/edit.png" alt="Edit Icon" class="edit-icon" />
                 <input type="text" class="contract-name" value="${contract.name}" data-index="${index}" />
             </div>

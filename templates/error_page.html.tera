@@ -8,7 +8,7 @@
     </head>
     <body>
         <div class="container-with-border">
-            <div class="container-without-border-horizontally-header">
+            <div class="container-without-border-horizontally-center">
                 <img src="/static/images/error.png" alt="Icon"
                     class="icon-large">
                 <h1>{{ error_header }}</h1>

@@ -1,47 +1,49 @@
  <div class="scroll-container">
     <div class="container-without-border">
-        <h1>
-            <img src="/static/images/transaction.png" alt="Icon"
-                class="icon-big">
-            {{ translations.transactions_title }}</h1>
+        <div class="container-header">
+            <h1>
+                <img src="/static/images/transaction.png" alt="Icon"
+                    class="icon-big">
+                {{ translations.transactions_title }}</h1>
 
-        <!-- Static header and table structure -->
-        <div class="container-without-border-horizontally-header">
+            <!-- Static header and table structure -->
+            <div class="container-border-bottom-horizontally">
 
-            <label for="date-range" class="date-label">
-                {{translations.select_date_range }}
-            </label>
-            <img src="/static/images/calendar.png" alt="Icon">
-            <input type="text" id="date-range" class="date-input flatpickr"
-                placeholder="{{ translations.select_date_range }}">
+                <label for="date-range" class="date-label">
+                    {{translations.select_date_range }}
+                </label>
+                <input type="text" id="date-range" class="input flatpickr"
+                    placeholder="{{ translations.select_date_range }}">
 
-            <label for="contract-filter">
-                {{translations.transactions_filter_by_contract }}
-            </label>
-            <img src="/static/images/filter.png" alt="Icon">
-            <select id="contract-filter" class="input-select">
-                <option value>
-                    {{ translations.transactions_all_contracts_option }}
-                </option>
-            </select>
+                <label for="contract-filter">
+                    {{translations.transactions_filter_by_contract }}
+                </label>
+                <select id="contract-filter" class="input">
+                    <option value>
+                        {{ translations.transactions_all_contracts_option }}
+                    </option>
+                </select>
 
-            <img src="/static/images/search.png" alt="Icon">
-            <input type="text" id="transaction-search" class="input-search"
-                placeholder="{{ translations.transactions_search_placeholder }}">
+                <img src="/static/images/search.png" class="icon-big"
+                    alt="Icon">
+                <input type="text" id="transaction-search" class="input"
+                    placeholder="{{ translations.transactions_search_placeholder }}">
 
-            <!-- Toggle for Hidden Transactions -->
-            <div class="container-without-border-horizontally"
-                style="width: auto;">
-                <button id="toggle-hidden-transaction" class="toggle-button">
-                    <div class="slider"></div>
-                </button>
-                <div class="container-without-border">
-                    <span>
-                        {{ translations.transactions_hide_hidden_text }}
-                    </span>
-                    <span>
-                        {{ translations.transactions_show_hidden_text }}
-                    </span>
+                <!-- Toggle for Hidden Transactions -->
+                <div class="container-without-border-horizontally"
+                    style="width: auto;">
+                    <button id="toggle-hidden-transaction"
+                        class="toggle-button">
+                        <div class="slider"></div>
+                    </button>
+                    <div class="container-without-border">
+                        <span>
+                            {{ translations.transactions_hide_hidden_text }}
+                        </span>
+                        <span>
+                            {{ translations.transactions_show_hidden_text }}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -87,7 +89,8 @@
 
                     </th>
                     <th data-key="current_amount" class="sortable">
-                        {{ translations.transactions_contract_amount_header }}
+                        {{ translations.transactions_contract_amount_header
+                        }}
                         <img src="/static/images/up.png" alt="Sort up"
                             class="sort-icon">
 
@@ -132,7 +135,8 @@
                             class="sort-icon">
                     </th>
                     <th data-key="current_amount" class="sortable">
-                        {{ translations.transactions_contract_amount_header }}
+                        {{ translations.transactions_contract_amount_header
+                        }}
                         <img src="/static/images/up.png" alt="Sort up"
                             class="sort-icon">
                     </th>

@@ -1,10 +1,10 @@
 <div class="scroll-container">
-    <div class="container-without-border-horizontally-header">
+    <div class="container-without-border-horizontally-center">
         <h1 id="header-success">{{ success.success }}</h1>
         <label for="dateRange" class="date-label">
             {{ translations.select_date_range }}
         </label>
-        <input type="text" id="dateRange" class="date-input"
+        <input type="text" id="dateRange" class="input"
             placeholder="{{ translations.select_date_range }}">
     </div>
 

@@ -5,7 +5,7 @@
                 class="icon-big">
             {{ translations.bank_contract_title }}
         </h1>
-        <div class="container-without-border-horizontally-header">
+        <div class="container-border-bottom-horizontally">
             <!-- Buttons with consistent styling -->
             <div class="tooltip">
                 <button id="merge-selected-btn" class="button btn-primary"
@@ -16,15 +16,7 @@
                 <span class="tooltiptext">{{
                     translations.button_contract_merge_hint }}</span>
             </div>
-            <div class="tooltip">
-                <button id="delete-selected-btn" class="button btn-danger"
-                    style="width: auto;">
-                    <img src="/static/images/delete.png" alt="Delete Icon">
-                    {{ translations.bank_contract_delete_selected_button }}
-                </button>
-                <span class="tooltiptext">{{
-                    translations.button_contract_delete_hint }}</span>
-            </div>
+
             <div class="tooltip">
                 <button id="scan-btn" class="button btn-secondary"
                     style="width: auto;">
@@ -42,12 +34,23 @@
                     <div class="slider"></div>
                 </button>
                 <div class="container-without-border">
-                    <span>{{ translations.bank_contract_show_open_contracts_text
-                        }}</span>
-                    <span>{{
-                        translations.bank_contract_show_closed_contracts_text
-                        }}</span>
+                    <span>
+                        {{translations.bank_contract_show_open_contracts_text}}
+                    </span>
+                    <span>
+                        {{translations.bank_contract_show_closed_contracts_text}}
+                    </span>
                 </div>
+            </div>
+
+            <div class="tooltip" style="margin-left: auto; margin-right: 20px;">
+                <button id="delete-selected-btn" class="button btn-danger"
+                    style="width: auto;">
+                    <img src="/static/images/delete.png" alt="Delete Icon">
+                    {{ translations.bank_contract_delete_selected_button }}
+                </button>
+                <span class="tooltiptext">{{
+                    translations.button_contract_delete_hint }}</span>
             </div>
         </div>
         <div id="contract-container">

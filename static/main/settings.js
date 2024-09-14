@@ -143,7 +143,7 @@ function handleDeleteButton() {
     modal.className = 'alert alert-info';
 
     const horizontalContainer = document.createElement('div');
-    horizontalContainer.className = 'container-without-border-horizontally-header';
+    horizontalContainer.className = 'container-without-border-horizontally-center';
 
     // Add icon and header text
     const icon = document.createElement('img');
@@ -166,7 +166,7 @@ function handleDeleteButton() {
     bodyText.textContent = getLocalizedString('delete_account_confirmation');
 
     const buttonContainer = document.createElement('div');
-    buttonContainer.classList.add('container-without-border-horizontally-header');
+    buttonContainer.classList.add('container-without-border-horizontally-center');
 
     // Create delete button
     const deleteButton = document.createElement('button');

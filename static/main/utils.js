@@ -57,7 +57,7 @@ export function displayCustomAlert(type, header_text, body_text, button_text = '
     // Construct the HTML structure with image icons
     alert.innerHTML = `
         <div class="container-without-border">
-            <div class="container-without-border-horizontally-header">
+            <div class="container-without-border-horizontally-center">
                 <img src="${iconSrc}" alt="${type}" class="icon-big">
                 <div style="flex-grow: 1;" class="alert-header-text">
                     <strong>${header_text}</strong> <span class="alert-timer">${countdown > 0 ? `(${countdown}s)` : ''}</span>
