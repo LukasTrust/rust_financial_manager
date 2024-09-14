@@ -8,8 +8,13 @@ const translations = {
         showHistory: 'Show History',
         hideHistory: 'Hide History',
         noHistoryAvailable: 'No History Available.',
-        mergeSelected: 'Please select at least 2 contracts to merge.',
-        deleteSelected: 'Please select at least 1 contract to delete.',
+        mergeSelected: 'Merge Selected Contracts',
+        mergeSelected_detail: 'Please select at least 2 contracts to merge.',
+        deleteSelected: 'Delete Selected Contracts',
+        deleteSelected_detail: 'Please select at least 1 contract to delete.',
+        scanFailed: 'Scan Failed',
+        deletionFalied: 'Deletion Failed',
+        mergeFailed: 'Merge Failed',
         currentAmount: 'Current Amount',
         totalAmountOverTime: 'Total Amount Over Time',
         monthsBetweenPayment: 'Months Between Payment',
@@ -26,8 +31,13 @@ const translations = {
         showHistory: 'Historie anzeigen',
         hideHistory: 'Historie verstecken',
         noHistoryAvailable: 'Keine Historie verfügbar.',
-        mergeSelected: 'Bitte wählen Sie mindestens 2 Verträge zum Zusammenführen aus.',
-        deleteSelected: 'Bitte wählen Sie mindestens 1 Vertrag zum Löschen aus.',
+        mergeSelected: 'Ausgewählte Verträge zusammenführen',
+        mergeSelected_detail: 'Bitte wählen Sie mindestens 2 Verträge zum Zusammenführen aus.',
+        deleteSelected: 'Ausgewählte Verträge löschen',
+        deleteSelected_detail: 'Bitte wählen Sie mindestens 1 Vertrag zum Löschen aus.',
+        scanFailed: 'Scan fehlgeschlagen',
+        deletionFalied: 'Löschen fehlgeschlagen',
+        mergeFailed: 'Zusammenführen fehlgeschlagen',
         currentAmount: 'Aktueller Betrag',
         totalAmountOverTime: 'Gesamtbetrag über die Zeit',
         monthsBetweenPayment: 'Monate zwischen Zahlungen',
@@ -259,7 +269,7 @@ async function scanContracts() {
         }
     } catch (err) {
         error(`Error scanning contracts: ${err.message}`, 'scanContracts');
-        displayCustomAlert('error', 'Scan Failed', err.message);
+        displayCustomAlert('error', translations[lang].scanFailed, err.message);
     } finally {
         const end = performance.now();
         log(`Scanned contracts in ${end - start}ms`, 'scanContracts');
@@ -273,8 +283,10 @@ async function deleteSelectedContracts() {
     try {
         const selectedContracts = document.querySelectorAll('.selected');
 
+        const lang = getGlobalLanguage();
+
         if (selectedContracts.length === 0) {
-            displayCustomAlert('error', 'Delete contracts', 'Please select at least 1 contract to delete.');
+            displayCustomAlert('error', translations[lang].deleteSelected, translations[lang].deleteSelected_detail);
             return;
         }
 
@@ -301,7 +313,7 @@ async function deleteSelectedContracts() {
         }
     } catch (err) {
         error(`Error deleting contracts: ${err.message}`, 'deleteSelectedContracts');
-        displayCustomAlert('error', 'Delete Failed', err.message);
+        displayCustomAlert('error', translations[lang].deletionFalied, err.message);
     } finally {
         const end = performance.now();
         log(`Deleted contracts in ${end - start}ms`, 'deleteSelectedContracts');
@@ -315,8 +327,10 @@ async function mergeSelectedContracts() {
     try {
         const selectedContracts = document.querySelectorAll('.selected');
 
+        const lang = getGlobalLanguage();
+
         if (selectedContracts.length < 2) {
-            displayCustomAlert('error', 'Merge contracts', 'Please select at least 2 contracts to merge.');
+            displayCustomAlert('error', translations[lang].mergeSelected, translations[lang].mergeSelected_detail);
             return;
         }
 
@@ -338,10 +352,10 @@ async function mergeSelectedContracts() {
         }
 
         get_contract_data();
-        displayCustomAlert('success', 'Merge Successful', 'Contracts have been successfully merged.');
+        displayCustomAlert('success', updatedContractsData.header, updatedContractsData.success);
     } catch (err) {
         error(`Error merging contracts: ${err.message}`, 'mergeSelectedContracts');
-        displayCustomAlert('error', 'Merge Failed', err.message);
+        displayCustomAlert('error', translations[lang].mergeFailed, err.message);
     } finally {
         const end = performance.now();
         log(`Merged contracts in ${end - start}ms`, 'mergeSelectedContracts');

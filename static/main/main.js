@@ -34,7 +34,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    loadContent(old_url);
+    if (!old_url.startsWith('/bank/')) {
+        loadContent(old_url);
+    }
+    else {
+        loadContent('/dashboard');
+    }
 });
 
 // Main function to load content
