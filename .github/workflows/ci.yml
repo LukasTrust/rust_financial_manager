@@ -36,20 +36,22 @@ jobs:
           apt-get update
           apt-get install -y postgresql
 
-      # Build the project
-      - name: Build
-        run: cargo build
+      # Configure PostgreSQL to use 'trust' authentication
+      - name: Configure PostgreSQL Authentication
+        run: |
+          sed -i "s/peer/trust/g" /etc/postgresql/*/main/pg_hba.conf
+          sed -i "s/md5/trust/g" /etc/postgresql/*/main/pg_hba.conf
+          service postgresql start
 
-      # Set environment variables and run tests
-      - name: Test with PostgreSQL
+      # Create PostgreSQL Database
+      - name: Setup PostgreSQL Database
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres_db
           ROCKET_ENV: test
         run: |
-          # Set up PostgreSQL service
-          service postgresql start
+          # Create PostgreSQL database
           psql -U postgres -c "CREATE DATABASE postgres_db;"
-          
+
           # Run migrations
           diesel migration run
 

@@ -135,17 +135,17 @@ pub fn generate_performance_value(
 
     let transactions_count = filtered_transactions.len();
 
-    let mut filtered_contracts: Vec<&Contract> = contracts
+    let mut open_contracts: Vec<&Contract> = contracts
         .iter()
         .filter(|c| c.start_date >= *start_date && c.end_date.map_or(true, |d| d >= *end_date))
         .collect();
 
-    let contracts_count = filtered_contracts.len();
+    let contracts_count = open_contracts.len();
 
     if (transactions_count == 0) || (contracts_count == 0) {
         return (PerformanceData::default(), vec![]);
     } else if transactions_count == 0 {
-        return handle_only_contracts(contracts_count, &mut filtered_contracts);
+        return handle_only_contracts(contracts_count, &mut open_contracts);
     } else if contracts_count == 0 {
         return handle_only_transactions(transactions_count, &mut filtered_transactions);
     }
@@ -155,12 +155,12 @@ pub fn generate_performance_value(
 
     let transactions_with_discrepancy = result_only_transactions.1;
 
-    let result_only_contracts = handle_only_contracts(contracts_count, &mut filtered_contracts);
+    let result_only_contracts = handle_only_contracts(contracts_count, &mut open_contracts);
 
     let contracts_amount_per_time_span: f64 =
         filtered_transactions.iter().fold(0.0, |acc, transaction| {
             if let Some(contract_id) = transaction.contract_id {
-                if filtered_contracts.iter().any(|c| c.id == contract_id) {
+                if open_contracts.iter().any(|c| c.id == contract_id) {
                     acc + transaction.amount
                 } else {
                     acc
@@ -248,21 +248,25 @@ fn handle_only_transactions(
 
 fn handle_only_contracts(
     contracts_count: usize,
-    filtered_contracts: &mut [&Contract],
+    open_contracts: &mut [&Contract],
 ) -> (PerformanceData, Vec<Discrepancy>) {
-    // Calculate contract statistics
-    let contracts_total_amount: f64 = filtered_contracts.iter().map(|c| c.current_amount).sum();
-    let contracts_average_amount = contracts_total_amount / contracts_count as f64;
-    let contracts_max_amount = filtered_contracts
+    let positive_amounts: Vec<f64> = open_contracts
         .iter()
+        .filter(|c| c.current_amount > 0.0)
         .map(|c| c.current_amount)
-        .fold(f64::MIN, f64::max);
-    let contracts_min_amount = filtered_contracts
-        .iter()
-        .map(|c| c.current_amount)
-        .fold(f64::MAX, f64::min);
+        .collect();
 
-    let contracts_amount_per_year: f64 = filtered_contracts
+    let contracts_total_positive_amount: f64 = positive_amounts.iter().sum();
+
+    let negative_amounts: Vec<f64> = open_contracts
+        .iter()
+        .filter(|c| c.current_amount < 0.0)
+        .map(|c| c.current_amount)
+        .collect();
+
+    let contracts_total_negative_amount: f64 = negative_amounts.iter().sum();
+
+    let contracts_amount_per_year: f64 = open_contracts
         .iter()
         .map(|contract| {
             let months_between = contract.months_between_payment as f64;
@@ -270,11 +274,13 @@ fn handle_only_contracts(
         })
         .sum();
 
+    let contracts_amount_per_month = contracts_amount_per_year / 12.0;
+
     let performance_data = PerformanceData::new_only_contract(
         contracts_count,
-        contracts_average_amount,
-        contracts_max_amount,
-        contracts_min_amount,
+        contracts_total_positive_amount,
+        contracts_total_negative_amount,
+        contracts_amount_per_month,
         contracts_amount_per_year,
     );
 

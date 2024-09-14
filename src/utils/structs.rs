@@ -89,10 +89,10 @@ pub struct PerformanceData {
     transactions_net_gain_loss: f64,
     transactions_total_discrepancy: f64,
     contracts_count: usize,
-    contracts_average_amount: f64,
-    contracts_max_amount: f64,
-    contracts_min_amount: f64,
+    contracts_total_positive_amount: f64,
+    contracts_total_negative_amount: f64,
     contracts_amount_per_time_span: f64,
+    contracts_amount_per_month: f64,
     contracts_amount_per_year: f64,
 }
 
@@ -110,10 +110,10 @@ impl PerformanceData {
             transactions_net_gain_loss: only_transaction.transactions_net_gain_loss,
             transactions_total_discrepancy: only_transaction.transactions_total_discrepancy,
             contracts_count: only_contract.contracts_count,
-            contracts_average_amount: only_contract.contracts_average_amount,
-            contracts_max_amount: only_contract.contracts_max_amount,
-            contracts_min_amount: only_contract.contracts_min_amount,
+            contracts_total_positive_amount: only_contract.contracts_total_positive_amount,
+            contracts_total_negative_amount: only_contract.contracts_total_negative_amount,
             contracts_amount_per_time_span,
+            contracts_amount_per_month: only_contract.contracts_amount_per_month,
             contracts_amount_per_year: only_contract.contracts_amount_per_year,
         }
     }
@@ -139,16 +139,16 @@ impl PerformanceData {
 
     pub fn new_only_contract(
         contracts_count: usize,
-        contracts_average_amount: f64,
-        contracts_max_amount: f64,
-        contracts_min_amount: f64,
+        contracts_total_positive_amount: f64,
+        contracts_total_negative_amount: f64,
+        contracts_amount_per_month: f64,
         contracts_amount_per_year: f64,
     ) -> PerformanceData {
         PerformanceData {
             contracts_count,
-            contracts_average_amount,
-            contracts_max_amount,
-            contracts_min_amount,
+            contracts_total_positive_amount,
+            contracts_total_negative_amount,
+            contracts_amount_per_month,
             contracts_amount_per_year,
             ..Default::default()
         }
@@ -165,10 +165,10 @@ impl Default for PerformanceData {
             transactions_net_gain_loss: 0.0,
             transactions_total_discrepancy: 0.0,
             contracts_count: 0,
-            contracts_average_amount: 0.0,
-            contracts_max_amount: 0.0,
-            contracts_min_amount: 0.0,
+            contracts_total_positive_amount: 0.0,
+            contracts_total_negative_amount: 0.0,
             contracts_amount_per_time_span: 0.0,
+            contracts_amount_per_month: 0.0,
             contracts_amount_per_year: 0.0,
         }
     }

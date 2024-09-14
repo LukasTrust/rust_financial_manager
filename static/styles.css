@@ -184,6 +184,7 @@ button {
 }
 
 .box {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -207,11 +208,39 @@ button {
     color: #333;
 }
 
+/* Hover effect */
 .box:hover {
     transform: translateY(-8px);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
     background-color: #f0f0f0;
 }
+
+/* Tooltip styling */
+.box::after {
+    content: attr(data-hint);
+    /* Use the data-hint attribute's value */
+    position: absolute;
+    bottom: -40px;
+    /* Adjust this to position the tooltip */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 100;
+}
+
+/* Show the tooltip on hover */
+.box:hover::after {
+    opacity: 1;
+}
+
 
 .box span.positive {
     color: #4CAF50;

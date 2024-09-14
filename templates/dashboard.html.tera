@@ -14,9 +14,10 @@
     <!-- Transaction Data Section -->
     <h2>{{ translations.transaction_data_title }}</h2>
     <div class="display-container">
-        <div class="box">{{ translations.transaction_count }}
-            <span id="transactions_count"></span>
-        </div>
+        <div class="box" id="transactions_count_box">
+    {{ translations.transaction_count }}
+    <span id="transactions_count"></span>
+</div>
         <div class="box">{{ translations.transaction_average_amount_label }}
             <span id="transactions_average_amount"></span>
         </div>
@@ -40,17 +41,17 @@
         <div class="box">{{ translations.contracts_count_label }}
             <span id="contracts_count"></span>
         </div>
-        <div class="box">{{ translations.contracts_average_amount_label }}
-            <span id="contracts_average_amount"></span>
+        <div class="box">{{ translations.contracts_total_positive_amount }}
+            <span id="contracts_total_positive_amount"></span>
         </div>
-        <div class="box">{{ translations.contracts_max_amount_label }}
-            <span id="contracts_max_amount"></span>
-        </div>
-        <div class="box">{{ translations.contracts_min_amount_label }}
-            <span id="contracts_min_amount"></span>
+        <div class="box">{{ translations.contracts_total_negative_amount }}
+            <span id="contracts_total_negative_amount"></span>
         </div>
         <div class="box">{{ translations.contracts_amount_per_time_span_label }}
             <span id="contracts_amount_per_time_span"></span>
+        </div>
+        <div class="box">{{ translations.contracts_amount_per_month }}
+            <span id="contracts_amount_per_month"></span>
         </div>
         <div class="box">{{ translations.contracts_amount_per_year_label }}
             <span id="contracts_amount_per_year"></span>
