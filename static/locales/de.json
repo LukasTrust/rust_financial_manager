@@ -211,5 +211,7 @@
     "lowest_amount": "Transaktion mit dem niedrigsten Betrag:",
     "button_contract_merge_hint": "Wählen Sie zwei oder mehr Verträge aus, um sie zusammenzuführen.",
     "button_contract_delete_hint": "Wählen Sie einen oder mehrere Verträge aus, um sie zu löschen.",
-    "button_contract_scan_hint": "Scannen Sie nach neuen Verträgen oder Vertragsänderungen."
+    "button_contract_scan_hint": "Scannen Sie nach neuen Verträgen oder Vertragsänderungen.",
+    "delete_contract_with_no_transactions": "Vertrag ohne Transaktionen gelöscht",
+    "delete_contract_with_no_transactions_details": "Der Vertrag wurde gelöscht, da er keine Transaktionen mehr hatte"
 }

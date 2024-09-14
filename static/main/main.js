@@ -2,7 +2,7 @@ import { initializeFormHandling } from './formHandler.js';
 import { update_performance } from './performanceUpdater.js';
 import { initializeChartAndDatePicker } from './chartManager.js';
 import { loadContracts } from './contractManager.js';
-import { loadTransactions } from './transactionManager.js';
+import { setupTransactions } from './transactionManager.js';
 import { initializeSettings } from './settings.js';
 
 export function log(message, context = '', ...data) {
@@ -33,12 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Load the appropriate content based on the URL
-    if (!oldUrl.startsWith('/bank/')) {
-        loadContent(oldUrl);
-    } else {
-        loadContent('/dashboard');
-    }
+    loadContent(oldUrl);
 });
 
 // Main function to load content
@@ -73,7 +68,7 @@ export async function loadContent(url) {
                     loadContracts();
                     break;
                 case '/bank/transaction':
-                    loadTransactions();
+                    setupTransactions();
                     break;
                 case '/add-bank':
                     initializeFormHandling();

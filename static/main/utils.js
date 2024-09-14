@@ -1,4 +1,4 @@
-import { error } from './main.js';
+import { error, log } from './main.js';
 
 // Initialize the state from localStorage or default to 'English'
 const state = {
@@ -7,28 +7,36 @@ const state = {
 
 // Function to get the current language from the state or localStorage
 export function getGlobalLanguage() {
+    log('Retrieving global language:', 'getGlobalLanguage', state.language);
     return state.language;
 }
 
 // Function to set the global language and store it in localStorage
 export function setGlobalLanguage(newLanguage) {
+    log('Setting global language:', 'setGlobalLanguage', newLanguage);
     state.language = newLanguage;
     localStorage.setItem('language', newLanguage);
 }
 
 export function formatDate(dateString) {
+    log('Formatting date:', 'formatDate', dateString);
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'N/A';
+    if (isNaN(date.getTime())) {
+        log('Invalid date, returning N/A:', 'formatDate', dateString);
+        return 'N/A';
+    }
 
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
 
-    return `${day}.${month}.${year}`;
+    const formattedDate = `${day}.${month}.${year}`;
+    log('Formatted date:', 'formatDate', formattedDate);
+    return formattedDate;
 }
 
 export function displayCustomAlert(type, header_text, body_text, button_text = 'Close', countdown = 0) {
-    console.log('Displaying custom alert:', type, header_text, body_text, button_text, countdown);
+    log('Displaying custom alert:', 'displayCustomAlert', { type, header_text, body_text, button_text, countdown });
 
     // Create the backdrop
     const backdrop = document.createElement('div');
@@ -64,7 +72,7 @@ export function displayCustomAlert(type, header_text, body_text, button_text = '
                 </div>
             </div>
             <p>${body_text}</p>
-            ${button_text ? `<button class="alert-close" disabled>${button_text}</button>` : ''}
+            ${button_text ? `<button class="alert-close button btn-secondary" disabled>${button_text}</button>` : ''}
         </div>
     `;
 
@@ -79,6 +87,7 @@ export function displayCustomAlert(type, header_text, body_text, button_text = '
 
         const timerInterval = setInterval(() => {
             countdown--;
+            log('Countdown in progress:', 'displayCustomAlert', countdown);
             if (countdown > 0) {
                 timerElement.textContent = `(${countdown}s)`;
             } else {
@@ -104,16 +113,23 @@ export function displayCustomAlert(type, header_text, body_text, button_text = '
     const closeButton = alert.querySelector('.alert-close');
     if (closeButton) {
         closeButton.addEventListener('click', () => {
-            document.body.removeChild(alert);
-            document.body.removeChild(backdrop);
+            log('Alert closed:', 'displayCustomAlert', { type, header_text });
+            if (document.body.contains(alert)) {
+                document.body.removeChild(alert);
+            }
+
+            if (document.body.contains(backdrop)) {
+                document.body.removeChild(backdrop);
+            }
         });
     }
 }
 
 export async function parseJsonResponse(response) {
     try {
+        log('Parsing JSON response:', 'parseJsonResponse', response);
         return await response.json();
-    } catch {
+    } catch (err) {
         error('Error parsing JSON response:', 'parseJsonResponse', response);
         throw new Error('Error parsing JSON response');
     }

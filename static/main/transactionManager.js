@@ -47,7 +47,15 @@ const translations = {
     }
 };
 
-export async function loadTransactions() {
+export async function setupTransactions() {
+    listernerAdded = false;
+
+    await loadTransactions();
+}
+
+let listernerAdded = false;
+
+async function loadTransactions() {
     const start = performance.now();
 
     await get_transaction_data();
@@ -55,7 +63,12 @@ export async function loadTransactions() {
     filteredData = transactionsData;
 
     fillContractFilter();
-    setupEventListeners();
+
+    if (listernerAdded === false) {
+        setupEventListeners();
+        listernerAdded = true;
+    }
+
     filterTransactions();
 
     const end = performance.now();
@@ -81,6 +94,7 @@ async function get_transaction_data() {
         if (data.transactions) {
             transactionsData = JSON.parse(data.transactions);
         }
+
     } catch (err) {
         error('Error while getting transaction data:', 'get_transaction_data', err);
         displayCustomAlert('error', 'Error', 'Failed to get transaction data');
@@ -92,6 +106,18 @@ async function get_transaction_data() {
 
 function fillContractFilter() {
     const contractFilter = document.getElementById('contract-filter');
+
+    for (let i = contractFilter.options.length - 1; i >= 0; i--) {
+        const optionText = contractFilter.options[i].textContent;
+
+        if (optionText.includes('All Contracts') || optionText.includes('Alle Verträge')) {
+            continue;
+        } else {
+            contractFilter.remove(i);
+        }
+    }
+
+
     const contractNames = [...new Set(transactionsData.map(t => t.contract?.name).filter(Boolean))];
     contractNames.forEach(name => {
         const option = document.createElement('option');
@@ -122,27 +148,35 @@ function generateTransactionHTML({ transaction, contract }, index) {
         `<button class="table_button button btn-secondary allow-contract-btn" data-index="${index}">${t.allowContract}</button>` :
         `<button class="table_button button btn-secondary not-allow-contract" data-index="${index}">${t.notAllowContract}</button>`;
 
-    let contractName = '';
-    let contractAmount = '';
-    let dropdownMenu = '';
+    let dropdownMenu = ''; // Initialize the dropdownMenu variable
+    let contractName = ''; // Initialize contractName
+    let contractAmount = ''; // Initialize contractAmount
+
+    // Determine if the transaction is hidden or shown and set button text accordingly
+    const hideButtonText = transaction.is_hidden ? t.display : t.hide;
+    const hideButtonClass = transaction.is_hidden ? 'show-btn' : 'hide-btn';
 
     if (contract) {
+        // Determine class based on the contract amount
         const contractAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
         contractName = contract.name;
         contractAmount = `<span class="${contractAmountClass}">$${contract.current_amount.toFixed(2)}</span>`;
+
+        // Generate dropdown for existing contracts
         dropdownMenu = `
-            <div class="dropdown-content" style="display:none;">
-                <button class="table_button button btn-secondary remove-contract-btn" data-index="${index}">${t.removeContract}</button>
-                ${contractAllowed}
-                <button class="table_button button btn-secondary hide-btn" data-index="${index}">${transaction.is_hidden ? t.display : t.hide}</button>
-            </div>`;
+                <div class="dropdown-content" style="display:none;">
+                    <button class="table_button button btn-secondary remove-contract-btn" data-index="${index}">${t.removeContract}</button>
+                    ${contractAllowed}
+                    <button class="table_button button btn-secondary ${hideButtonClass}" data-index="${index}">${hideButtonText}</button>
+                </div>`;
     } else {
+        // Generate dropdown for adding a new contract
         dropdownMenu = `
-        <div class="dropdown-content" style="display:none;">
-            <button class="table_button button btn-secondary add-contract-btn" data-index="${index}">${t.addContract}</button>
-            ${contractAllowed}
-            <button class="table_button button btn-secondary hide-btn" data-index="${index}">${transaction.is_hidden ? t.display : t.hide}</button>
-        </div>`;
+                <div class="dropdown-content" style="display:none;">
+                    <button class="table_button button btn-secondary add-contract-btn" data-index="${index}">${t.addContract}</button>
+                    ${contractAllowed}
+                    <button class="table_button button btn-secondary ${hideButtonClass}" data-index="${index}">${hideButtonText}</button>
+                </div>`;
     }
 
     const emptyCellIcon = contract
@@ -189,20 +223,32 @@ function setupEventListeners() {
     const tableBody = document.getElementById('transaction-table-body');
 
     // Handle click events for remove contract buttons
-    tableBody.addEventListener('click', (event) => {
+    tableBody.addEventListener('click', async (event) => {
         const index = event.target.getAttribute('data-index');
-        if (event.target.classList.contains('remove-contract-btn')) {
-            removeContract(index);
-        } else if (event.target.classList.contains('add-contract-btn')) {
-            handleAddContract(index);
-        } else if (event.target.classList.contains('hide-btn')) {
-            handleHideTransaction(index);
-        } else if (event.target.classList.contains('show-btn')) {
-            handleShowTransaction(index);
-        } else if (event.target.classList.contains('allow-contract-btn')) {
-            handleAllowContract(index);
-        } else if (event.target.classList.contains('not-allow-contract')) {
-            handleNotAllowContract(index);
+        const targetClassList = event.target.classList;
+
+        switch (true) {
+            case targetClassList.contains('remove-contract-btn'):
+                removeContract(index);
+                break;
+            case targetClassList.contains('add-contract-btn'):
+                handleAddContract(index);
+                break;
+            case targetClassList.contains('hide-btn'):
+                handleHideTransaction(index);
+                break;
+            case targetClassList.contains('show-btn'):
+                handleShowTransaction(index);
+                break;
+            case targetClassList.contains('allow-contract-btn'):
+                handleAllowContract(index);
+                break;
+            case targetClassList.contains('not-allow-contract'):
+                handleNotAllowContract(index);
+                break;
+            default:
+                // No matching case
+                break;
         }
     });
 
@@ -417,13 +463,13 @@ function removeContract(index) {
     handleTransactionOperation(
         `/bank/transaction/remove_contract/${filteredData[index].transaction.id}`,
         'remove contract'
-    ).then(success => {
+    ).then(async success => {
         if (success) {
             // Update data
             filteredData[index].contract = null;
             transactionsData.find(t => t.transaction.id === filteredData[index].transaction.id).contract = null;
 
-            updateTransactionTable();
+            await loadTransactions();
         }
     });
 }
@@ -557,7 +603,7 @@ function handleAddContract(index) {
 
     // Create the select element with contract options
     const select = document.createElement('select');
-    select.classList.add('input-search');
+    select.classList.add('input');
     select.id = 'contractSelect';
     contracts.forEach(contract => {
         const option = document.createElement('option');
@@ -666,7 +712,7 @@ function addSelectedContract(index) {
         const submitButton = document.createElement('button');
         submitButton.classList.add('button', 'btn-secondary');
         submitButton.textContent = 'Submit';
-        submitButton.onclick = () => {
+        submitButton.onclick = async () => {
             const selectedOption = document.querySelector('input[name="contractAmountChoice"]:checked');
             if (selectedOption) {
                 handleContractChoice(selectedOption.value, index, selectedContractId);
@@ -726,13 +772,9 @@ function handleContractChoice(choice, index, selectedContractId) {
             break;
     }
 
-    handleTransactionOperation(url).then(success => {
+    handleTransactionOperation(url).then(async success => {
         if (success) {
-            const selectedContract = contracts.find(contract => contract.id == selectedContractId);
-            filteredData[index].contract = selectedContract;
-            transactionsData.find(t => t.transaction.id === transaction.id).contract = selectedContract;
-
-            updateTransactionTable();
+            await loadTransactions();
             closeModal();
         }
     });

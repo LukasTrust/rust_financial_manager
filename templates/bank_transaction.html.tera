@@ -101,50 +101,5 @@
                 <!-- Rows will be generated and inserted here -->
             </tbody>
         </table>
-        <table class="transaction-table">
-            <thead>
-                <tr>
-                    <th data-key="icon" class="sortable">
-                        {{ translations.transactions_icon_header }}
-                        <img src="/static/images/up.png" alt="Sort up"
-                            class="sort-icon">
-                    </th>
-                    <th data-key="counterparty" class="sortable">
-                        {{ translations.transactions_counterparty_header }}
-                        <img src="/static/images/up.png" alt="Sort up"
-                            class="sort-icon">
-                    </th>
-                    <th data-key="amount" class="sortable">
-                        {{ translations.transactions_amount_header }}
-                        <img src="/static/images/up.png" alt="Sort up"
-                            class="sort-icon">
-                    </th>
-                    <th data-key="bank_balance_after" class="sortable">
-                        {{ translations.transactions_balance_header }}
-                        <img src="/static/images/up.png" alt="Sort up"
-                            class="sort-icon">
-                    </th>
-                    <th data-key="date" class="sortable">
-                        {{ translations.transactions_date_header }}
-                        <img src="/static/images/up.png" alt="Sort up"
-                            class="sort-icon">
-                    </th>
-                    <th data-key="name" class="sortable">
-                        {{ translations.transactions_contract_name_header }}
-                        <img src="/static/images/up.png" alt="Sort up"
-                            class="sort-icon">
-                    </th>
-                    <th data-key="current_amount" class="sortable">
-                        {{ translations.transactions_contract_amount_header
-                        }}
-                        <img src="/static/images/up.png" alt="Sort up"
-                            class="sort-icon">
-                    </th>
-                </tr>
-            </thead>
-            <tbody id="transaction-table-body">
-                <!-- Rows will be generated and inserted here -->
-            </tbody>
-        </table>
     </div>
 </div>

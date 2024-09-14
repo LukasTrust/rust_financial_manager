@@ -79,7 +79,6 @@ function formatAndColorNumbers() {
 
             // Skip the icon addition for count elements
             if (id === "transactions_count" || id === "contracts_count") {
-                element.textContent = `${value} €`;
                 return;
             }
 

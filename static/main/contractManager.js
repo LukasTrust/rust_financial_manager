@@ -422,8 +422,8 @@ function generateHistoryHTML(contractHistory) {
         ? `<li>${translations[lang].noHistoryAvailable}</li>`
         : contractHistory.map(({ old_amount, new_amount, changed_at }) => `
             <li>
-                <p>${translations[lang].oldAmount}: <span class="${old_amount < 0 ? 'negative' : 'positive'}">$${old_amount.toFixed(2)}</span></p>
                 <p>${translations[lang].newAmount}: <span class="${new_amount < 0 ? 'negative' : 'positive'}">$${new_amount.toFixed(2)}</span></p>
+                <p>${translations[lang].oldAmount}: <span class="${old_amount < 0 ? 'negative' : 'positive'}">$${old_amount.toFixed(2)}</span></p>
                 <p>${translations[lang].changedAt}: ${formatDate(changed_at)}</p>
             </li>
         `).join('');

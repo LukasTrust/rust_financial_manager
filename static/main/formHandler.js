@@ -53,36 +53,19 @@ function updateBankList(banks) {
     const banksContainer = document.getElementById('banks');
 
     if (banksContainer) {
-        const newBankIds = new Set(banks.map(bank => bank.id));
-
-        // Remove buttons for banks that no longer exist
-        Array.from(banksContainer.children).forEach(bankButtonContainer => {
-            const bankId = bankButtonContainer.getAttribute('data-bank-id');
-            if (!newBankIds.has(bankId)) {
-                log(`Removing bank button for bank ID ${bankId}.`, 'updateBankList');
-                banksContainer.removeChild(bankButtonContainer);
-            }
-        });
-
         // Add or update bank buttons
-        banks.forEach(bank => updateOrCreateBankButton(bank, banksContainer));
+        banks.forEach(bank => createNewBankButton(bank, banksContainer));
     }
 }
 
 // Function to create or update a bank button
-function updateOrCreateBankButton(bank, banksContainer) {
+function createNewBankButton(bank, banksContainer) {
     let bankButtonContainer = banksContainer.querySelector(`div[data-bank-id="${bank.id}"]`);
 
     if (!bankButtonContainer) {
         log(`Creating bank button for bank ID ${bank.id}.`, 'updateOrCreateBankButton');
         bankButtonContainer = createBankButtonContainer(bank);
         banksContainer.appendChild(bankButtonContainer);
-    } else {
-        const bankButton = bankButtonContainer.querySelector('.bank-button');
-        if (bankButton) {
-            log(`Updating bank button for bank ID ${bank.id}.`, 'updateOrCreateBankButton');
-            bankButton.textContent = bank.name;
-        }
     }
 }
 
@@ -110,11 +93,8 @@ function createBankButton(bank) {
 
     // Create img element for the icon
     const iconImage = document.createElement('img');
-    iconImage.src = "/static/images/add.png";
+    iconImage.src = "/static/images/bank.png";
     iconImage.alt = "Icon";
-    iconImage.style.width = "16px";
-    iconImage.style.height = "16px";
-    iconImage.style.verticalAlign = "middle";
     iconImage.style.marginRight = "5px";
 
     // Append the icon to the button
@@ -141,8 +121,8 @@ function createSubButtonsContainer() {
     subButtonsContainer.classList.add('button', 'bank-sub-buttons');
     subButtonsContainer.style.display = 'none';
 
-    const contractButton = createSubButton('Contract', `/bank/contract`);
-    const transactionButton = createSubButton('Transaction', `/bank/transaction`);
+    const contractButton = createSubButton('Contract', `/bank/contract`, '/static/images/contract.png');
+    const transactionButton = createSubButton('Transaction', `/bank/transaction`, '/static/images/transaction.png');
 
     subButtonsContainer.appendChild(contractButton);
     subButtonsContainer.appendChild(transactionButton);
@@ -151,12 +131,18 @@ function createSubButtonsContainer() {
 }
 
 // Function to create a single sub-button
-function createSubButton(text, url) {
+function createSubButton(text, url, imageUrl) {
     const button = document.createElement('button');
     button.classList.add('button', 'btn-secondary');
-    button.textContent = text;
     button.setAttribute('url', url);
     button.style.width = '100%';
+
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    img.alt = `${text} Icon`;
+
+    button.appendChild(img);
+    button.appendChild(document.createTextNode(text));
 
     button.addEventListener("click", function () {
         loadContent(this.getAttribute("url"));

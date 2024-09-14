@@ -52,6 +52,7 @@ pub async fn base(mut db: Connection<DbConn>, cookies: &CookieJar<'_>) -> Templa
             "banks": banks,
             "translations": localized_strings,
             "view_name": "dashboard",
+            "release-mode": "true",
         }),
     )
 }

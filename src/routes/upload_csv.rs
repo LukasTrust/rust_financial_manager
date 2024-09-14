@@ -1,9 +1,10 @@
 use chrono::{Datelike, NaiveDate};
 use csv::ReaderBuilder;
 use log::{error, info};
-use rocket::data::{Data, ToByteUnit};
+use rocket::fs::TempFile;
 use rocket::http::CookieJar;
 use rocket::serde::json::Json;
+use rocket::tokio::io::AsyncReadExt;
 use rocket::{post, State};
 use rocket_db_pools::Connection;
 use std::io::Cursor;
@@ -17,9 +18,9 @@ use crate::utils::insert_utiles::insert_transactions;
 use crate::utils::loading_utils::{load_csv_converter_of_bank, load_transactions_of_bank};
 use crate::utils::structs::{Bank, ErrorResponse, SuccessResponse, Transaction};
 
-#[post("/upload_csv", data = "<data>")]
+#[post("/upload_csv", data = "<file>")]
 pub async fn upload_csv(
-    data: Data<'_>,
+    file: TempFile<'_>,
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
     mut db: Connection<DbConn>,
@@ -33,20 +34,27 @@ pub async fn upload_csv(
     let transactions_task =
         load_transactions_of_bank(current_bank.id, cookie_user_language, &mut db);
 
-    // Read the CSV file
-    let data_stream = match data.open(512.kibibytes()).into_bytes().await {
-        Ok(bytes) => bytes,
-        Err(_) => {
-            error!("Failed to read CSV file");
-            return Err(Json(ErrorResponse::new(
-                LOCALIZATION.get_localized_string(cookie_user_language, "error_reading_csv_file"),
-                LOCALIZATION
-                    .get_localized_string(cookie_user_language, "error_reading_csv_file_details"),
-            )));
-        }
-    };
+    // Open the file and read its contents into a Vec<u8>
+    let mut buffer = Vec::new();
+    let mut temp_file = file.open().await.map_err(|_| {
+        error!("Failed to open temporary file");
+        Json(ErrorResponse::new(
+            LOCALIZATION.get_localized_string(cookie_user_language, "error_reading_csv_file"),
+            LOCALIZATION
+                .get_localized_string(cookie_user_language, "error_reading_csv_file_details"),
+        ))
+    })?;
+    temp_file.read_to_end(&mut buffer).await.map_err(|_| {
+        error!("Failed to read CSV file content");
+        Json(ErrorResponse::new(
+            LOCALIZATION.get_localized_string(cookie_user_language, "error_reading_csv_file"),
+            LOCALIZATION
+                .get_localized_string(cookie_user_language, "error_reading_csv_file_details"),
+        ))
+    })?;
 
-    let cursor = Cursor::new(data_stream.to_vec());
+    // Read the CSV data from the buffer
+    let cursor = Cursor::new(buffer);
     let mut rdr = ReaderBuilder::new()
         .has_headers(true)
         .flexible(true)

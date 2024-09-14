@@ -18,12 +18,14 @@
             <div class="sidebar-left">
                 <h2>{{ translations.base_dashboard }}</h2>
                 <!-- Dashboard Button -->
-                <button class="button btn-primary" url="/dashboard">
+                <button class="button btn-primary" url="/dashboard"
+                    style="width: 100%">
                     <img src="/static/images/dashboard.png" alt="Icon">
                     {{ translations.base_dashboard }}
                 </button>
                 <!-- Add New Bank Button -->
-                <button class="button btn-secondary" url="/add-bank">
+                <button class="button btn-secondary" url="/add-bank"
+                    style="width: 100%">
                     <img src="/static/images/add.png" alt="Icon">
                     {{ translations.base_add_new_bank }}
                 </button>
@@ -38,11 +40,17 @@
                         </button>
                         <div class="bank-sub-buttons" style="display: none;">
                             <button class="button btn-secondary"
-                                style="width: 100%" url="/bank/contract">{{
-                                translations.base_contracts }}</button>
+                                style="width: 100%" url="/bank/contract">
+                                <img src="/static/images/contract.png"
+                                    alt="Icon">
+                                {{ translations.base_contracts }}
+                            </button>
                             <button class="button btn-secondary"
-                                style="width: 100%" url="/bank/transaction">{{
-                                translations.base_transactions }}</button>
+                                style="width: 100%" url="/bank/transaction">
+                                <img src="/static/images/transaction.png"
+                                    alt="Icon">
+                                {{ translations.base_transactions }}
+                            </button>
                         </div>
                     </div>
                     {% endfor %}

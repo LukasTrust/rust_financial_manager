@@ -1,3 +1,4 @@
+use chrono::{Duration, Utc};
 use log::error;
 use rocket::serde::json::Json;
 use rocket_db_pools::Connection;
@@ -12,10 +13,13 @@ use crate::utils::update_utils::{
 };
 
 use super::appstate::Language;
+use super::delete_utils::delete_contracts_with_ids;
 use super::loading_utils::{
-    load_contract_history, load_contracts_from_ids, load_transaction_by_id,
+    load_contract_history, load_contracts_from_ids, load_last_transaction_of_contract,
+    load_transaction_by_id,
 };
 use super::structs::{ErrorResponse, SuccessResponse};
+use super::update_utils::update_contract_with_end_date;
 
 pub async fn handle_remove_contract(
     transaction_id: i32,
@@ -34,6 +38,33 @@ pub async fn handle_remove_contract(
                 .get_localized_string(language, "error_transaction_has_no_contract_details"),
         ))
     })?;
+
+    // Update the transaction to remove the contract association
+    update_transactions_with_contract(vec![transaction_id], None::<i32>, language, db).await?;
+
+    let last_transaction_of_contract =
+        load_last_transaction_of_contract(contract_id, language, db).await;
+
+    if last_transaction_of_contract.is_err() {
+        delete_contracts_with_ids(vec![contract_id], language, db).await?;
+
+        return Ok(Json(SuccessResponse::new(
+            LOCALIZATION.get_localized_string(language, "delete_contract_with_no_transactions"),
+            LOCALIZATION
+                .get_localized_string(language, "delete_contract_with_no_transactions_details"),
+        )));
+    }
+
+    let last_transaction_of_contract = last_transaction_of_contract.unwrap();
+    let new_date = last_transaction_of_contract.date + Duration::days(60);
+    let now = Utc::now().naive_utc().date();
+
+    let new_end_date = match new_date < now {
+        true => Some(last_transaction_of_contract.date),
+        false => None,
+    };
+
+    update_contract_with_end_date(contract_id, new_end_date, language, db).await?;
 
     // Load contract
     let contract = load_contracts_from_ids(vec![contract_id], language, db).await?;
@@ -56,6 +87,8 @@ pub async fn handle_remove_contract(
         .iter()
         .find(|h| h.new_amount == transaction.amount && h.changed_at == transaction.date)
     {
+        update_contract_with_new_amount(contract.id, history.old_amount, language, db).await?;
+
         let history_before = contract_histories
             .iter()
             .filter(|h| h.changed_at < history.changed_at)
@@ -84,21 +117,10 @@ pub async fn handle_remove_contract(
 
                 update_contract_history(updated_after, language, db).await?;
             }
-            (Some(before), None) => {
-                // Case 3: Only before history entry exists
-                update_contract_with_new_amount(contract.id, before.new_amount, language, db)
-                    .await?;
-            }
-            (None, None) => {
-                // Case 4: No history entries exist
-                update_contract_with_new_amount(contract.id, history.old_amount, language, db)
-                    .await?;
-            }
+            (Some(_), None) => {}
+            (None, None) => {}
         }
     }
-
-    // Update the transaction to remove the contract association
-    update_transactions_with_contract(vec![transaction_id], None::<i32>, language, db).await?;
 
     Ok(Json(SuccessResponse::new(
         LOCALIZATION.get_localized_string(language, "transaction_removed_from_contract"),
@@ -126,6 +148,9 @@ pub async fn handel_update_amount(
 
     let mut contract = contract[0].clone();
 
+    update_transactions_with_contract(vec![transaction_id], Some(contract.id), language, &mut db)
+        .await?;
+
     let contract_history = NewContractHistory {
         contract_id: contract.id,
         old_amount: contract.current_amount,
@@ -138,6 +163,18 @@ pub async fn handel_update_amount(
     contract.current_amount = transaction.amount;
 
     update_contract_with_new_amount(contract.id, transaction.amount, language, &mut db).await?;
+
+    if contract.end_date.is_some() && contract.end_date.unwrap() < transaction.date {
+        let new_date = transaction.date + Duration::days(60);
+        let now = Utc::now().naive_utc().date();
+
+        let new_end_date = match new_date < now {
+            true => Some(transaction.date),
+            false => None,
+        };
+
+        update_contract_with_end_date(contract.id, new_end_date, language, &mut db).await?;
+    }
 
     Ok(Json(SuccessResponse::new(
         LOCALIZATION.get_localized_string(language, "contract_updated"),
@@ -177,6 +214,9 @@ pub async fn handle_set_old_amount(
         .filter(|h| h.changed_at > transaction.date)
         .min_by_key(|h| h.changed_at);
 
+    update_transactions_with_contract(vec![transaction_id], Some(contract_id), language, &mut db)
+        .await?;
+
     match (history_before, history_after) {
         (Some(before), Some(after)) => {
             // Case 1: Both before and after history entries exist
@@ -184,12 +224,12 @@ pub async fn handle_set_old_amount(
 
             let history = NewContractHistory {
                 contract_id: contract.id,
-                old_amount: before.old_amount,
+                old_amount: before.new_amount,
                 new_amount: transaction.amount,
                 changed_at: transaction.date,
             };
 
-            updated_after.old_amount = history.new_amount;
+            updated_after.old_amount = transaction.amount;
 
             update_contract_history(updated_after, language, &mut db).await?;
 
@@ -223,13 +263,19 @@ pub async fn handle_set_old_amount(
             )))
         }
         (Some(before), None) => {
+            let mut updated_before = before.clone();
+
             // Case 3: Only before history entry exists
             let history = NewContractHistory {
                 contract_id: contract.id,
-                old_amount: before.new_amount,
+                old_amount: transaction.amount,
                 new_amount: contract.current_amount,
                 changed_at: transaction.date,
             };
+
+            updated_before.new_amount = transaction.amount;
+
+            update_contract_history(updated_before, language, &mut db).await?;
 
             insert_contract_histories(&vec![history], language, &mut db).await?;
 

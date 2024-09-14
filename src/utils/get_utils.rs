@@ -152,7 +152,9 @@ pub async fn get_contracts_with_history(
     let contracts = load_contracts_of_bank(bank_id, language, db).await?;
 
     for contract in contracts.iter() {
-        let contract_history = load_contract_history(contract.id, language, db).await?;
+        let mut contract_history = load_contract_history(contract.id, language, db).await?;
+
+        contract_history.sort_by(|a, b| b.changed_at.cmp(&a.changed_at));
 
         let total_amount_paid =
             get_total_amount_paid_of_contract(contract.id, language, db).await?;
