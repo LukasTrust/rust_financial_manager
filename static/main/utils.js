@@ -1,4 +1,4 @@
-import { log, error } from './main.js';
+import { error } from './main.js';
 
 // Initialize the state from localStorage or default to 'English'
 const state = {

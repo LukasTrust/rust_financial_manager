@@ -1,4 +1,5 @@
 import { update_performance } from './performanceUpdater.js';
+import { log, error } from './main.js';
 import { getGlobalLanguage } from './utils.js';
 
 const localizedStrings = {
@@ -15,15 +16,22 @@ const localizedStrings = {
 };
 
 export function initializeChartAndDatePicker(plotData) {
+    log('Initializing chart and date picker', 'initializeChartAndDatePicker');
+
+    // Update graph initially with provided data
     update_graph(plotData);
 
     setTimeout(() => {
+        log('Setting up date picker', 'initializeChartAndDatePicker');
+
         flatpickr("#dateRange", {
             mode: "range",
             dateFormat: "d-m-Y",
             onChange: function (selectedDates) {
                 if (selectedDates.length === 2) {
                     const [startDate, endDate] = selectedDates.map(date => date.toISOString().split('T')[0]);
+
+                    log(`Date range selected: ${startDate} to ${endDate}`, 'initializeChartAndDatePicker');
 
                     fetch(`/update_date_range/${startDate}/${endDate}`, {
                         method: 'GET',
@@ -32,14 +40,22 @@ export function initializeChartAndDatePicker(plotData) {
                         .then(response => response.json())
                         .then(data => {
                             if (data.performance_value) {
+                                log('Updating performance with new value', 'initializeChartAndDatePicker');
                                 update_performance(data.performance_value);
+                            } else {
+                                log('No performance value received', 'initializeChartAndDatePicker');
                             }
 
                             if (data.graph_data) {
+                                log('Updating graph with new data', 'initializeChartAndDatePicker');
                                 update_graph(data.graph_data);
+                            } else {
+                                log('No graph data received', 'initializeChartAndDatePicker');
                             }
                         })
                         .catch(err => error('Error updating date range:', 'initializeChartAndDatePicker', err));
+                } else {
+                    log('Date range selection is invalid. Need exactly 2 dates.', 'initializeChartAndDatePicker');
                 }
             }
         });
@@ -47,7 +63,15 @@ export function initializeChartAndDatePicker(plotData) {
 }
 
 function update_graph(plotData) {
-    const data = JSON.parse(plotData);
+    log('Updating graph with new data', 'update_graph');
+
+    let data;
+    try {
+        data = JSON.parse(plotData);
+    } catch (err) {
+        error('Error parsing plot data:', 'update_graph', err);
+        return; // Exit if data parsing fails
+    }
 
     const layout = {
         title: localizedStrings[getGlobalLanguage()].chart_title,
@@ -69,5 +93,10 @@ function update_graph(plotData) {
         modeBarButtons: [['toImage', 'resetViews']]
     };
 
-    Plotly.newPlot('balance_graph', data, layout, config);
+    try {
+        Plotly.newPlot('balance_graph', data, layout, config);
+        log('Graph plotted successfully', 'update_graph');
+    } catch (err) {
+        error('Error plotting graph:', 'update_graph', err);
+    }
 }

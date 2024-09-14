@@ -13,7 +13,7 @@ export function error(message, context = '', ...data) {
     console.error(`[${new Date().toISOString()}] [${context}] ${message}`, ...data);
 }
 
-let old_url = localStorage.getItem('old_url') || '/dashboard';
+let oldUrl = localStorage.getItem('old_url') || '/dashboard';
 
 document.addEventListener("DOMContentLoaded", function () {
     log('DOM content loaded. Initializing sidebar buttons and loading default content:', 'DOMContentLoaded');
@@ -23,21 +23,20 @@ document.addEventListener("DOMContentLoaded", function () {
         if (url) {
             button.addEventListener("click", function () {
                 loadContent(url);
-                old_url = url;
+                oldUrl = url;
                 if (url !== '/logout') {
-                    localStorage.setItem('old_url', old_url);
-                }
-                else {
+                    localStorage.setItem('old_url', oldUrl);
+                } else {
                     localStorage.removeItem('old_url');
                 }
             });
         }
     });
 
-    if (!old_url.startsWith('/bank/')) {
-        loadContent(old_url);
-    }
-    else {
+    // Load the appropriate content based on the URL
+    if (!oldUrl.startsWith('/bank/')) {
+        loadContent(oldUrl);
+    } else {
         loadContent('/dashboard');
     }
 });
@@ -50,7 +49,7 @@ export async function loadContent(url) {
         const html = await fetchContent(url);
 
         if (url === '/logout') {
-            window.location.href = `/`;
+            window.location.href = '/';
             return;
         }
 
@@ -64,19 +63,26 @@ export async function loadContent(url) {
                 hideAllSubButtons();
             }
 
-            if (url === '/dashboard' || /^\/bank\/\d+$/.test(url)) {
-                initializeFormHandling();
-                handlePageWithGraphData();
-            } else if (url === '/bank/contract') {
-                loadContracts();
-            } else if (url === '/bank/transaction') {
-                loadTransactions();
-            }
-            else if (url === '/add-bank') {
-                initializeFormHandling();
-            }
-            else if (url === '/settings') {
-                initializeSettings();
+            switch (url) {
+                case '/dashboard':
+                case /^\/bank\/\d+$/.test(url) ? url : null:
+                    initializeFormHandling();
+                    handlePageWithGraphData();
+                    break;
+                case '/bank/contract':
+                    loadContracts();
+                    break;
+                case '/bank/transaction':
+                    loadTransactions();
+                    break;
+                case '/add-bank':
+                    initializeFormHandling();
+                    break;
+                case '/settings':
+                    initializeSettings();
+                    break;
+                default:
+                    log('No specific content handler for URL:', 'loadContent', url);
             }
         }
 
@@ -90,28 +96,26 @@ export async function loadContent(url) {
 async function fetchContent(url) {
     const response = await fetch(url);
 
-    if (!response.ok) throw new Error('Network response was not ok');
+    if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
 
     return response.text();
 }
 
 // Function to handle bank page specific logic
 function handleBankPage(url) {
-    // Extract bank ID from the URL
     const bankId = url.split('/').pop();
 
     log('Displaying sub-buttons for the bank:', 'handleBankPage', bankId);
 
     hideAllSubButtons();
 
-    // Find the container for the specific bank
     const bankButtonContainer = document.querySelector(`div[data-bank-id="${bankId}"]`);
-
-    // Find the sub-buttons within the bank's container
-    const subButtons = bankButtonContainer.querySelector('.bank-sub-buttons');
-
-    // Display the sub-buttons for the current bank
-    subButtons.style.display = 'block';
+    if (bankButtonContainer) {
+        const subButtons = bankButtonContainer.querySelector('.bank-sub-buttons');
+        if (subButtons) {
+            subButtons.style.display = 'block';
+        }
+    }
 
     initializeFormHandling();
     handlePageWithGraphData();
@@ -124,17 +128,23 @@ function hideAllSubButtons() {
     });
 }
 
-async function featchGraphData() {
+// Function to fetch graph data
+async function fetchGraphData() {
     const response = await fetch('/get/graph/data');
 
-    const json = await response.json();
+    if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
 
+    const json = await response.json();
     return json;
 }
 
 export async function handlePageWithGraphData() {
-    const data = await featchGraphData();
+    try {
+        const data = await fetchGraphData();
 
-    initializeChartAndDatePicker(data.graph_data);
-    update_performance(data.performance_value);
+        initializeChartAndDatePicker(data.graph_data);
+        update_performance(data.performance_value);
+    } catch (err) {
+        error('Error handling page with graph data:', 'handlePageWithGraphData', err);
+    }
 }

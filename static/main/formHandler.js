@@ -36,7 +36,7 @@ async function handleFormSubmission(form) {
 
             if (!result.error) form.reset();
         } catch (err) {
-            error('Error submitting form:', 'handleFormSubmission', err);
+            error(`Error submitting form: ${err.message}`, 'handleFormSubmission', err);
         }
     });
 }
@@ -45,9 +45,7 @@ async function handleFormSubmission(form) {
 export function initializeFormHandling() {
     const forms = document.querySelectorAll('form');
 
-    forms.forEach(form => {
-        handleFormSubmission(form);
-    });
+    forms.forEach(form => handleFormSubmission(form));
 }
 
 // Function to update the bank list
@@ -61,7 +59,7 @@ function updateBankList(banks) {
         Array.from(banksContainer.children).forEach(bankButtonContainer => {
             const bankId = bankButtonContainer.getAttribute('data-bank-id');
             if (!newBankIds.has(bankId)) {
-                log(`Removing bank button for bank ID ${bankId}.`, 'handleFormSubmission');
+                log(`Removing bank button for bank ID ${bankId}.`, 'updateBankList');
                 banksContainer.removeChild(bankButtonContainer);
             }
         });
@@ -76,13 +74,13 @@ function updateOrCreateBankButton(bank, banksContainer) {
     let bankButtonContainer = banksContainer.querySelector(`div[data-bank-id="${bank.id}"]`);
 
     if (!bankButtonContainer) {
-        log(`Creating bank button for bank ID ${bank.id}.`, 'handleFormSubmission');
+        log(`Creating bank button for bank ID ${bank.id}.`, 'updateOrCreateBankButton');
         bankButtonContainer = createBankButtonContainer(bank);
         banksContainer.appendChild(bankButtonContainer);
     } else {
         const bankButton = bankButtonContainer.querySelector('.bank-button');
         if (bankButton) {
-            log(`Updating bank button for bank ID ${bank.id}.`, 'handleFormSubmission');
+            log(`Updating bank button for bank ID ${bank.id}.`, 'updateOrCreateBankButton');
             bankButton.textContent = bank.name;
         }
     }

@@ -26,7 +26,12 @@ const localizedStrings = {
 
 // Function to get the localized string.
 function getLocalizedString(key) {
-    return localizedStrings[getGlobalLanguage()][key];
+    const language = getGlobalLanguage();
+    if (!localizedStrings[language]) {
+        error('Language not supported:', 'getLocalizedString', language);
+        return '';
+    }
+    return localizedStrings[language][key] || key;
 }
 
 export function initializeSettings() {
@@ -34,8 +39,12 @@ export function initializeSettings() {
     log('Initializing settings page', 'initializeSettings');
 
     const forms = document.getElementById('change_passwordForm');
-
-    handleChangePasswordForm(forms);
+    if (forms) {
+        log('Change password form found', 'initializeSettings');
+        handleChangePasswordForm(forms);
+    } else {
+        error('Change password form not found', 'initializeSettings');
+    }
 
     document.getElementById('delete_account').addEventListener('click', function () {
         log('Delete account button clicked', 'initializeSettings');
@@ -59,7 +68,7 @@ export function initializeSettings() {
 
 // Function to set the language
 function setLanguage(new_language) {
-    log(`Setting language to ${new_language}`, 'setLanguage');
+    log(`Attempting to set language to ${new_language}`, 'setLanguage');
     fetch(`/user/set_language/${new_language}`, {
         method: 'GET',
         headers: {
@@ -68,21 +77,22 @@ function setLanguage(new_language) {
     })
         .then(async response => {
             if (response.ok) {
-                log(`Language set to ${new_language}`, 'setLanguage');
+                log(`Language set response received: ${new_language}`, 'setLanguage');
 
                 let json = await response.json();
+                log('Language set response JSON:', 'setLanguage', json);
 
                 if (json.success) {
                     setGlobalLanguage(new_language);
-
+                    log('Language set successfully, reloading page', 'setLanguage');
                     // Reload the page to update the language
                     window.location.reload();
-                }
-                else if (json.error) {
+                } else if (json.error) {
                     displayCustomAlert('error', json.header, json.error);
+                    log('Language set error:', 'setLanguage', json.error);
                 }
             } else {
-                error('Failed to set language', 'setLanguage');
+                error('Failed to set language. Status: ' + response.status, 'setLanguage');
             }
         })
         .catch(err => {
@@ -91,10 +101,12 @@ function setLanguage(new_language) {
 }
 
 function handleChangePasswordForm(form) {
+    log('Handling change password form submission', 'handleChangePasswordForm');
     form.addEventListener('submit', async function (event) {
         event.preventDefault();
 
         const formData = new FormData(form);
+        log('Form submitted with data:', 'handleChangePasswordForm', Array.from(formData.entries()));
 
         try {
             const response = await fetch(form.action, {
@@ -105,7 +117,6 @@ function handleChangePasswordForm(form) {
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
             const result = await parseJsonResponse(response);
-
             log('Form submission result:', 'handleChangePasswordForm', result);
 
             if (result.success) {
@@ -115,7 +126,6 @@ function handleChangePasswordForm(form) {
                 inputs.forEach(input => {
                     input.value = '';
                 });
-
                 displayCustomAlert('error', result.header, result.error);
             }
 
@@ -131,7 +141,7 @@ function handleChangePasswordForm(form) {
 }
 
 function handleDeleteButton() {
-    log('Delete account button clicked', 'handleDeleteButton');
+    log('Prepare to handle delete account button click', 'handleDeleteButton');
 
     // Create backdrop div
     const backdrop = document.createElement('div');
@@ -194,6 +204,8 @@ function handleDeleteButton() {
     backdrop.appendChild(modal);
 
     document.body.appendChild(backdrop);
+
+    log('Delete account modal displayed', 'handleDeleteButton');
 }
 
 function sendDeleteRequest() {
@@ -204,21 +216,21 @@ function sendDeleteRequest() {
     })
         .then(async response => {
             if (response.ok) {
-                log('Account deleted', 'sendDeleteRequest');
+                log('Delete request successful', 'sendDeleteRequest');
 
                 let json = await response.json();
+                log('Delete request response JSON:', 'sendDeleteRequest', json);
 
                 if (json.success) {
                     displayCustomAlert('success', json.header, json.success, '', 5);
                     setTimeout(() => {
                         window.location.href = '/';
                     }, 5000);
-                }
-                else if (json.error) {
+                } else if (json.error) {
                     displayCustomAlert('error', json.header, json.error);
                 }
             } else {
-                error('Failed to delete account', 'sendDeleteRequest');
+                error('Failed to delete account. Status: ' + response.status, 'sendDeleteRequest');
             }
         })
         .catch(err => {
@@ -227,6 +239,7 @@ function sendDeleteRequest() {
 }
 
 function closeModal() {
+    log('Closing delete account modal', 'closeModal');
     const modals = document.querySelectorAll('.alert-backdrop');
     modals.forEach(modal => modal.remove());
 }

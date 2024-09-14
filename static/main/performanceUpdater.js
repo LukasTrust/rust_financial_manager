@@ -1,5 +1,10 @@
+import { error, log } from './main.js';
+
 export function update_performance(performance_value) {
-    if (!performance_value || typeof performance_value !== 'object') return;
+    if (!performance_value || typeof performance_value !== 'object') {
+        error('Invalid performance value received:', 'update_performance', performance_value);
+        return;
+    }
 
     const elements = {
         transactions_total_discrepancy: performance_value.transactions_total_discrepancy,
@@ -16,11 +21,16 @@ export function update_performance(performance_value) {
         contracts_amount_per_year: performance_value.contracts_amount_per_year,
     };
 
+    log('Updating performance elements:', 'update_performance', elements);
+
     // Iterate over each element and update its content
     Object.keys(elements).forEach(id => {
         const element = document.getElementById(id);
         if (element && elements[id] !== undefined) {
             element.textContent = elements[id];
+            log(`Updated element ${id} with value ${elements[id]}.`, 'update_performance');
+        } else {
+            log(`Element ${id} not found or value is undefined.`, 'update_performance');
         }
     });
 
@@ -28,29 +38,34 @@ export function update_performance(performance_value) {
 }
 
 function formatAndColorNumbers() {
-    const elements = [
-        document.getElementById("transactions_count"),
-        document.getElementById("transactions_average_amount"),
-        document.getElementById("transactions_max_amount"),
-        document.getElementById("transactions_min_amount"),
-        document.getElementById("transactions_net_gain_loss"),
-        document.getElementById("transactions_total_discrepancy"),
-        document.getElementById("contracts_count"),
-        document.getElementById("contracts_amount_per_month"),
-        document.getElementById("contracts_total_positive_amount"),
-        document.getElementById("contracts_total_negative_amount"),
-        document.getElementById("contracts_amount_per_time_span"),
-        document.getElementById("contracts_amount_per_year"),
+    const ids = [
+        "transactions_count",
+        "transactions_average_amount",
+        "transactions_max_amount",
+        "transactions_min_amount",
+        "transactions_net_gain_loss",
+        "transactions_total_discrepancy",
+        "contracts_count",
+        "contracts_amount_per_month",
+        "contracts_total_positive_amount",
+        "contracts_total_negative_amount",
+        "contracts_amount_per_time_span",
+        "contracts_amount_per_year",
     ];
 
-    elements.forEach(element => {
+    ids.forEach(id => {
+        const element = document.getElementById(id);
         if (element) {
             let value = parseFloat(element.textContent);
 
             // Check if value is a valid number
-            if (isNaN(value)) return;
+            if (isNaN(value)) {
+                log(`Value for element ${id} is not a valid number.`, 'formatAndColorNumbers');
+                return;
+            }
 
             value = value.toFixed(2); // Format to two decimal places
+            log(`Formatting value for element ${id}: ${value}`, 'formatAndColorNumbers');
 
             // Determine the icon based on the value
             let iconName;
@@ -62,32 +77,33 @@ function formatAndColorNumbers() {
                 iconName = "no-change.png";
             }
 
-            if (element.id === "transactions_count" ||
-                element.id === "contracts_count") {
+            // Skip the icon addition for count elements
+            if (id === "transactions_count" || id === "contracts_count") {
+                element.textContent = `${value} €`;
                 return;
             }
 
             // Remove any existing icon if present
             if (element.previousElementSibling && element.previousElementSibling.tagName === "IMG") {
                 element.previousElementSibling.remove();
+                log(`Removed existing icon for element ${id}.`, 'formatAndColorNumbers');
             }
 
-            // Create the icon image element
+            // Create and insert the new icon
             const icon = document.createElement("img");
             icon.src = `/static/images/${iconName}`;
             icon.alt = "Icon";
-
-            // Format the text content
-            let formattedText = `${value} €`;
-
-            // Clear current content and add the icon and formatted text in order
             element.innerHTML = ''; // Clear existing content
-            element.appendChild(icon); // Add the icon first
-            element.insertAdjacentText('beforeend', formattedText); // Add the formatted text after the icon
+            element.appendChild(icon); // Add the icon
+            element.insertAdjacentText('beforeend', `${value} €`); // Add the formatted text
 
             // Apply CSS classes for positive or negative values
             element.classList.toggle("positive", value > 0);
             element.classList.toggle("negative", value < 0);
+
+            log(`Updated element ${id} with formatted value: ${value} € and icon: ${iconName}.`, 'formatAndColorNumbers');
+        } else {
+            log(`Element ${id} not found.`, 'formatAndColorNumbers');
         }
     });
 }
