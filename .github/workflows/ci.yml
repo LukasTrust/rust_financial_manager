@@ -24,7 +24,8 @@ jobs:
       # Setup Rust environment and tools
       - name: Set up Rust
         run: |
-          rustc --version && cargo --version
+          rustc --version
+          cargo --version
           rustup component add clippy rustfmt
           cargo install cargo-tarpaulin cargo-audit
           cargo install diesel_cli --no-default-features --features postgres
@@ -34,29 +35,31 @@ jobs:
       - name: Install PostgreSQL
         run: |
           apt-get update
-          apt-get install -y postgresql
+          apt-get install -y postgresql postgresql-contrib
 
-      # Configure PostgreSQL to use 'trust' authentication
-      - name: Configure PostgreSQL Authentication
+      # Configure PostgreSQL to use 'trust' authentication and set up database
+      - name: Configure PostgreSQL and Setup Database
         run: |
+          # Configure PostgreSQL to use 'trust' authentication
           sed -i "s/peer/trust/g" /etc/postgresql/*/main/pg_hba.conf
           sed -i "s/md5/trust/g" /etc/postgresql/*/main/pg_hba.conf
-          service postgresql start
+          service postgresql restart
 
-      # Create PostgreSQL Database
-      - name: Setup PostgreSQL Database
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres_db
-          ROCKET_ENV: test
-        run: |
-          # Create PostgreSQL database
-          psql -U postgres -c "CREATE DATABASE postgres_db;"
+          # Set PostgreSQL password
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'glpat-BYytBgysP3yeceKp6FUW';"
 
-          # Run migrations
+          # Create the database
+          sudo -u postgres psql -c "CREATE DATABASE financial_manager;"
+
+          # Apply migrations
           diesel migration run
 
-          # Run tests
-          cargo test
+      # Run tests
+      - name: Run Tests
+        env:
+          DATABASE_URL: postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@localhost:5432/financial_manager
+          ROCKET_ENV: test
+        run: cargo test
 
       # Lint and format code
       - name: Lint and Format
