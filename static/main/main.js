@@ -19,6 +19,7 @@ export function error(message, context = '', ...data) {
     console.error(`[${new Date().toISOString()}] [${context}] ${message}`, ...data);
 }
 
+
 let oldUrl = localStorage.getItem('old_url') || '/dashboard';
 let release_mode = false;
 
