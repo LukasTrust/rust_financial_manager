@@ -99,6 +99,6 @@ fn rocket() -> _ {
                 delete_account
             ],
         )
-        .mount("/static", FileServer::from(relative!("static")).rank(11))
+        .mount("/static", FileServer::from("/usr/src/static").rank(11))
         .register("/", catchers![not_found])
 }

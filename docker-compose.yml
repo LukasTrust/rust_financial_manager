@@ -1,7 +1,8 @@
-version: "3.7"
+version: "3.9"
+
 services:
   db:
-    image: postgres:13
+    image: postgres:13-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: your_password
@@ -10,30 +11,51 @@ services:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
 
   app:
     build: .
     ports:
-      - "${ROCKET_PORT:-8000}:8000"
+      - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       DATABASE_URL: "postgres://postgres:your_password@db/financial_manager"
-      ROCKET_SECRET_KEY: ${ROCKET_SECRET_KEY:-$(openssl rand -base64 32)}
-      ROCKET_PORT: ${ROCKET_PORT:-8000}
-    volumes:
-      - .:/usr/src/app
+      ROCKET_PORT: "8000"
+      # ROCKET_SECRET_KEY should be set externally or in a .env file
+    working_dir: /usr/src
     command: >
-      sh -c " 
-        # Install Diesel CLI
-        cargo install diesel_cli --no-default-features --features postgres &&
-        
-        # Run Diesel setup and migrations
-        diesel setup --database-url=$${DATABASE_URL} &&
-        diesel migration run --database-url=$${DATABASE_URL} &&
-        
+      sh -c "
+        # Wait for the database to be ready
+        until pg_isready -h db -p 5432 -U postgres; do
+          echo 'Waiting for database...';
+          sleep 2;
+        done;
+
+        # List files for debugging
+        echo 'Listing /usr/src';
+        ls -l /usr/src;
+
+        # Verify binary existence
+        echo 'Checking binary';
+        if [ -f /usr/local/bin/rust_financial_manager ]; then
+          echo 'Binary found and executable';
+        else
+          echo 'Binary not found';
+          exit 1;
+        fi;
+
+        # Run Diesel migrations
+        diesel migration run --database-url=$${DATABASE_URL};
+
         # Start the Rust application
-        ROCKET_SECRET_KEY=$(openssl rand -base64 32) ROCKET_PORT=${ROCKET_PORT:-8000} /usr/local/bin/rust_financial_manager 
+        /usr/local/bin/rust_financial_manager
       "
 
 volumes:
