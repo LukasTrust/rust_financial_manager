@@ -14,6 +14,9 @@
     </head>
 
     <body>
+        <div id="release_mode" style="visibility: collapse;">
+            {{ release_mode }}
+        </div>
         <div class="full-page-container">
             <div class="sidebar-left">
                 <h2>{{ translations.base_dashboard }}</h2>

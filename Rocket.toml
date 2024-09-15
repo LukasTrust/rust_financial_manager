@@ -1,4 +1,10 @@
-[global]
+[default]
+address = "0.0.0.0"
+port = { from = "ROCKET_PORT" }
 
 [default.databases.postgres_db]
-url = "postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@192.168.178.48/financial_manager"
+url = { from = "DATABASE_URL" }
+pool_size = 10
+
+[release]
+secret_key = { from = "ROCKET_SECRET_KEY" }
