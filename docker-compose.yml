@@ -5,9 +5,9 @@ services:
     image: postgres:15
     container_name: postgres_db
     environment:
-      POSTGRES_DB: financial_manager
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -28,20 +28,6 @@ services:
       ROCKET_DATABASES: '{postgres_db={url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}"}}'
     ports:
       - "8080:8080"
-    depends_on:
-      - postgres
-    networks:
-      - app_network
-
-  diesel_migrations:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: build
-    container_name: diesel_migrations
-    environment:
-      ROCKET_DATABASES: '{postgres_db={url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}"}}'
-    entrypoint: [ "cargo", "run", "--", "diesel", "migration", "run" ]
     depends_on:
       - postgres
     networks:
