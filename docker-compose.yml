@@ -1,62 +1,39 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  db:
-    image: postgres:13-alpine
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: your_password
       POSTGRES_DB: financial_manager
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
     ports:
       - "5432:5432"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+
+  rust_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        pkg: rocket-app
+    container_name: rust_app
+    environment:
+      ROCKET_ADDRESS: 0.0.0.0
+      ROCKET_PORT: 8080
+      ROCKET_URL: postgres://myuser:mypassword@postgres:5432/financial_manager
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: [ "CMD-SHELL", "pg_isready -U myuser -d financial_manager -h postgres" ]
       interval: 10s
       retries: 5
       start_period: 30s
       timeout: 5s
 
-  app:
-    build: .
-    ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: "postgres://postgres:your_password@db/financial_manager"
-      ROCKET_PORT: "8000"
-      # ROCKET_SECRET_KEY should be set externally or in a .env file
-    working_dir: /usr/src
-    command: >
-      sh -c "
-        # Wait for the database to be ready
-        until pg_isready -h db -p 5432 -U postgres; do
-          echo 'Waiting for database...';
-          sleep 2;
-        done;
-
-        # List files for debugging
-        echo 'Listing /usr/src';
-        ls -l /usr/src;
-
-        # Verify binary existence
-        echo 'Checking binary';
-        if [ -f /usr/local/bin/rust_financial_manager ]; then
-          echo 'Binary found and executable';
-        else
-          echo 'Binary not found';
-          exit 1;
-        fi;
-
-        # Run Diesel migrations
-        diesel migration run --database-url=$${DATABASE_URL};
-
-        # Start the Rust application
-        /usr/local/bin/rust_financial_manager
-      "
-
 volumes:
-  db-data:
+  postgres_data:

@@ -2,7 +2,7 @@
 extern crate rocket;
 
 use env_logger::Env;
-use rocket::fs::{relative, FileServer};
+use rocket::fs::FileServer;
 use rocket_db_pools::Database;
 use rocket_dyn_templates::Template;
 use rust_financial_manager::routes::bank_transaction::{
@@ -99,6 +99,6 @@ fn rocket() -> _ {
                 delete_account
             ],
         )
-        .mount("/static", FileServer::from("/usr/src/static").rank(11))
+        .mount("/static", FileServer::from("./static").rank(11))
         .register("/", catchers![not_found])
 }

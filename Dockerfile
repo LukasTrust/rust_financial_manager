@@ -1,62 +1,48 @@
-# Stage 1: Build and install tools
-FROM debian:buster-slim as builder
+# Stage 1: Build the Rust application
+FROM rust:1-slim-bookworm AS build
 
-# Install build dependencies, including curl and ca-certificates
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl ca-certificates libpq-dev build-essential \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Define build argument with default value
+ARG pkg=rocket-app
 
-# Install Rust (required for Diesel CLI)
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+# Create a working directory
+WORKDIR /build
 
-# Add Rust to PATH
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Clone the GitHub repository
+RUN git clone https://github.com/LukasTrust/rust_financial_manager.git .
 
-# Install Diesel CLI with PostgreSQL support
-RUN cargo install diesel_cli --no-default-features --features postgres
+# Build the application
+RUN --mount=type=cache,target=/build/target \
+    --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    set -eux; \
+    cargo build --release; \
+    objcopy --compress-debug-sections target/release/$pkg ./main
 
-# Stage 2: Final image
-FROM debian:buster-slim
+# Stage 2: Create a minimal runtime image
+FROM debian:bookworm-slim
 
-# Install runtime dependencies, including curl, ca-certificates, file, and others
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl ca-certificates libpq5 openssl postgresql-client file \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Copy Diesel CLI binary from the builder stage
-COPY --from=builder /root/.cargo/bin/diesel /usr/local/bin/diesel
-
-# Use hardcoded release tag to download the binary
-RUN TAG="v0.1.0" && \
-    RELEASE_URL="https://github.com/LukasTrust/rust_financial_manager/releases/download/${TAG}/rust_financial_manager" && \
-    echo "Using release URL: ${RELEASE_URL}" && \
-    curl -L ${RELEASE_URL} -o /usr/local/bin/rust_financial_manager && \
-    chmod +x /usr/local/bin/rust_financial_manager && \
-    echo "Binary downloaded and permissions set."
-
-# Verify binary download and permissions
-RUN echo "Checking binary..." && \
-    ls -l /usr/local/bin/rust_financial_manager && \
-    file /usr/local/bin/rust_financial_manager && \
-    if [ -x /usr/local/bin/rust_financial_manager ]; then \
-    echo "Binary is executable"; \
-    else \
-    echo "Binary is not executable"; \
-    exit 1; \
-    fi
-
-# Copy the migrations directory into the container
-COPY ./migrations /usr/src/migrations
-
-# Add this to copy the static directory into the container
-COPY ./static /usr/src/static
-
-# Add a non-root user
-RUN useradd -ms /bin/sh appuser
-USER appuser
+# Install openssl for key generation
+RUN apt-get update && apt-get install -y openssl
 
 # Set working directory
-WORKDIR /usr/src
+WORKDIR /app
 
-# Default command
-CMD ["sh", "-c", "ROCKET_SECRET_KEY=$(openssl rand -base64 32) /usr/local/bin/rust_financial_manager"]
+# Copy the binary from the build stage
+COPY --from=build /build/main ./
+
+# Conditionally copy files if they exist
+COPY --from=build /build/Rocket.toml ./static/
+COPY --from=build /build/static ./static/
+COPY --from=build /build/templates ./templates/
+
+# Copy the entry point script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Set environment variables for Rocket
+ENV ROCKET_ADDRESS=0.0.0.0
+ENV ROCKET_PORT=8080
+
+# Define the entry point
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["./main"]
