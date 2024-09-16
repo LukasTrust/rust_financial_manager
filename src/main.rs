@@ -5,9 +5,6 @@ use env_logger::Env;
 use rocket::fs::FileServer;
 use rocket_db_pools::Database;
 use rocket_dyn_templates::Template;
-use rust_financial_manager::routes::bank_transaction::{
-    bank_transaction_data, transaction_set_old_amount, transaction_update_contract_amount,
-};
 
 use database::db_connector::DbConn;
 use routes::add_bank::{add_bank, add_bank_form};
@@ -28,6 +25,9 @@ use routes::register::{register_form, register_user};
 use routes::update_csv::update_csv;
 use routes::update_date_range::update_date_range;
 use routes::upload_csv::upload_csv;
+use rust_financial_manager::routes::bank_transaction::{
+    bank_transaction_data, transaction_set_old_amount, transaction_update_contract_amount,
+};
 use rust_financial_manager::routes::get_data::get_graph_data;
 use rust_financial_manager::routes::settings::{
     change_password, delete_account, set_user_language, settings,

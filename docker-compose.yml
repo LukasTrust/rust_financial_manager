@@ -12,6 +12,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
 
   rust_app:
     build:
@@ -23,17 +25,32 @@ services:
     environment:
       ROCKET_ADDRESS: 0.0.0.0
       ROCKET_PORT: 8080
-      ROCKET_postgres_db: postgres://myuser:mypassword@postgres:5432/financial_manager
+      ROCKET_DATABASES: '{postgres_db={url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}"}}'
     ports:
       - "8080:8080"
     depends_on:
       - postgres
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U myuser -d financial_manager -h postgres" ]
-      interval: 10s
-      retries: 5
-      start_period: 30s
-      timeout: 5s
+    networks:
+      - app_network
+
+  diesel_migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+    container_name: diesel_migrations
+    environment:
+      ROCKET_DATABASES: '{postgres_db={url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}"}}'
+    entrypoint: [ "cargo", "run", "--", "diesel", "migration", "run" ]
+    depends_on:
+      - postgres
+    networks:
+      - app_network
 
 volumes:
   postgres_data:
+
+
+networks:
+  app_network:
+    driver: bridge
