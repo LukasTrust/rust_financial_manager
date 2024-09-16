@@ -23,7 +23,7 @@ services:
     environment:
       ROCKET_ADDRESS: 0.0.0.0
       ROCKET_PORT: 8080
-      ROCKET_URL: postgres://myuser:mypassword@postgres:5432/financial_manager
+      ROCKET_postgres_db: postgres://myuser:mypassword@postgres:5432/financial_manager
     ports:
       - "8080:8080"
     depends_on:
