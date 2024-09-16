@@ -39,9 +39,11 @@ use rust_financial_manager::routes::settings::{
 use rust_financial_manager::utils::appstate::AppState;
 use rust_financial_manager::{database, routes};
 
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 fn run_migration(conn: &mut PgConnection) {
+    info!("Running migrations");
+
     conn.run_pending_migrations(MIGRATIONS).unwrap();
 }
 
