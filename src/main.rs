@@ -1,6 +1,10 @@
 #[macro_use]
 extern crate rocket;
 
+use std::env;
+
+use diesel::{Connection, PgConnection};
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use env_logger::Env;
 use rocket::fs::FileServer;
 use rocket_db_pools::Database;
@@ -35,9 +39,26 @@ use rust_financial_manager::routes::settings::{
 use rust_financial_manager::utils::appstate::AppState;
 use rust_financial_manager::{database, routes};
 
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
+
+fn run_migration(conn: &mut PgConnection) {
+    conn.run_pending_migrations(MIGRATIONS).unwrap();
+}
+
 #[launch]
 fn rocket() -> _ {
     env_logger::init_from_env(Env::default().default_filter_or("info"));
+
+    dotenv::dotenv().ok();
+
+    // Get the database URL from the environment variable
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
+    // Establish a database connection
+    let mut connection =
+        PgConnection::establish(&database_url).expect("Error connecting to the database");
+
+    run_migration(&mut connection);
 
     let app_state = AppState::default();
 
