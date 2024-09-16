@@ -1,14 +1,21 @@
 # Stage 1: Build the Rust application
 FROM rust:1-slim-bookworm AS build
 
+# Install necessary dependencies, including PostgreSQL client library and headers
+RUN apt-get update && \
+    apt-get install -y \
+    git \
+    build-essential \
+    libpq-dev
+
 # Define build argument with default value
-ARG pkg=rocket-app
+ARG pkg=rust_financial_manager
 
 # Create a working directory
 WORKDIR /build
 
-# Clone the GitHub repository
-RUN git clone https://github.com/LukasTrust/rust_financial_manager.git .
+# Clone the specific branch from the GitHub repository
+RUN git clone --branch release_test https://github.com/LukasTrust/rust_financial_manager.git .
 
 # Build the application
 RUN --mount=type=cache,target=/build/target \
@@ -21,8 +28,11 @@ RUN --mount=type=cache,target=/build/target \
 # Stage 2: Create a minimal runtime image
 FROM debian:bookworm-slim
 
-# Install openssl for key generation
-RUN apt-get update && apt-get install -y openssl
+# Install necessary runtime libraries, including PostgreSQL client library
+RUN apt-get update && \
+    apt-get install -y \
+    libpq5 \
+    openssl
 
 # Set working directory
 WORKDIR /app
@@ -45,4 +55,4 @@ ENV ROCKET_PORT=8080
 
 # Define the entry point
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["./main"]
+CMD ./main

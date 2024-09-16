@@ -18,7 +18,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        pkg: rocket-app
+        pkg: rust_financial_manager
     container_name: rust_app
     environment:
       ROCKET_ADDRESS: 0.0.0.0
