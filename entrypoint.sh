@@ -12,7 +12,7 @@ if [ -f /app/.env ]; then
 fi
 
 # Build the DATABASE_URL dynamically
-DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_PORT}:5432/${POSTGRES_DB}"
+DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
 
 # Output the DATABASE_URL for debugging
 echo "DATABASE_URL is: $DATABASE_URL"
