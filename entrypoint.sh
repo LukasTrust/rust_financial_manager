@@ -2,7 +2,6 @@
 
 # Function to URL encode special characters
 urlencode() {
-  # urlencode function for special characters in the user/password
   echo "$1" | sed -e 's/%/%25/g' \
                   -e 's/ /%20/g' \
                   -e 's/!/%21/g' \
@@ -36,22 +35,32 @@ if [ -f /app/.env ]; then
   set +o allexport
 fi
 
-# Log the environment variables for debugging
-echo "POSTGRES_USER: $POSTGRES_USER"
-echo "POSTGRES_PASSWORD: $POSTGRES_PASSWORD"
-echo "POSTGRES_DB: $POSTGRES_DB"
+# Trim whitespace from variables (important to remove stray spaces)
+ENCODED_USER=$(echo "$POSTGRES_USER" | xargs)
+ENCODED_PASSWORD=$(echo "$POSTGRES_PASSWORD" | xargs)
+POSTGRES_DB=$(echo "$POSTGRES_DB" | xargs)
 
 # URL encode the POSTGRES_USER and POSTGRES_PASSWORD
-ENCODED_USER=$(urlencode "$POSTGRES_USER")
-ENCODED_PASSWORD=$(urlencode "$POSTGRES_PASSWORD")
+ENCODED_USER=$(urlencode "$ENCODED_USER")
+ENCODED_PASSWORD=$(urlencode "$ENCODED_PASSWORD")
 
-# Build the DATABASE_URL dynamically
-DATABASE_URL="postgres://${ENCODED_USER}:${ENCODED_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+# Debugging outputs to ensure no trailing spaces
+echo "ENCODED_USER: '$ENCODED_USER'"
+echo "ENCODED_PASSWORD: '$ENCODED_PASSWORD'"
+
+# Define each part of the DATABASE_URL separately
+PROTOCOL="postgres://"
+USER_PASS=":${ENCODED_PASSWORD}"
+HOST_PORT="@postgres:5432"
+DB_NAME="/${POSTGRES_DB}"
+
+# Concatenate the full DATABASE_URL
+DATABASE_URL="${PROTOCOL}${ENCODED_USER}${USER_PASS}${HOST_PORT}${DB_NAME}"
 
 # Output the DATABASE_URL for debugging
 echo "DATABASE_URL is: $DATABASE_URL"
 
-# Run Diesel migrations using DATABASE_URL
+echo "Running database migrations..."
 diesel migration run --database-url $DATABASE_URL
 
 # Start the Rust application
