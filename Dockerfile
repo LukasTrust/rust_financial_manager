@@ -11,9 +11,6 @@ RUN apt-get update && \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Diesel CLI
-RUN cargo install diesel_cli --no-default-features --features postgres
-
 # Define build argument with default value
 ARG pkg=rust_financial_manager
 
@@ -42,7 +39,13 @@ RUN apt-get update && \
     apt-get install -y \
     libpq5 \
     openssl \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Diesel CLI
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable -y && \
+    export PATH="$PATH:$HOME/.cargo/bin" && \
+    cargo install diesel_cli --no-default-features --features postgres
 
 # Set working directory
 WORKDIR /app
