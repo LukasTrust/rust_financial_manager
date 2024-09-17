@@ -1,13 +1,21 @@
 #!/bin/sh
 # Generate a secret key if not already set
 if [ -z "$ROCKET_SECRET_KEY" ]; then
-  export ENV ROCKET_SECRET_KEY=$(openssl rand -base64 32)
+  export ROCKET_SECRET_KEY=$(openssl rand -base64 32)
 fi
 
-# Load the .env file to set environment variables
-if [ -f .env ]; then
-  export $(cat .env | grep -v '^#' | xargs)
+# Load the .env file from /app directory to set environment variables
+if [ -f /app/.env ]; then
+  set -o allexport
+  . /app/.env
+  set +o allexport
 fi
+
+# Debug: Check if the environment variables are set correctly
+echo "POSTGRES_USER is: $POSTGRES_USER"
+echo "POSTGRES_PASSWORD is: $POSTGRES_PASSWORD"
+echo "POSTGRES_DB is: $POSTGRES_DB"
+echo "POSTGRES_PORT is: $POSTGRES_PORT"
 
 # Build the DATABASE_URL dynamically
 export DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}"
