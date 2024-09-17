@@ -6,9 +6,15 @@ if [ -z "$ROCKET_SECRET_KEY" ]; then
   export ROCKET_SECRET_KEY=$(openssl rand -base64 32)
 fi
 
+# Ensure DATABASE_URL is set
+if [ -z "$DATABASE_URL" ]; then
+  echo "DATABASE_URL is not set. Exiting."
+  exit 1
+fi
+
 # Wait for PostgreSQL to be ready
-until PGPASSWORD=$POSTGRES_PASSWORD psql -h "postgres" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c '\q'; do
-  >&2 echo "Postgres is unavailable - sleeping"
+until diesel migration run --database-url="$DATABASE_URL"; do
+  >&2 echo "Database is unavailable - sleeping"
   sleep 3
 done
 
