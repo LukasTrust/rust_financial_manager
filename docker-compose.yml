@@ -32,7 +32,7 @@ services:
       - postgres
     networks:
       - app_network
-    entrypoint: [ "/bin/bash", "/entrypoint.sh" ]
+    entrypoint: [ "/entrypoint.sh" ]
 
 volumes:
   postgres_data:

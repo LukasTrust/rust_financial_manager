@@ -11,6 +11,10 @@ if [ -f /app/.env ]; then
   set +o allexport
 fi
 
+# Print out the .env file for debugging
+echo "Contents of .env file:"
+cat /app/.env
+
 # Debug: Check if the environment variables are set correctly
 echo "POSTGRES_USER is: $POSTGRES_USER"
 echo "POSTGRES_PASSWORD is: $POSTGRES_PASSWORD"
