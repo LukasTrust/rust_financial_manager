@@ -18,7 +18,7 @@ DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_PORT}:
 echo "DATABASE_URL is: $DATABASE_URL"
 
 # Run Diesel migrations using DATABASE_URL
-diesel migration run
+diesel migration run --database-url $DATABASE_URL
 
 # Start the Rust application
 exec "$@"
