@@ -11,6 +11,10 @@ if [ -f /app/.env ]; then
   set +o allexport
 fi
 
+echo "POSTGRES_USER: $POSTGRES_USER"
+echo "POSTGRES_PASSWORD: $POSTGRES_PASSWORD"
+echo "POSTGRES_DB: $POSTGRES_DB"
+
 # Build the DATABASE_URL dynamically
 DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}"
 
