@@ -4,17 +4,19 @@ if [ -z "$ROCKET_SECRET_KEY" ]; then
   export ENV ROCKET_SECRET_KEY=$(openssl rand -base64 32)
 fi
 
-# Wait for Postgres to be ready
-until PGPASSWORD=$POSTGRES_PASSWORD psql -h "postgres" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c '\q'; do
+# Extract database connection info from DATABASE_URL
+export DATABASE_URL=${DATABASE_URL}
+
+# Wait for Postgres to be ready by using the full DATABASE_URL
+until diesel database reset --database-url "$DATABASE_URL"; do
   >&2 echo "Postgres is unavailable - sleeping"
   sleep 1
 done
 
->&2 echo "Postgres is up - running Diesel setup and migrations"
+>&2 echo "Postgres is up - running Diesel migrations"
 
-# Run Diesel setup and migrations
-diesel setup
-diesel migration run
+# Run Diesel migrations
+diesel migration run --database-url "$DATABASE_URL"
 
 # Start the Rust application
 exec "$@"
