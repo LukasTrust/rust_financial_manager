@@ -46,7 +46,6 @@ HOST_PORT="@postgres:5432"
 DB_NAME="/${POSTGRES_DB}"
 
 # Concatenate the full DATABASE_URL
-set -x
 DATABASE_URL="${PROTOCOL}${ENCODED_USER}${USER_PASS}${HOST_PORT}${DB_NAME}"
 
 # Output the DATABASE_URL for debugging
