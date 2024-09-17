@@ -34,10 +34,11 @@ RUN --mount=type=cache,target=/build/target \
 # Stage 2: Create a minimal runtime image
 FROM debian:bookworm-slim
 
-# Install necessary runtime libraries, including PostgreSQL client library
+# Install necessary runtime libraries and PostgreSQL client
 RUN apt-get update && \
     apt-get install -y \
     libpq5 \
+    postgresql-client \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
