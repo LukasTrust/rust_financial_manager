@@ -1,4 +1,29 @@
 #!/bin/sh
+
+# Function to URL encode special characters
+urlencode() {
+  # urlencode function for special characters in the user/password
+  echo "$1" | sed -e 's/%/%25/g' \
+                  -e 's/ /%20/g' \
+                  -e 's/!/%21/g' \
+                  -e 's/#/%23/g' \
+                  -e 's/\$/%24/g' \
+                  -e 's/&/%26/g' \
+                  -e "s/'/%27/g" \
+                  -e 's/(/%28/g' \
+                  -e 's/)/%29/g' \
+                  -e 's/*/%2A/g' \
+                  -e 's/+/%2B/g' \
+                  -e 's/,/%2C/g' \
+                  -e 's/:/%3A/g' \
+                  -e 's/;/%3B/g' \
+                  -e 's/=/%3D/g' \
+                  -e 's/?/%3F/g' \
+                  -e 's/@/%40/g' \
+                  -e 's/\[/%5B/g' \
+                  -e 's/\]/%5D/g'
+}
+
 # Generate a secret key if not already set
 if [ -z "$ROCKET_SECRET_KEY" ]; then
   export ROCKET_SECRET_KEY=$(openssl rand -base64 32)
@@ -11,12 +36,17 @@ if [ -f /app/.env ]; then
   set +o allexport
 fi
 
+# Log the environment variables for debugging
 echo "POSTGRES_USER: $POSTGRES_USER"
 echo "POSTGRES_PASSWORD: $POSTGRES_PASSWORD"
 echo "POSTGRES_DB: $POSTGRES_DB"
 
+# URL encode the POSTGRES_USER and POSTGRES_PASSWORD
+ENCODED_USER=$(urlencode "$POSTGRES_USER")
+ENCODED_PASSWORD=$(urlencode "$POSTGRES_PASSWORD")
+
 # Build the DATABASE_URL dynamically
-DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}"
+DATABASE_URL="postgres://${ENCODED_USER}:${ENCODED_PASSWORD}@postgres/${POSTGRES_DB}"
 
 # Output the DATABASE_URL for debugging
 echo "DATABASE_URL is: $DATABASE_URL"
