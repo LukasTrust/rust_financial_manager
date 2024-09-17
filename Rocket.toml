@@ -1,4 +1,2 @@
-[global]
-
-[default.databases.postgres_db]
+[debug.databases.postgres_db]
 url = "postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@192.168.178.48/financial_manager"

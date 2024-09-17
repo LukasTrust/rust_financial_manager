@@ -6,16 +6,30 @@ import { setupTransactions } from './transactionManager.js';
 import { initializeSettings } from './settings.js';
 
 export function log(message, context = '', ...data) {
+    if (release_mode) {
+        return;
+    }
     console.log(`[${new Date().toISOString()}] [${context}] ${message}`, ...data);
 }
 
 export function error(message, context = '', ...data) {
+    if (release_mode) {
+        return;
+    }
     console.error(`[${new Date().toISOString()}] [${context}] ${message}`, ...data);
 }
 
 let oldUrl = localStorage.getItem('old_url') || '/dashboard';
+let release_mode = false;
 
 document.addEventListener("DOMContentLoaded", function () {
+    const release_mode_element = document.getElementById('release_mode');
+
+    if (release_mode_element) {
+        console.log(release_mode_element.value);
+        release_mode = release_mode_element.value === 'True';
+    }
+
     log('DOM content loaded. Initializing sidebar buttons and loading default content:', 'DOMContentLoaded');
 
     document.querySelectorAll("button").forEach(button => {

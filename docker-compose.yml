@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: rust_financial_manager_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rust_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        pkg: rust_financial_manager
+    container_name: rust_app
+    environment:
+      ROCKET_ADDRESS: 0.0.0.0
+      ROCKET_PORT: 8080
+      ROCKET_DATABASES: '{postgres_db={url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres/${POSTGRES_DB}"}}'
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - app_network
+    restart: on-failure
+
+volumes:
+  postgres_data:
+
+
+networks:
+  app_network:
+    driver: bridge

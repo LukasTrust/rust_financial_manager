@@ -46,13 +46,14 @@ pub async fn base(mut db: Connection<DbConn>, cookies: &CookieJar<'_>) -> Templa
 
     let localized_strings = get_base_localized_strings(cookie_user_language);
 
+    let is_release_mode = cfg!(debug_assertions);
+
     Template::render(
         "base",
         json!({
             "banks": banks,
             "translations": localized_strings,
-            "view_name": "dashboard",
-            "release-mode": "true",
+            "release_mode": is_release_mode,
         }),
     )
 }
