@@ -15,6 +15,8 @@ done
 
 >&2 echo "Postgres is up - running Diesel migrations"
 
+diesel setup --database-url "$DATABASE_URL"
+
 # Run Diesel migrations
 diesel migration run --database-url "$DATABASE_URL"
 
