@@ -26,6 +26,9 @@ RUN git clone --branch release_test https://github.com/LukasTrust/rust_financial
 # Copy the migrations directory
 COPY ./migrations /build/migrations
 
+# Copy the .env file into the runtime container
+COPY .env /app/.env
+
 # Build the application
 RUN --mount=type=cache,target=/build/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
