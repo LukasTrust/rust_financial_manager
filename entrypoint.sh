@@ -36,11 +36,6 @@ if [ -f /app/.env ]; then
   set +o allexport
 fi
 
-# Log the environment variables for debugging
-echo "POSTGRES_USER: $POSTGRES_USER"
-echo "POSTGRES_PASSWORD: $POSTGRES_PASSWORD"
-echo "POSTGRES_DB: $POSTGRES_DB"
-
 # URL encode the POSTGRES_USER and POSTGRES_PASSWORD
 ENCODED_USER=$(urlencode "$POSTGRES_USER")
 ENCODED_PASSWORD=$(urlencode "$POSTGRES_PASSWORD")
@@ -49,6 +44,9 @@ PROTOCOL="postgres://"
 USER_PASS=":${ENCODED_PASSWORD}"
 HOST_PORT="@postgres:5432"
 DB_NAME="/${POSTGRES_DB}"
+
+echo "ENCODED_USER: $ENCODED_USER"
+echo "USER_PASS: $USER_PASS"
 
 # Concatenate the full DATABASE_URL
 DATABASE_URL="${PROTOCOL}${ENCODED_USER}${USER_PASS}${HOST_PORT}${DB_NAME}"
