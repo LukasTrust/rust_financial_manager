@@ -23,9 +23,6 @@ WORKDIR /build
 # Clone the specific branch from the GitHub repository
 RUN git clone --branch release_test https://github.com/LukasTrust/rust_financial_manager.git .
 
-# Copy the .env file so we can use DATABASE_URL from it
-COPY .env .env
-
 # Build the application
 RUN --mount=type=cache,target=/build/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
@@ -33,9 +30,6 @@ RUN --mount=type=cache,target=/build/target \
     set -eux; \
     cargo build --release; \
     objcopy --compress-debug-sections target/release/$pkg ./main
-
-# Run Diesel setup and migrations
-RUN /bin/bash -c "source .env && diesel setup && diesel migration run"
 
 # Stage 2: Create a minimal runtime image
 FROM debian:bookworm-slim
