@@ -60,13 +60,7 @@ DATABASE_URL="${PROTOCOL}${ENCODED_USER}${USER_PASS}${HOST_PORT}${DB_NAME}"
 # Output the DATABASE_URL for debugging
 echo "DATABASE_URL is: $DATABASE_URL"
 
-# Check if MIGRATE_DB is set to true and run migrations only if it is
-if [ "$MIGRATE_DB" = "true" ]; then
-  echo "Running database migrations..."
-  diesel migration run --database-url $DATABASE_URL
-else
-  echo "Skipping database migrations..."
-fi
+diesel migration run --database-url $DATABASE_URL
 
 # Start the Rust application
 exec "$@"
