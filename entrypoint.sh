@@ -11,32 +11,14 @@ if [ -f /app/.env ]; then
   set +o allexport
 fi
 
-# Print out the .env file for debugging
-echo "Contents of .env file:"
-cat /app/.env
-
-# Debug: Check if the environment variables are set correctly
-echo "POSTGRES_USER is: $POSTGRES_USER"
-echo "POSTGRES_PASSWORD is: $POSTGRES_PASSWORD"
-echo "POSTGRES_DB is: $POSTGRES_DB"
-echo "POSTGRES_PORT is: $POSTGRES_PORT"
-
 # Build the DATABASE_URL dynamically
-export DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}"
+DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_PORT}:5432/${POSTGRES_DB}"
 
 # Output the DATABASE_URL for debugging
 echo "DATABASE_URL is: $DATABASE_URL"
 
-# Wait for Postgres to be ready by using the DATABASE_URL
-until diesel database reset --database-url "$DATABASE_URL"; do
-  >&2 echo "Postgres is unavailable - sleeping"
-  sleep 1
-done
-
->&2 echo "Postgres is up - running Diesel migrations"
-
 # Run Diesel migrations using DATABASE_URL
-diesel migration run --database-url "$DATABASE_URL"
+diesel migration run
 
 # Start the Rust application
 exec "$@"

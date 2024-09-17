@@ -23,12 +23,6 @@ WORKDIR /build
 # Clone the specific branch from the GitHub repository
 RUN git clone --branch release_test https://github.com/LukasTrust/rust_financial_manager.git .
 
-# Copy the migrations directory
-COPY ./migrations /build/migrations
-
-# Copy the .env file into the runtime container
-COPY .env /app/.env
-
 # Build the application
 RUN --mount=type=cache,target=/build/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
@@ -59,6 +53,9 @@ COPY --from=build /usr/local/cargo/bin/diesel /usr/local/bin/diesel
 
 # Copy the migrations directory from the build stage
 COPY --from=build /build/migrations ./migrations
+
+# Copy the .env file into the runtime container
+COPY .env /app/.env
 
 # Conditionally copy files if they exist
 COPY --from=build /build/Rocket.toml ./static/
