@@ -13,7 +13,7 @@ if [ -f /app/.env ]; then
 fi
 
 # Concatenate the full DATABASE_URL
-DATABASE_URL=${DB_URL}
+DATABASE_URL="postgres://myuser:mypassword@postgres/financial_manager"
 
 # Output the DATABASE_URL for debugging
 echo "DATABASE_URL is: $DATABASE_URL"
