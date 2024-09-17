@@ -25,7 +25,7 @@ services:
     environment:
       ROCKET_ADDRESS: 0.0.0.0
       ROCKET_PORT: 8080
-      ROCKET_DATABASES: '{postgres_db={url=${DATABASE_URL}}}'
+      ROCKET_DATABASES: '{postgres_db={url="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}"}'
     ports:
       - "8080:8080"
     depends_on:
