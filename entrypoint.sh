@@ -14,6 +14,7 @@ until diesel database reset --database-url "$DATABASE_URL"; do
 done
 
 >&2 echo "Postgres is up - running Diesel migrations"
+echo "DATABASE_URL: $DATABASE_URL"
 
 diesel setup --database-url "$DATABASE_URL"
 
