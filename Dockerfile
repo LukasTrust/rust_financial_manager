@@ -11,6 +11,9 @@ RUN apt-get update && \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Diesel CLI
+RUN cargo install diesel_cli --no-default-features --features postgres
+
 # Define build argument with default value
 ARG pkg=rust_financial_manager
 
@@ -31,6 +34,9 @@ RUN --mount=type=cache,target=/build/target \
     cargo build --release; \
     objcopy --compress-debug-sections target/release/$pkg ./main
 
+# Run Diesel setup and migrations
+RUN /bin/bash -c "source .env && diesel setup && diesel migration run"
+
 # Stage 2: Create a minimal runtime image
 FROM debian:bookworm-slim
 
@@ -39,13 +45,7 @@ RUN apt-get update && \
     apt-get install -y \
     libpq5 \
     openssl \
-    curl \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Diesel CLI
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable -y && \
-    export PATH="$PATH:$HOME/.cargo/bin" && \
-    cargo install diesel_cli --no-default-features --features postgres
 
 # Set working directory
 WORKDIR /app
