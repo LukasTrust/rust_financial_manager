@@ -46,7 +46,7 @@ ENCODED_USER=$(urlencode "$POSTGRES_USER")
 ENCODED_PASSWORD=$(urlencode "$POSTGRES_PASSWORD")
 
 # Build the DATABASE_URL dynamically
-DATABASE_URL="postgres://${ENCODED_USER}:${ENCODED_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+DATABASE_URL="postgres://myuser:mypassword@postgres:5432/financial_manager"
 
 # Output the DATABASE_URL for debugging
 echo "DATABASE_URL is: $DATABASE_URL"
