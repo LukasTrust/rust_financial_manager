@@ -32,9 +32,7 @@ services:
       - postgres
     networks:
       - app_network
-    volumes:
-      - ./wait-for-it.sh:/wait-for-it.sh
-    entrypoint: [ "/wait-for-db.sh", "postgres" ]
+    entrypoint: [ "/bin/bash", "-c", "./wait-for-postgres.sh && /entrypoint.sh" ]
 
 volumes:
   postgres_data:
