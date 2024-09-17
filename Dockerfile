@@ -1,14 +1,18 @@
 # Stage 1: Build the Rust application
 FROM rust:1-slim-bookworm AS build
 
-# Install necessary dependencies, including PostgreSQL client library and headers
+# Install necessary dependencies, including PostgreSQL client library, Diesel CLI, and headers
 RUN apt-get update && \
     apt-get install -y \
     git \
     build-essential \
     libpq-dev \
     binutils \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Diesel CLI
+RUN cargo install diesel_cli --no-default-features --features postgres
 
 # Define build argument with default value
 ARG pkg=rust_financial_manager
@@ -19,6 +23,9 @@ WORKDIR /build
 # Clone the specific branch from the GitHub repository
 RUN git clone --branch release_test https://github.com/LukasTrust/rust_financial_manager.git .
 
+# Copy the .env file so we can use DATABASE_URL from it
+COPY .env .env
+
 # Build the application
 RUN --mount=type=cache,target=/build/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
@@ -26,7 +33,6 @@ RUN --mount=type=cache,target=/build/target \
     set -eux; \
     cargo build --release; \
     objcopy --compress-debug-sections target/release/$pkg ./main
-
 
 # Stage 2: Create a minimal runtime image
 FROM debian:bookworm-slim
