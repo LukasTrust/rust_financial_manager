@@ -35,18 +35,9 @@ if [ -f /app/.env ]; then
   set +o allexport
 fi
 
-# Trim whitespace from variables (important to remove stray spaces)
-ENCODED_USER=$(echo "$POSTGRES_USER" | xargs)
-ENCODED_PASSWORD=$(echo "$POSTGRES_PASSWORD" | xargs)
-POSTGRES_DB=$(echo "$POSTGRES_DB" | xargs)
-
 # URL encode the POSTGRES_USER and POSTGRES_PASSWORD
 ENCODED_USER=$(urlencode "$ENCODED_USER")
 ENCODED_PASSWORD=$(urlencode "$ENCODED_PASSWORD")
-
-# Debugging outputs to ensure no trailing spaces
-echo "ENCODED_USER: '$ENCODED_USER'"
-echo "ENCODED_PASSWORD: '$ENCODED_PASSWORD'"
 
 # Define each part of the DATABASE_URL separately
 PROTOCOL="postgres://"
@@ -54,9 +45,8 @@ USER_PASS=":${ENCODED_PASSWORD}"
 HOST_PORT="@postgres:5432"
 DB_NAME="/${POSTGRES_DB}"
 
-echo "Test" '$PROTOCOL$ENCODED_USER$USER_PASS$HOST_PORT$DB_NAME'
-
 # Concatenate the full DATABASE_URL
+set -x
 DATABASE_URL="${PROTOCOL}${ENCODED_USER}${USER_PASS}${HOST_PORT}${DB_NAME}"
 
 # Output the DATABASE_URL for debugging
