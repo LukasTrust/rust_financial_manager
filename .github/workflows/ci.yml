@@ -13,53 +13,58 @@ on:
       - 'tests/**'
 
 jobs:
-  all_in_one:
+  setup_rust:
     runs-on: ubuntu-latest
-    container:
-      image: rust:latest
     steps:
-      # Check out the repository
       - uses: actions/checkout@v3
 
-      # Setup Rust environment and tools
+      # Set up Rust environment and tools
       - name: Set up Rust
         run: |
           rustc --version
           cargo --version
           rustup component add clippy rustfmt
           cargo install cargo-tarpaulin cargo-audit
-          cargo install diesel_cli --no-default-features --features postgres
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-      # Install PostgreSQL
-      - name: Install PostgreSQL
+  cargo_build_release:
+    runs-on: ubuntu-latest
+    needs: setup_rust
+    steps:
+      - uses: actions/checkout@v3
+
+      # Build the project in release mode without caching
+      - name: Build with Cargo in Release Mode
         run: |
-          apt-get update
-          apt-get install -y postgresql postgresql-contrib
+          cargo build --release
 
-      # Configure PostgreSQL to use 'trust' authentication and set up database
-      - name: Configure PostgreSQL and Setup Database
+  run_tests:
+    runs-on: ubuntu-latest
+    needs: cargo_build_release
+    steps:
+      - uses: actions/checkout@v3
+
+      # Install Docker and Docker Compose
+      - name: Install Docker and Docker Compose
         run: |
-          # Configure PostgreSQL to use 'trust' authentication
-          sed -i "s/peer/trust/g" /etc/postgresql/*/main/pg_hba.conf
-          sed -i "s/md5/trust/g" /etc/postgresql/*/main/pg_hba.conf
-          service postgresql restart
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
 
-          # Set PostgreSQL password
-          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'glpat-BYytBgysP3yeceKp6FUW';"
+      # Copy environment variables file
+      - name: Copy environment variables file
+        run: |
+          cp .env .env.ci
 
-          # Create the database
-          sudo -u postgres psql -c "CREATE DATABASE financial_manager;"
+      # Start services and run tests with Docker Compose (no caching)
+      - name: Start Services and Run Tests
+        run: |
+          docker-compose --env-file .env.ci up --build --no-cache --exit-code-from rust_app
 
-          # Apply migrations
-          diesel migration run
-
-      # Run tests
-      - name: Run Tests
-        env:
-          DATABASE_URL: postgres://postgres:glpat-BYytBgysP3yeceKp6FUW@localhost:5432/financial_manager
-          ROCKET_ENV: test
-        run: cargo test
+  lint_and_format:
+    runs-on: ubuntu-latest
+    needs: setup_rust
+    steps:
+      - uses: actions/checkout@v3
 
       # Lint and format code
       - name: Lint and Format
@@ -67,9 +72,22 @@ jobs:
           cargo clippy -- -D warnings
           cargo fmt --check
 
+  run_coverage:
+    runs-on: ubuntu-latest
+    needs: run_tests
+    steps:
+      - uses: actions/checkout@v3
+
       # Run code coverage
       - name: Run Coverage
-        run: cargo tarpaulin --engine llvm --ignore-tests --out Xml
+        run: |
+          cargo tarpaulin --release --engine llvm --ignore-tests --out Xml
+
+  documentation_benchmarks_audit:
+    runs-on: ubuntu-latest
+    needs: setup_rust
+    steps:
+      - uses: actions/checkout@v3
 
       # Generate documentation, run benchmarks, and audit dependencies
       - name: Documentation, Benchmarks, and Audit

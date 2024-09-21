@@ -12,14 +12,11 @@ if [ -f /app/.env ]; then
   set +o allexport
 fi
 
-# Concatenate the full DATABASE_URL
-DATABASE_URL="postgres://myuser:mypassword@postgres/financial_manager"
-
 # Output the DATABASE_URL for debugging
-echo "DATABASE_URL is: $DATABASE_URL"
+echo "DATABASE_URL is: $DB_URL"
 
 echo "Running database migrations..."
-diesel migration run --database-url $DATABASE_URL
+diesel migration run --database-url $DB_URL
 
 # Start the Rust application
 exec "$@"
