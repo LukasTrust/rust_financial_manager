@@ -12,6 +12,12 @@ if [ -f /app/.env ]; then
   set +o allexport
 fi
 
+# Wait for Postgres to be ready
+until pg_isready -h postgres -U "${POSTGRES_USER}"; do
+  echo "Waiting for Postgres..."
+  sleep 2
+done
+
 # Output the DATABASE_URL for debugging
 echo "DATABASE_URL is: $DB_URL"
 

@@ -61,6 +61,8 @@ COPY .env /app/.env
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+RUN ls -l /
+
 # Check if entrypoint.sh was copied and is executable
 RUN if [ ! -f /entrypoint.sh ]; then echo "Error: entrypoint.sh not found!"; exit 1; fi
 RUN if [ ! -x /entrypoint.sh ]; then echo "Error: entrypoint.sh is not executable!"; exit 1; fi
