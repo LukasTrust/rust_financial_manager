@@ -18,7 +18,7 @@
     "error_inserting_csv": "Error inserting CSV converter",
     "error_inserting_csv_details": "There was an internal error trying to add the CSV converter of the new bank. The bank was added but the CSV converter was not.",
     "csv_converter_not_set_up": "CSV converter not set up",
-    "csv_converter_not_set_up_details": "The CSV converter is not set up. Please try again.",
+    "csv_converter_not_set_up_details": "The CSV converter is not set up. Please ensure that you have specified the columns for the counterparty, amount, balance after transaction, and date.",
     "dashboard_welcome_message": "Welcome, {first_name} {last_name}!",
     "logout_error_validation": "Error validating the login!",
     "logout_login_prompt": "Please login again.",

@@ -18,7 +18,7 @@
     "error_inserting_csv": "Fehler beim Hinzufügen des CSV-Konverters",
     "error_inserting_csv_details": "Es gab einen internen Fehler beim Hinzufügen des CSV-Konverters der neuen Bank. Die Bank wurde hinzugefügt, aber der CSV-Konverter nicht.",
     "csv_converter_not_set_up": "CSV-Konverter nicht eingerichtet",
-    "csv_converter_not_set_up_details": "Der CSV-Konverter ist nicht eingerichtet. Bitte versuchen Sie es erneut.",
+    "csv_converter_not_set_up_details": "Der CSV-Konverter ist nicht eingerichtet. Bitte stellen Sie sicher, dass Sie eine Gegenpartei-Spalte, eine Betragsspalte, Spalte für Guthaben nach Transaktion und eine Datumsspalten angegeben haben",
     "dashboard_welcome_message": "Willkommen, {first_name} {last_name}!",
     "logout_error_validation": "Fehler bei der Validierung des Logins!",
     "logout_login_prompt": "Bitte melden Sie sich erneut an.",
