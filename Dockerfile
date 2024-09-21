@@ -61,11 +61,14 @@ COPY .env /app/.env
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# Check if entrypoint.sh was copied and is executable
+RUN if [ ! -f /entrypoint.sh ]; then echo "Error: entrypoint.sh not found!"; exit 1; fi
+RUN if [ ! -x /entrypoint.sh ]; then echo "Error: entrypoint.sh is not executable!"; exit 1; fi
+
 # Conditionally copy files if they exist
 COPY --from=build /build/Rocket.toml ./static/
 COPY --from=build /build/static ./static/
 COPY --from=build /build/templates ./templates/
-
 
 # Set environment variables for Rocket
 ENV ROCKET_ADDRESS=0.0.0.0
