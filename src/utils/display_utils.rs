@@ -31,10 +31,9 @@ pub async fn generate_graph_data(
     let amount_string = LOCALIZATION.get_localized_string(language, "transactions_amount_header");
     let balance_string = LOCALIZATION.get_localized_string(language, "new_balance_header");
     let discrepancy_string = LOCALIZATION.get_localized_string(language, "discrepancy_header");
-    let heighest_amount_string = LOCALIZATION.get_localized_string(language, "heighest_amount");
-    let lowest_amount_string = LOCALIZATION.get_localized_string(language, "lowest_amount");
+    let heighest_balance_string = LOCALIZATION.get_localized_string(language, "heighest_balance");
+    let lowest_balance_string = LOCALIZATION.get_localized_string(language, "lowest_balance");
 
-    // Convert the transactions_with_discrepancy into a HashMap for quick lookup
     let discrepancy_map: HashMap<i32, f64> = discrepancies
         .iter()
         .map(|d| (d.transaction_id, d.discrepancy_amount))
@@ -52,29 +51,25 @@ pub async fn generate_graph_data(
             .cloned()
             .collect::<Vec<Transaction>>();
 
-        // Use a BTreeMap to maintain order and store multiple transactions per day
-        let mut data: DataMap = BTreeMap::new();
-
-        // Filter transactions within the date range
         let filtered_transactions: Vec<&Transaction> = bank_transactions
             .iter()
             .filter(|t| t.date >= *start_date && t.date <= *end_date)
             .collect();
 
-        // Determine the minimum and maximum amounts
-        let min_amount = filtered_transactions
+        // Determine the minimum and maximum bank balances after transactions
+        let min_balance = filtered_transactions
             .iter()
-            .map(|t| t.amount)
+            .map(|t| t.bank_balance_after)
             .fold(f64::INFINITY, f64::min);
-        let max_amount = filtered_transactions
+        let max_balance = filtered_transactions
             .iter()
-            .map(|t| t.amount)
+            .map(|t| t.bank_balance_after)
             .fold(f64::NEG_INFINITY, f64::max);
 
-        for transaction in filtered_transactions.iter().rev() {
-            // Check if the transaction is in the discrepancy map
-            let discrepancy_amount = discrepancy_map.get(&transaction.id).cloned();
+        let mut data: DataMap = BTreeMap::new();
 
+        for transaction in filtered_transactions.iter().rev() {
+            let discrepancy_amount = discrepancy_map.get(&transaction.id).cloned();
             data.entry(transaction.date).or_default().push((
                 transaction.bank_balance_after,
                 transaction.counterparty.clone(),
@@ -83,22 +78,18 @@ pub async fn generate_graph_data(
             ));
         }
 
-        // Prepare series data for plotting
         let mut series_data = vec![];
         for (date, transactions) in data {
             for (balance, counterparty, amount, discrepancy_amount) in transactions {
-                // Determine color based on amount
-                let color = if amount == min_amount {
-                    "red"
-                } else if amount == max_amount {
-                    "green"
+                // Adjust marker size and color based on bank balance
+                let (color, size) = if balance == min_balance {
+                    ("red", 10) // Highlight lowest balance
+                } else if balance == max_balance {
+                    ("green", 10) // Highlight highest balance
                 } else {
-                    // Optionally, you can interpolate between red and green
-                    // For simplicity, using a fixed color for non-min/max amounts
-                    "blue"
+                    ("blue", 5) // Default size for other points
                 };
 
-                // Adjust hover text based on discrepancy
                 let mut hover_text = if let Some(discrepancy_amount) = discrepancy_amount {
                     format!(
                         "{}<br>{}:{}<br>{}: {} €<br>{}: {} €<br>{}: {} €",
@@ -125,24 +116,30 @@ pub async fn generate_graph_data(
                     )
                 };
 
-                if amount == min_amount {
-                    hover_text = format!("{}<br>{}", lowest_amount_string, hover_text);
-                } else if amount == max_amount {
-                    hover_text = format!("{}<br>{}", heighest_amount_string, hover_text);
+                if balance == min_balance {
+                    hover_text = format!("{}<br>{}", lowest_balance_string, hover_text);
+                } else if balance == max_balance {
+                    hover_text = format!("{}<br>{}", heighest_balance_string, hover_text);
                 }
 
-                series_data.push((date.to_string(), balance, hover_text, color.to_string()));
+                series_data.push((
+                    date.to_string(),
+                    balance,
+                    hover_text,
+                    color.to_string(),
+                    size,
+                ));
             }
         }
 
-        // Add plot data for the bank
         plot_data.push(json!({
             "name": bank.name,
-            "x": series_data.iter().map(|(date, _, _, _)| date.clone()).collect::<Vec<String>>(),
-            "y": series_data.iter().map(|(_, balance, _, _)| *balance).collect::<Vec<f64>>(),
-            "text": series_data.iter().map(|(_, _, text, _)| text.clone()).collect::<Vec<String>>(),
+            "x": series_data.iter().map(|(date, _, _, _, _)| date.clone()).collect::<Vec<String>>(),
+            "y": series_data.iter().map(|(_, balance, _, _, _)| *balance).collect::<Vec<f64>>(),
+            "text": series_data.iter().map(|(_, _, text, _, _)| text.clone()).collect::<Vec<String>>(),
             "marker": {
-                "color": series_data.iter().map(|(_, _, _, color)| color.clone()).collect::<Vec<String>>(),
+                "color": series_data.iter().map(|(_, _, _, color, _)| color.clone()).collect::<Vec<String>>(),
+                "size": series_data.iter().map(|(_, _, _, _, size)| *size).collect::<Vec<u32>>(),
             },
             "type": "scatter",
             "mode": "lines+markers",
@@ -150,7 +147,6 @@ pub async fn generate_graph_data(
         }));
     }
 
-    // Return the plot data as JSON
     let plot_data = json!(plot_data);
 
     warn!("Graph data generation took: {:?}", start.elapsed());
