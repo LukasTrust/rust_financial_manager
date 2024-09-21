@@ -57,14 +57,15 @@ COPY --from=build /build/migrations ./migrations
 # Copy the .env file into the runtime container
 COPY .env /app/.env
 
+# Copy the entry point script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Conditionally copy files if they exist
 COPY --from=build /build/Rocket.toml ./static/
 COPY --from=build /build/static ./static/
 COPY --from=build /build/templates ./templates/
 
-# Copy the entry point script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
 # Set environment variables for Rocket
 ENV ROCKET_ADDRESS=0.0.0.0
