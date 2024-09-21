@@ -134,3 +134,123 @@ export async function parseJsonResponse(response) {
         throw new Error('Error parsing JSON response');
     }
 }
+
+export function closeModal() {
+    log('Closing delete account modal', 'closeModal');
+    const modals = document.querySelectorAll('.alert-backdrop');
+    modals.forEach(modal => modal.remove());
+}
+
+export function getLocalizedString(key) {
+    const language = getGlobalLanguage();
+    if (!localizedStrings[language]) {
+        error('Language not supported:', 'getLocalizedString', language);
+        return '';
+    }
+    return localizedStrings[language][key] || key;
+}
+
+const localizedStrings = {
+    English: {
+        delete_account_header: "Delete Account",
+        delete_account_confirmation: "Are you sure you want to delete your account? This action cannot be undone.",
+        delete_account_button: "Delete Account",
+        cancel_button: "Cancel",
+        delete_bank_header: "Delete Bank",
+        delete_bank_confirmation: "Are you sure you want to delete this bank? This action cannot be undone.",
+        delete_bank_button: "Delete Bank",
+        change_password_header: "Change Password",
+        success_message: "Operation successful",
+        language_set_success: "Language set to ",
+        language_set_error: "Failed to set language",
+        openContractsTitle: 'Open Contracts',
+        closedContractsTitle: 'Closed Contracts',
+        showHistory: 'Show History',
+        hideHistory: 'Hide History',
+        noHistoryAvailable: 'No History Available.',
+        mergeSelected: 'Merge Selected Contracts',
+        mergeSelected_detail: 'Please select at least 2 contracts to merge.',
+        deleteSelected: 'Delete Selected Contracts',
+        deleteSelected_detail: 'Please select at least 1 contract to delete.',
+        scanFailed: 'Scan Failed',
+        deletionFalied: 'Deletion Failed',
+        mergeFailed: 'Merge Failed',
+        currentAmount: 'Current Amount',
+        totalAmountOverTime: 'Total Amount Over Time',
+        monthsBetweenPayment: 'Months Between Payment',
+        oldAmount: 'Old Amount',
+        newAmount: 'New Amount',
+        changedAt: 'Changed At',
+        endDate: 'End Date',
+        lastPaymentDate: 'Last Payment Date',
+        contractHistory: 'Contract History',
+        error_loading: 'Error loading contracts',
+        allowContract: 'Allow contract',
+        notAllowContract: 'Not allow contract',
+        removeContract: 'Remove contract',
+        addContract: 'Add contract',
+        hide: 'Hide',
+        display: 'Display',
+        contractNotAllowed: 'Contract not allowed',
+        pickContractHeader: 'Pick a contract from this list:',
+        selectContractBody: 'Please select a contract from the list below:',
+        addButton: 'Add',
+        cancelButton: 'Cancel',
+        contractAmountMismatch: 'The contract amount does not match the transaction amount. Please select an option:',
+        newContractAmountOption: 'Set a new contract amount<br>(updates current amount and bases new transactions on it)',
+        oldContractAmountOption: 'Mark as an old contract amount<br>(adds to contract history)',
+        addToContractOption: 'Add to the contract<br>(included in calculations, but not in history)',
+        submitButton: 'Submit'
+    },
+    German: {
+        delete_account_header: "Konto löschen",
+        delete_account_confirmation: "Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+        delete_account_button: "Konto löschen",
+        cancel_button: "Abbrechen",
+        delete_bank_header: "Bank löschen",
+        delete_bank_confirmation: "Sind Sie sicher, dass Sie diese Bank löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+        delete_bank_button: "Bank löschen",
+        change_password_header: "Passwort ändern",
+        success_message: "Aktion erfolgreich",
+        language_set_success: "Sprache geändert zu ",
+        language_set_error: "Fehler beim Einstellen der Sprache",
+        openContractsTitle: 'Offene Verträge',
+        closedContractsTitle: 'Abgeschlossene Verträge',
+        showHistory: 'Historie anzeigen',
+        hideHistory: 'Historie verstecken',
+        noHistoryAvailable: 'Keine Historie verfügbar.',
+        mergeSelected: 'Ausgewählte Verträge zusammenführen',
+        mergeSelected_detail: 'Bitte wählen Sie mindestens 2 Verträge zum Zusammenführen aus.',
+        deleteSelected: 'Ausgewählte Verträge löschen',
+        deleteSelected_detail: 'Bitte wählen Sie mindestens 1 Vertrag zum Löschen aus.',
+        scanFailed: 'Scan fehlgeschlagen',
+        deletionFalied: 'Löschen fehlgeschlagen',
+        mergeFailed: 'Zusammenführen fehlgeschlagen',
+        currentAmount: 'Aktueller Betrag',
+        totalAmountOverTime: 'Gesamtbetrag über die Zeit',
+        monthsBetweenPayment: 'Monate zwischen Zahlungen',
+        oldAmount: 'Alter Betrag',
+        newAmount: 'Neuer Betrag',
+        changedAt: 'Geändert am',
+        endDate: 'Enddatum',
+        lastPaymentDate: 'Letztes Zahlungsdatum',
+        contractHistory: 'Vertragsgeschichte',
+        error_loading: 'Fehler beim Laden der Verträge',
+        allowContract: 'Vertrag erlauben',
+        notAllowContract: 'Vertrag nicht erlauben',
+        removeContract: 'Vertrag entfernen',
+        addContract: 'Vertrag hinzufügen',
+        hide: 'Verbergen',
+        display: 'Anzeigen',
+        contractNotAllowed: 'Vertrag nicht erlaubt',
+        pickContractHeader: 'Wählen Sie einen Vertrag aus dieser Liste:',
+        selectContractBody: 'Bitte wählen Sie einen Vertrag aus der folgenden Liste:',
+        addButton: 'Hinzufügen',
+        cancelButton: 'Abbrechen',
+        contractAmountMismatch: 'Der Vertragsbetrag stimmt nicht mit dem Transaktionsbetrag überein. Bitte wählen Sie eine Option:',
+        newContractAmountOption: 'Einen neuen Vertragsbetrag festlegen<br>(aktualisiert den aktuellen Betrag und basiert neue Transaktionen darauf)',
+        oldContractAmountOption: 'Als alten Vertragsbetrag markieren<br>(fügt der Vertragshistorie hinzu)',
+        addToContractOption: 'Zum Vertrag hinzufügen<br>(in Berechnungen enthalten, aber nicht in der Historie)',
+        submitButton: 'Einreichen'
+    }
+};

@@ -99,6 +99,28 @@ pub async fn delete_user_by_id(
         })
 }
 
+pub async fn delte_bank_by_id(
+    bank_id_for_deleting: i32,
+    language: Language,
+    db: &mut Connection<DbConn>,
+) -> Result<usize, Json<ErrorResponse>> {
+    use crate::schema::banks::dsl::*;
+
+    diesel::delete(banks.filter(id.eq(bank_id_for_deleting)))
+        .execute(db)
+        .await
+        .map_err(|e| {
+            error!(
+                "Error deleting bank with ID '{}': {:?}",
+                bank_id_for_deleting, e
+            );
+            Json(ErrorResponse::new(
+                LOCALIZATION.get_localized_string(language, "error_deleting_bank"),
+                LOCALIZATION.get_localized_string(language, "error_deleting_bank_details"),
+            ))
+        })
+}
+
 pub async fn delete_bank_by_name(
     bank_name_for_deleting: String,
     db: &mut Connection<DbConn>,

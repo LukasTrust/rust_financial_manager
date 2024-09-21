@@ -1,4 +1,4 @@
-import { formatDate, displayCustomAlert, getGlobalLanguage } from './utils.js';
+import { formatDate, displayCustomAlert, getLocalizedString, closeModal } from './utils.js';
 import { log, error } from './main.js';
 
 let filteredData = [];
@@ -7,45 +7,6 @@ let sortConfig = { key: 'date', ascending: false };
 let dateRange = { start: null, end: null };
 let showOrHideTransaction = false;
 let contracts = [];
-
-const translations = {
-    English: {
-        allowContract: 'Allow contract',
-        notAllowContract: 'Not allow contract',
-        removeContract: 'Remove contract',
-        addContract: 'Add contract',
-        hide: 'Hide',
-        display: 'Display',
-        contractNotAllowed: 'Contract not allowed',
-        pickContractHeader: 'Pick a contract from this list:',
-        selectContractBody: 'Please select a contract from the list below:',
-        addButton: 'Add',
-        cancelButton: 'Cancel',
-        contractAmountMismatch: 'The contract amount does not match the transaction amount. Please select an option:',
-        newContractAmountOption: 'Set a new contract amount<br>(updates current amount and bases new transactions on it)',
-        oldContractAmountOption: 'Mark as an old contract amount<br>(adds to contract history)',
-        addToContractOption: 'Add to the contract<br>(included in calculations, but not in history)',
-        submitButton: 'Submit'
-    },
-    German: {
-        allowContract: 'Vertrag erlauben',
-        notAllowContract: 'Vertrag nicht erlauben',
-        removeContract: 'Vertrag entfernen',
-        addContract: 'Vertrag hinzufügen',
-        hide: 'Verbergen',
-        display: 'Anzeigen',
-        contractNotAllowed: 'Vertrag nicht erlaubt',
-        pickContractHeader: 'Wählen Sie einen Vertrag aus dieser Liste:',
-        selectContractBody: 'Bitte wählen Sie einen Vertrag aus der folgenden Liste:',
-        addButton: 'Hinzufügen',
-        cancelButton: 'Abbrechen',
-        contractAmountMismatch: 'Der Vertragsbetrag stimmt nicht mit dem Transaktionsbetrag überein. Bitte wählen Sie eine Option:',
-        newContractAmountOption: 'Einen neuen Vertragsbetrag festlegen<br>(aktualisiert den aktuellen Betrag und basiert neue Transaktionen darauf)',
-        oldContractAmountOption: 'Als alten Vertragsbetrag markieren<br>(fügt der Vertragshistorie hinzu)',
-        addToContractOption: 'Zum Vertrag hinzufügen<br>(in Berechnungen enthalten, aber nicht in der Historie)',
-        submitButton: 'Einreichen'
-    }
-};
 
 export async function setupTransactions() {
     listernerAdded = false;
@@ -137,7 +98,6 @@ function generateTransactionHTML({ transaction, contract }, index) {
     const amountClass = transaction.amount < 0 ? 'negative' : 'positive';
     const balanceClass = transaction.bank_balance_after < 0 ? 'negative' : 'positive';
     const rowClass = transaction.is_hidden ? 'hidden_transaction' : '';
-    const t = translations[getGlobalLanguage()] || translations['en'];
 
     let displayStyle = 'table-row';
     if (transaction.is_hidden) {
@@ -145,15 +105,15 @@ function generateTransactionHTML({ transaction, contract }, index) {
     }
 
     let contractAllowed = transaction.contract_not_allowed ?
-        `<button class="table_button button btn-secondary allow-contract-btn" data-index="${index}">${t.allowContract}</button>` :
-        `<button class="table_button button btn-secondary not-allow-contract" data-index="${index}">${t.notAllowContract}</button>`;
+        `<button class="table_button button btn-secondary allow-contract-btn" data-index="${index}">${getLocalizedString("allowContract")}</button>` :
+        `<button class="table_button button btn-secondary not-allow-contract" data-index="${index}">${getLocalizedString("notAllowContract")}</button>`;
 
     let dropdownMenu = ''; // Initialize the dropdownMenu variable
     let contractName = ''; // Initialize contractName
     let contractAmount = ''; // Initialize contractAmount
 
     // Determine if the transaction is hidden or shown and set button text accordingly
-    const hideButtonText = transaction.is_hidden ? t.display : t.hide;
+    const hideButtonText = transaction.is_hidden ? getLocalizedString("display") : getLocalizedString("hide");
     const hideButtonClass = transaction.is_hidden ? 'show-btn' : 'hide-btn';
 
     if (contract) {
@@ -165,7 +125,7 @@ function generateTransactionHTML({ transaction, contract }, index) {
         // Generate dropdown for existing contracts
         dropdownMenu = `
                 <div class="dropdown-content" style="display:none;">
-                    <button class="table_button button btn-secondary remove-contract-btn" data-index="${index}">${t.removeContract}</button>
+                    <button class="table_button button btn-secondary remove-contract-btn" data-index="${index}">${getLocalizedString("removeContract")}</button>
                     ${contractAllowed}
                     <button class="table_button button btn-secondary ${hideButtonClass}" data-index="${index}">${hideButtonText}</button>
                 </div>`;
@@ -173,16 +133,16 @@ function generateTransactionHTML({ transaction, contract }, index) {
         // Generate dropdown for adding a new contract
         dropdownMenu = `
                 <div class="dropdown-content" style="display:none;">
-                    <button class="table_button button btn-secondary add-contract-btn" data-index="${index}">${t.addContract}</button>
+                    <button class="table_button button btn-secondary add-contract-btn" data-index="${index}">${getLocalizedString("addContract")}</button>
                     ${contractAllowed}
                     <button class="table_button button btn-secondary ${hideButtonClass}" data-index="${index}">${hideButtonText}</button>
                 </div>`;
     }
 
     const emptyCellIcon = contract
-        ? `<img src="/static/images/contract.png" alt="${t.contractAltText || 'Contract'}" class="icon">`
+        ? `<img src="/static/images/contract.png" alt="${getLocalizedString("contractAltText") || 'Contract'}" class="icon">`
         : (transaction.contract_not_allowed
-            ? `<img src="/static/images/not-allowed.png" alt="${t.notAllowedAltText || 'Not Allowed'}" class="icon">`
+            ? `<img src="/static/images/not-allowed.png" alt="${getLocalizedString("notAllowedAltText") || 'Not Allowed'}" class="icon">`
             : '');
 
     const html = `
@@ -492,7 +452,7 @@ function handleHideTransaction(index) {
             const hideButton = row.querySelector('.hide-btn');
             hideButton.classList.remove('hide-btn');
             hideButton.classList.add('show-btn');
-            hideButton.textContent = translations[getGlobalLanguage()].display;
+            hideButton.textContent = getLocalizedString("display");
         }
     });
 }
@@ -515,7 +475,7 @@ function handleShowTransaction(index) {
             const showButton = row.querySelector('.show-btn');
             showButton.classList.remove('show-btn');
             showButton.classList.add('hide-btn');
-            showButton.textContent = translations[getGlobalLanguage()].hide;
+            showButton.textContent = getLocalizedString("hide");
         }
     });
 }
@@ -550,7 +510,7 @@ function handleNotAllowContract(index) {
             const notAllowButton = row.querySelector('.not-allow-contract');
             notAllowButton.classList.remove('not-allow-contract');
             notAllowButton.classList.add('allow-contract-btn');
-            notAllowButton.textContent = translations[getGlobalLanguage()].allowContract;
+            notAllowButton.textContent = getLocalizedString("allowContract");
 
             updateTransactionTable();
         }
@@ -558,8 +518,6 @@ function handleNotAllowContract(index) {
 }
 
 function handleAddContract(index) {
-    const t = translations[getGlobalLanguage()];
-
     // Check if the modal already exists; if so, remove it
     const existingModal = document.getElementById('contractModal');
     if (existingModal) {
@@ -586,7 +544,7 @@ function handleAddContract(index) {
     icon.classList.add('icon-big');
 
     const headerText = document.createElement('strong');
-    headerText.textContent = t.pickContractHeader; // Localized header text
+    headerText.textContent = getLocalizedString("pickContractHeader");
 
     // Flex-grow div to push the header to the left
     const flexDiv = document.createElement('div');
@@ -599,7 +557,7 @@ function handleAddContract(index) {
 
     // Create body text
     const bodyText = document.createElement('p');
-    bodyText.textContent = t.selectContractBody; // Localized body text
+    bodyText.textContent = getLocalizedString("selectContractBody");
 
     // Create the select element with contract options
     const select = document.createElement('select');
@@ -618,16 +576,16 @@ function handleAddContract(index) {
 
     const addButton = document.createElement('button');
     addButton.innerHTML = `
-        <img src="/static/images/add.png" alt="${t.addButton}" class="button-icon">
-        <span>${t.addButton}</span>
+        <img src="/static/images/add.png" alt="${getLocalizedString("addButton")}" class="button-icon">
+        <span>${getLocalizedString("addButton")}</span>
     `; // Image and text for add button
     addButton.classList.add('button', 'btn-secondary');
-    addButton.addEventListener('click', () => addSelectedContract(index)); // Use addEventListener for consistency
+    addButton.addEventListener('click', () => addSelectedContract(index));
 
     const cancelButton = document.createElement('button');
     cancelButton.innerHTML = `
-        <img src="/static/images/back.png" alt="${t.cancelButton}" class="button-icon">
-        <span>${t.cancelButton}</span>
+        <img src="/static/images/back.png" alt="${getLocalizedString("cancelButton")}" class="button-icon">
+        <span>${getLocalizedString("cancelButton")}</span>
     `; // Image and text for cancel button
     cancelButton.classList.add('button', 'btn-secondary');
     cancelButton.addEventListener('click', closeModal); // Use addEventListener for consistency
@@ -649,8 +607,6 @@ function handleAddContract(index) {
 }
 
 function addSelectedContract(index) {
-    const t = translations[getGlobalLanguage()];
-
     const selectedContractId = document.getElementById('contractSelect').value;
     const selectedContract = contracts.find(contract => contract.id == selectedContractId);
     const transaction = filteredData[index].transaction;
@@ -671,7 +627,7 @@ function addSelectedContract(index) {
         icon.classList.add('icon-big');
 
         const headerText = document.createElement('strong');
-        headerText.textContent = t.contractAmountMismatch;
+        headerText.textContent = getLocalizedString("contractAmountMismatch");
 
         headerContainer.appendChild(icon);
         headerContainer.appendChild(headerText);
@@ -681,9 +637,9 @@ function addSelectedContract(index) {
 
         // Create radio button choices
         const options = [
-            { id: 'new-contract-amount', label: t.newContractAmountOption },
-            { id: 'old-contract-amount', label: t.oldContractAmountOption },
-            { id: 'just-add-to-contract', label: t.addToContractOption }
+            { id: 'new-contract-amount', label: getLocalizedString("newContractAmountOption") },
+            { id: 'old-contract-amount', label: getLocalizedString("oldContractAmountOption") },
+            { id: 'just-add-to-contract', label: getLocalizedString("addToContractOption") }
         ];
 
         options.forEach(option => {
@@ -721,7 +677,7 @@ function addSelectedContract(index) {
 
         const cancelButton = document.createElement('button');
         cancelButton.classList.add('button', 'btn-secondary');
-        cancelButton.textContent = t.cancelButton;
+        cancelButton.textContent = getLocalizedString("cancelButton");
         cancelButton.onclick = closeModal;
 
         buttonContainer.appendChild(submitButton);
@@ -778,9 +734,4 @@ function handleContractChoice(choice, index, selectedContractId) {
             closeModal();
         }
     });
-}
-
-function closeModal() {
-    const modals = document.querySelectorAll('.alert-backdrop');
-    modals.forEach(modal => modal.remove());
 }

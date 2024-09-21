@@ -135,6 +135,11 @@
                     <img src="/static/images/edit.png" alt="Icon">
                     {{translations.bank_change_button }}
                 </button>
+
+                <button type="button" id="delete_bank_button" class="button btn-danger">
+                    <img src="/static/images/delete.png" alt="Icon">
+                    {{ translations.delete_bank_button }}
+                </button>
             </form>
         </div>
     </div>

@@ -13,9 +13,7 @@
     flex-direction: column;
     justify-content: space-between;
     width: 220px;
-    /* Adjust this value if needed */
     overflow-y: auto;
-    /* Enables vertical scrolling if content overflows */
 }
 
 .bottom-buttons {

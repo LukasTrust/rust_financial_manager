@@ -213,5 +213,8 @@
     "button_contract_delete_hint": "Wählen Sie einen oder mehrere Verträge aus, um sie zu löschen.",
     "button_contract_scan_hint": "Scannen Sie nach neuen Verträgen oder Vertragsänderungen.",
     "delete_contract_with_no_transactions": "Vertrag ohne Transaktionen gelöscht",
-    "delete_contract_with_no_transactions_details": "Der Vertrag wurde gelöscht, da er keine Transaktionen mehr hatte"
+    "delete_contract_with_no_transactions_details": "Der Vertrag wurde gelöscht, da er keine Transaktionen mehr hatte",
+    "delete_bank_button": "Bank löschen",
+    "deleted_bank": "Bank gelöscht",
+    "deleted_bank_details": "Die Bank wurde erfolgreich gelöscht."
 }

@@ -1,56 +1,5 @@
 import { log, error } from './main.js';
-import { formatDate, displayCustomAlert, getGlobalLanguage } from './utils.js';
-
-const translations = {
-    English: {
-        openContractsTitle: 'Open Contracts',
-        closedContractsTitle: 'Closed Contracts',
-        showHistory: 'Show History',
-        hideHistory: 'Hide History',
-        noHistoryAvailable: 'No History Available.',
-        mergeSelected: 'Merge Selected Contracts',
-        mergeSelected_detail: 'Please select at least 2 contracts to merge.',
-        deleteSelected: 'Delete Selected Contracts',
-        deleteSelected_detail: 'Please select at least 1 contract to delete.',
-        scanFailed: 'Scan Failed',
-        deletionFalied: 'Deletion Failed',
-        mergeFailed: 'Merge Failed',
-        currentAmount: 'Current Amount',
-        totalAmountOverTime: 'Total Amount Over Time',
-        monthsBetweenPayment: 'Months Between Payment',
-        oldAmount: 'Old Amount',
-        newAmount: 'New Amount',
-        changedAt: 'Changed At',
-        endDate: 'End Date',
-        lastPaymentDate: 'Last Payment Date',
-        contractHistory: 'Contract History',
-        error_loading: 'Error loading contracts',
-    },
-    German: {
-        openContractsTitle: 'Offene Verträge',
-        closedContractsTitle: 'Abgeschlossene Verträge',
-        showHistory: 'Historie anzeigen',
-        hideHistory: 'Historie verstecken',
-        noHistoryAvailable: 'Keine Historie verfügbar.',
-        mergeSelected: 'Ausgewählte Verträge zusammenführen',
-        mergeSelected_detail: 'Bitte wählen Sie mindestens 2 Verträge zum Zusammenführen aus.',
-        deleteSelected: 'Ausgewählte Verträge löschen',
-        deleteSelected_detail: 'Bitte wählen Sie mindestens 1 Vertrag zum Löschen aus.',
-        scanFailed: 'Scan fehlgeschlagen',
-        deletionFalied: 'Löschen fehlgeschlagen',
-        mergeFailed: 'Zusammenführen fehlgeschlagen',
-        currentAmount: 'Aktueller Betrag',
-        totalAmountOverTime: 'Gesamtbetrag über die Zeit',
-        monthsBetweenPayment: 'Monate zwischen Zahlungen',
-        oldAmount: 'Alter Betrag',
-        newAmount: 'Neuer Betrag',
-        changedAt: 'Geändert am',
-        endDate: 'Enddatum',
-        lastPaymentDate: 'Letztes Zahlungsdatum',
-        contractHistory: 'Vertragsgeschichte',
-        error_loading: 'Fehler beim Laden der Verträge',
-    }
-};
+import { formatDate, displayCustomAlert, getLocalizedString } from './utils.js';
 
 const closedContractsWrapper = document.createElement('div');
 const openContractsWrapper = document.createElement('div');
@@ -69,7 +18,7 @@ export function loadContracts() {
         document.getElementById('toggle-closed-contracts').addEventListener('click', showClosedContracts);
     } catch (err) {
         error(`Error loading contracts: ${err.message}`, 'loadContracts');
-        displayCustomAlert('error', translations[getGlobalLanguage()].error_loading, err.message);
+        displayCustomAlert('error', getLocalizedString("error_loading"), err.message);
     } finally {
         const end = performance.now();
         log(`Finished loading contracts in ${end - start}ms`, 'loadContracts');
@@ -127,7 +76,7 @@ function updateContractsView(contractsData) {
         if (!openContractsTitle) {
             openContractsTitle = document.createElement('h3');
             openContractsTitle.id = 'open-contracts-title';
-            openContractsTitle.textContent = translations[getGlobalLanguage()].openContractsTitle;
+            openContractsTitle.textContent = getLocalizedString("openContractsTitle");
         }
         container.appendChild(openContractsTitle);
         container.appendChild(openContractsWrapper);
@@ -136,7 +85,7 @@ function updateContractsView(contractsData) {
         if (!closedContractsTitle) {
             closedContractsTitle = document.createElement('h3');
             closedContractsTitle.id = 'closed-contracts-title';
-            closedContractsTitle.textContent = translations[getGlobalLanguage()].closedContractsTitle;
+            closedContractsTitle.textContent = getLocalizedString("closedContractsTitle");
         }
         const toggleButton = document.getElementById('toggle-closed-contracts');
         const slider = toggleButton.querySelector('.slider');
@@ -170,11 +119,10 @@ function attachContractEventListeners() {
                     const index = target.getAttribute('data-index');
                     const historyElement = document.getElementById(`contract-history-${index}`);
                     const isHidden = historyElement.classList.toggle('hidden');
-                    const lang = getGlobalLanguage();
                     const icon = target.querySelector('img');
 
                     // Update the button text based on the state
-                    target.childNodes[1].textContent = isHidden ? translations[lang].showHistory : translations[lang].hideHistory;
+                    target.childNodes[1].textContent = isHidden ? getLocalizedString("showHistory") : getLocalizedString("hideHistory");
                     target.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
 
                     // Update the icon based on the state
@@ -271,7 +219,7 @@ async function scanContracts() {
         }
     } catch (err) {
         error(`Error scanning contracts: ${err.message}`, 'scanContracts');
-        displayCustomAlert('error', translations[getGlobalLanguage()].scanFailed, err.message);
+        displayCustomAlert('error', getLocalizedString("scanFailed"), err.message);
     } finally {
         const end = performance.now();
         log(`Scanned contracts in ${end - start}ms`, 'scanContracts');
@@ -285,10 +233,8 @@ async function deleteSelectedContracts() {
     try {
         const selectedContracts = document.querySelectorAll('.selected');
 
-        const lang = getGlobalLanguage();
-
         if (selectedContracts.length === 0) {
-            displayCustomAlert('error', translations[lang].deleteSelected, translations[lang].deleteSelected_detail);
+            displayCustomAlert('error', getLocalizedString("deleteSelected"), getLocalizedString("deleteSelected_detail"));
             return;
         }
 
@@ -315,7 +261,7 @@ async function deleteSelectedContracts() {
         }
     } catch (err) {
         error(`Error deleting contracts: ${err.message}`, 'deleteSelectedContracts');
-        displayCustomAlert('error', translations[getGlobalLanguage()].deletionFalied, err.message);
+        displayCustomAlert('error', getLocalizedString("deletionFalied"), err.message);
     } finally {
         const end = performance.now();
         log(`Deleted contracts in ${end - start}ms`, 'deleteSelectedContracts');
@@ -329,10 +275,8 @@ async function mergeSelectedContracts() {
     try {
         const selectedContracts = document.querySelectorAll('.selected');
 
-        const lang = getGlobalLanguage();
-
         if (selectedContracts.length < 2) {
-            displayCustomAlert('error', translations[lang].mergeSelected, translations[lang].mergeSelected_detail);
+            displayCustomAlert('error', getLocalizedString("mergeSelected"), getLocalizedString("mergeSelected_detail"));
             return;
         }
 
@@ -357,7 +301,7 @@ async function mergeSelectedContracts() {
         displayCustomAlert('success', updatedContractsData.header, updatedContractsData.success);
     } catch (err) {
         error(`Error merging contracts: ${err.message}`, 'mergeSelectedContracts');
-        displayCustomAlert('error', translations[getGlobalLanguage()].mergeFailed, err.message);
+        displayCustomAlert('error', getLocalizedString("mergeFailed"), err.message);
     } finally {
         const end = performance.now();
         log(`Merged contracts in ${end - start}ms`, 'mergeSelectedContracts');
@@ -371,13 +315,12 @@ function generateContractHTML(contractWithHistory, index) {
     const { contract, contract_history, total_amount_paid, last_payment_date } = contractWithHistory;
     const currentAmountClass = contract.current_amount < 0 ? 'negative' : 'positive';
     const totalAmountClass = total_amount_paid < 0 ? 'negative' : 'positive';
-    const lang = getGlobalLanguage();
 
     // Localized strings
     const dateLabel = contract.end_date
-        ? translations[lang].endDate
-        : translations[lang].lastPaymentDate;
-    const showHistoryText = translations[lang].showHistory;
+        ? getLocalizedString("endDate")
+        : getLocalizedString("lastPaymentDate");
+    const showHistoryText = getLocalizedString("showHistory");
 
     const showImageSrc = '/static/images/show.png';
 
@@ -391,16 +334,16 @@ function generateContractHTML(contractWithHistory, index) {
                 <img src="/static/images/edit.png" alt="Edit Icon" class="edit-icon" />
                 <input type="text" class="contract-name" value="${contract.name}" data-index="${index}" />
             </div>
-            <p>${translations[lang].currentAmount}: <span class="${currentAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
-            <p>${translations[lang].totalAmountOverTime}: <span class="${totalAmountClass}">$${total_amount_paid.toFixed(2)}</span></p>
-            <p>${translations[lang].monthsBetweenPayment}: ${contract.months_between_payment}</p>
+            <p>${getLocalizedString("currentAmount")}: <span class="${currentAmountClass}">$${contract.current_amount.toFixed(2)}</span></p>
+            <p>${getLocalizedString("totalAmountOverTime")}: <span class="${totalAmountClass}">$${total_amount_paid.toFixed(2)}</span></p>
+            <p>${getLocalizedString("monthsBetweenPayment")}: ${contract.months_between_payment}</p>
             <p>${dateLabel}: <span>${dateValue}</span></p>
             <button class="toggle-history-btn" data-index="${index}">
                 <img src="${showImageSrc}" alt="Toggle History" data-state="show">
                 ${showHistoryText}
             </button>
             <div id="contract-history-${index}" class="hidden contract-history">
-                <h4>${translations[lang].contractHistory}:</h4>
+                <h4>${getLocalizedString("contractHistory")}:</h4>
                 <ul>${generateHistoryHTML(contract_history)}</ul>
             </div>
         </div>
@@ -416,15 +359,13 @@ function generateHistoryHTML(contractHistory) {
     const start = performance.now();
     log('Generating history HTML', 'generateHistoryHTML');
 
-    const lang = getGlobalLanguage();
-
     const html = contractHistory.length === 0
-        ? `<li>${translations[lang].noHistoryAvailable}</li>`
+        ? `<li>${getLocalizedString("noHistoryAvailable")}</li>`
         : contractHistory.map(({ old_amount, new_amount, changed_at }) => `
             <li>
-                <p>${translations[lang].newAmount}: <span class="${new_amount < 0 ? 'negative' : 'positive'}">$${new_amount.toFixed(2)}</span></p>
-                <p>${translations[lang].oldAmount}: <span class="${old_amount < 0 ? 'negative' : 'positive'}">$${old_amount.toFixed(2)}</span></p>
-                <p>${translations[lang].changedAt}: ${formatDate(changed_at)}</p>
+                <p>${getLocalizedString("newAmount")}: <span class="${new_amount < 0 ? 'negative' : 'positive'}">$${new_amount.toFixed(2)}</span></p>
+                <p>${getLocalizedString("oldAmount")}: <span class="${old_amount < 0 ? 'negative' : 'positive'}">$${old_amount.toFixed(2)}</span></p>
+                <p>${getLocalizedString("changedAt")}: ${formatDate(changed_at)}</p>
             </li>
         `).join('');
 

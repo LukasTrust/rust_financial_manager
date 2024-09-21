@@ -213,5 +213,8 @@
     "button_contract_delete_hint": "Select one or more contracts to delete them.",
     "button_contract_scan_hint": "Scan for new contracts or contract changes.",
     "delete_contract_with_no_transactions": "Deleted contract with no transactions",
-    "delete_contract_with_no_transactions_details": "The contract was deleted because it has no more transactions."
+    "delete_contract_with_no_transactions_details": "The contract was deleted because it has no more transactions.",
+    "delete_bank_button": "Delete Bank",
+    "deleted_bank": "Deleted bank",
+    "deleted_bank_details": "The bank has been deleted successfully."
 }

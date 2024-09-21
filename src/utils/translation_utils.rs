@@ -114,6 +114,7 @@ pub fn get_bank_localized_strings(language: Language) -> HashMap<&'static str, S
         "bank_balance_after_column",
         "bank_date_column",
         "bank_change_button",
+        "delete_bank_button",
         "transactions_count",
         "transactions_count_hint",
         "transactions_average_amount",

@@ -1,38 +1,5 @@
 import { error, log } from './main.js';
-import { displayCustomAlert, parseJsonResponse, getGlobalLanguage, setGlobalLanguage } from './utils.js';
-
-const localizedStrings = {
-    English: {
-        delete_account_header: "Delete Account",
-        delete_account_confirmation: "Are you sure you want to delete your account? This action cannot be undone.",
-        delete_account_button: "Delete Account",
-        cancel_button: "Cancel",
-        change_password_header: "Change Password",
-        success_message: "Operation successful",
-        language_set_success: "Language set to ",
-        language_set_error: "Failed to set language"
-    },
-    German: {
-        delete_account_header: "Konto löschen",
-        delete_account_confirmation: "Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
-        delete_account_button: "Konto löschen",
-        cancel_button: "Abbrechen",
-        change_password_header: "Passwort ändern",
-        success_message: "Aktion erfolgreich",
-        language_set_success: "Sprache geändert zu ",
-        language_set_error: "Fehler beim Einstellen der Sprache"
-    }
-};
-
-// Function to get the localized string.
-function getLocalizedString(key) {
-    const language = getGlobalLanguage();
-    if (!localizedStrings[language]) {
-        error('Language not supported:', 'getLocalizedString', language);
-        return '';
-    }
-    return localizedStrings[language][key] || key;
-}
+import { displayCustomAlert, parseJsonResponse, getGlobalLanguage, setGlobalLanguage, closeModal, getLocalizedString } from './utils.js';
 
 export function initializeSettings() {
     const startTime = performance.now();
@@ -236,10 +203,4 @@ function sendDeleteRequest() {
         .catch(err => {
             error('Error deleting account', 'sendDeleteRequest', err);
         });
-}
-
-function closeModal() {
-    log('Closing delete account modal', 'closeModal');
-    const modals = document.querySelectorAll('.alert-backdrop');
-    modals.forEach(modal => modal.remove());
 }

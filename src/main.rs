@@ -25,6 +25,7 @@ use routes::register::{register_form, register_user};
 use routes::update_csv::update_csv;
 use routes::update_date_range::update_date_range;
 use routes::upload_csv::upload_csv;
+use rust_financial_manager::routes::bank::delete_bank;
 use rust_financial_manager::routes::bank_transaction::{
     bank_transaction_data, transaction_set_old_amount, transaction_update_contract_amount,
 };
@@ -65,6 +66,7 @@ fn rocket() -> _ {
                 add_bank_form,
                 // Bank
                 bank_view,
+                delete_bank,
                 // Update CSV
                 update_csv,
                 // Upload CSV

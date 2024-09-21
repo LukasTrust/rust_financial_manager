@@ -25,6 +25,7 @@ use routes::upload_csv::upload_csv;
 use rust_financial_manager::database::db_connector::DbConn;
 use rust_financial_manager::database::models::{NewBank, NewUser, User};
 use rust_financial_manager::routes;
+use rust_financial_manager::routes::bank::delete_bank;
 use rust_financial_manager::routes::bank_transaction::{
     bank_transaction_data, transaction_set_old_amount, transaction_update_contract_amount,
 };
@@ -94,6 +95,7 @@ async fn init_client() -> Client {
                 add_bank_form,
                 // Bank
                 bank_view,
+                delete_bank,
                 // Update CSV
                 update_csv,
                 // Upload CSV
