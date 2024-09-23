@@ -10,28 +10,57 @@
 Rust Financial Manager is a lightweight and efficient web-based financial management tool developed in Rust using the Rocket framework and Diesel ORM for PostgreSQL integration. It aims to provide a simple and intuitive interface for managing personal finances, tracking expenses, and generating reports.
 
 ### Features
-- **Expense Tracking**: Easily add and categorize expenses.
-- **Income Management**: Track various income sources and monitor financial growth.
-- **Reports & Analytics**: Generate visual reports to understand spending habits.
-- **Secure & Efficient**: Built with Rust, ensuring safety and performance.
+- **Multi-User Support** The application allows multiple users to use it simultaneously. However, it is not recommended to expose it to the internet as there is no data encryption implemented. It is best suited for use on a home server
+- **Multiple Bank Accounts per User** Users can track and manage multiple bank accounts simultaneously, providing a comprehensive overview of their financial situation.
+- **CSV Data Import** Data can be uploaded only via CSV files. Users must specify which columns (starting from 0) contain the required data points: *Counterparty*, *Amount*, *Balance after transaction*, and *Date*. Without this setup, the upload will not be possible
+- **Automatic Contract Detection** The application analyzes the data to identify recurring patterns that indicate a contract, such as regular payments or receipts at consistent intervals
+- **Automatic Contract Closure** If a contract is detected but no longer has relevant transactions in the new data over a significant period, the application will automatically mark the contract as closed
+- **Automatic Contract Update** Before a contract is closed, the application checks for transactions with a modified amount (up to 10% change) that still fit the rest of the contract criteria (interval and counterparty). If a match is found, a *Contract History* entry is created with the old amount and the change date, while the contract is updated with the new amount and remains active
+- **Contract Merging** In cases where the application cannot automatically merge contracts due to discrepancies, users can manually select multiple contracts in the contract view and click Merge selected contracts to combine them into one. Note: The contract with the most recent payment date will become the new primary contract (this may be updated to allow user selection).
+-- **Contract Utilities** Contracts can be deleted if merged incorrectly. After deletion, users can re-scan for contracts, and the original contracts will be recreated from the data. Users can also view different contract histories and review closed contracts
+-- **Transaction View** If transactions belong to a contract but were not automatically matched, users can select the transaction row, click Add contract, and choose the appropriate contract. If the transaction amount differs from the contract, the application will prompt the user on how to handle the discrepancy, as shown in image *Add_transaction_2*
+-- **Assign Transactions to Contracts** If you have transactions that belonge to a contract but where not match to it you can click on thier row and click *Add contract* and then selecte the contract you want to add it to. If the amount of the transaction matches that of the contract that is is but if not you will be asked how the appliaction should handle the data, which is displayed in image [**Add_transaction_2**](#add-transaction-to-contract-window)
+-- **Transaction Utilities** Transactions can be removed from contracts if they were incorrectly matched or added by mistake. If they are re-added during subsequent scans, users can set them as Contract not allowed, preventing them from being considered in future scans. Transactions can also be hidden or unhidden as needed
+-- **Localization** The application includes built-in localization support and currently supports both English and German
 
 ## Screenshots
 
+### Login
+The login page of the site
+![Login](screenshots/login.png)
+
+### Register
+The register page of the site
+![Register](screenshots/register.png)
+
+### Settings
+The settings page of the site
+![Settings](screenshots/bank_view.png)
+
 ### Dashboard Overview
-A summary of your financial status with key metrics.
+A summary of your financial status with key metrics
 ![Dashboard](screenshots/dashboard.png)
 
-### Expense Tracking
-Add, edit, and delete expenses effortlessly.
-![Expense Tracking](screenshots/expense_tracking.png)
+### Add bank page
+A view in which a new bank can be added
+![Add_bank](screenshots/add_bank.png)
 
-### Income Management
-Manage various income sources and track growth.
-![Income Management](screenshots/income_management.png)
+### Specific Bank page
+A view that displayes the data of a bank and can be used to upload new data in form of CSV files
+![Bank](screenshots/bank_view.png)
 
-### Reports & Analytics
-Visualize your financial data through interactive charts and reports.
-![Reports & Analytics](screenshots/reports_analytics.png)
+### Contracts page
+A view that displayes the contracts of a specific bank that were found in the data. The contracts are displayed in a crad view
+![Contracts](screenshots/bank_view.png)
+
+### Transactions page
+A view that displayes the transactions of a specific bank that were found in the data. The transactions are displayed in a grid view
+![Transactions](screenshots/bank_view.png)
+
+### Add transaction to contract window
+The small windows that will guide you throw the add transaction to contract view
+![Add_transaction](screenshots/add_to_contract_1.png)
+![Add_transaction_2](screenshots/add_to_contract_2.png)
 
 ## Installation
 

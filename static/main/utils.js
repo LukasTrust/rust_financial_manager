@@ -186,7 +186,7 @@ const localizedStrings = {
         contractHistory: 'Contract History',
         error_loading: 'Error loading contracts',
         allowContract: 'Allow contract',
-        notAllowContract: 'Not allow contract',
+        notAllowContract: 'Contract not allowed',
         removeContract: 'Remove contract',
         addContract: 'Add contract',
         hide: 'Hide',
