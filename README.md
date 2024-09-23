@@ -7,10 +7,13 @@
 
 ## About
 
-Rust Financial Manager is a lightweight and efficient web-based financial management tool developed in Rust using the Rocket framework and Diesel ORM for PostgreSQL integration. It aims to provide a simple and intuitive interface for managing personal finances, tracking expenses, and generating reports.
+*Rust Financial Manager* is a lightweight and efficient web-based financial management tool, designed to help users easily track and manage their finances. Built with Rust, it leverages the Rocket framework for seamless web performance and utilizes Diesel ORM for robust PostgreSQL integration. With its user-friendly interface and powerful features, Rust Financial Manager empowers individuals to gain a clearer overview of their financial situation.
+
+With the provided *docker-compose.yml*, Rust Financial Manager can be easily deployed on a home server. 
+**NOTE** This application should not be run on the open internet, as it currently lacks encryption. This focus on local use ensures your financial data remains secure and private.
 
 ### Features
-- **Multi-User Support** The application allows multiple users to use it simultaneously. However, it is not recommended to expose it to the internet as there is no data encryption implemented. It is best suited for use on a home server
+- **Multi-User Support** The application allows multiple users to use it simultaneously
 - **Multiple Bank Accounts per User** Users can track and manage multiple bank accounts simultaneously, providing a comprehensive overview of their financial situation.
 - **CSV Data Import** Data can be uploaded only via CSV files. Users must specify which columns (starting from 0) contain the required data points: *Counterparty*, *Amount*, *Balance after transaction*, and *Date*. Without this setup, the upload will not be possible
 - **Automatic Contract Detection** The application analyzes the data to identify recurring patterns that indicate a contract, such as regular payments or receipts at consistent intervals
