@@ -21,7 +21,7 @@ ARG pkg=rust_financial_manager
 WORKDIR /build
 
 # Clone the specific branch from the GitHub repository
-RUN git clone --branch release_test https://github.com/LukasTrust/rust_financial_manager.git .
+RUN git clone --branch master https://github.com/LukasTrust/rust_financial_manager.git .
 
 # Build the application
 RUN --mount=type=cache,target=/build/target \
