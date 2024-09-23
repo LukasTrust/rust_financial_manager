@@ -25,7 +25,6 @@ jobs:
           cargo --version
           rustup component add clippy rustfmt
           cargo install cargo-tarpaulin cargo-audit
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
   cargo_build_release:
     runs-on: ubuntu-latest
@@ -38,28 +37,31 @@ jobs:
         run: |
           cargo build --release
 
-  run_tests:
+  run_tests_and_coverage:
     runs-on: ubuntu-latest
     needs: cargo_build_release
     steps:
       - uses: actions/checkout@v3
 
-      # Install Docker and Docker Compose
-      - name: Install Docker and Docker Compose
+      # Install Docker
+      - name: Install Docker
         run: |
           sudo apt-get update
-          sudo apt-get install -y docker-compose
+          sudo apt-get install -y docker.io
 
-      # Copy environment variables file
-      - name: Copy environment variables file
+      # Pull the prebuilt Docker image that sets up the application and database
+      - name: Pull Docker image
         run: |
-          cp .env .env.ci
+          docker pull your-docker-image:latest
 
-      # Start services and run tests with Docker Compose (no caching)
-      - name: Start Services and Run Tests
+      # Run tests and code coverage inside Docker container
+      - name: Run Tests and Coverage inside Docker container
         run: |
-          docker-compose --env-file .env.ci up --build --no-cache --exit-code-from rust_app
-
+          docker run --env-file .env.ci your-docker-image:latest \
+          /bin/bash -c "\
+            cargo test --release && \
+            cargo tarpaulin --release --engine llvm --ignore-tests --out Xml"
+          
   lint_and_format:
     runs-on: ubuntu-latest
     needs: setup_rust
@@ -71,17 +73,6 @@ jobs:
         run: |
           cargo clippy -- -D warnings
           cargo fmt --check
-
-  run_coverage:
-    runs-on: ubuntu-latest
-    needs: run_tests
-    steps:
-      - uses: actions/checkout@v3
-
-      # Run code coverage
-      - name: Run Coverage
-        run: |
-          cargo tarpaulin --release --engine llvm --ignore-tests --out Xml
 
   documentation_benchmarks_audit:
     runs-on: ubuntu-latest
