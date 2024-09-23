@@ -55,7 +55,7 @@ COPY --from=build /usr/local/cargo/bin/diesel /usr/local/bin/diesel
 COPY --from=build /build/migrations ./migrations
 
 # Copy the .env file into the runtime container
-COPY .env /app/.env
+COPY --from=build /build/.env /app/.env
 
 # Copy the entry point script
 COPY --from=build /build/entrypoint.sh /entrypoint.sh
