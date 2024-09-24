@@ -40,10 +40,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Install Docker and Docker Compose
+      # Remove containerd and install Docker and Docker Compose
       - name: Install Docker and Docker Compose
         run: |
           sudo apt-get update
+          sudo apt-get remove -y containerd  # Remove conflicting containerd package
           sudo apt-get install -y docker.io
           sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
@@ -51,13 +52,13 @@ jobs:
 
       # Set up Docker Compose from the 'docker' subdirectory
       - name: Set up Docker Compose
-        working-directory: ./docker  # Specify the correct working directory
+        working-directory: ./docker
         run: |
           docker-compose up -d
 
       # Run tests in the Rust application container
       - name: Run Tests
-        working-directory: ./docker  # Specify the correct working directory
+        working-directory: ./docker
         run: |
           docker-compose exec rust_app /bin/bash -c "\
             cargo test --release && \
@@ -65,14 +66,14 @@ jobs:
 
       # Upload coverage to Codecov
       - name: Upload coverage to Codecov
-        working-directory: ./docker  # Specify the correct working directory
+        working-directory: ./docker
         run: |
           docker-compose exec rust_app bash -c "\
             bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml"
 
       # Tear down the Docker Compose services after tests complete
       - name: Tear down Docker Compose
-        working-directory: ./docker  # Specify the correct working directory
+        working-directory: ./docker
         run: |
           docker-compose down
 
