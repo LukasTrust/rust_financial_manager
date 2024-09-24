@@ -21,6 +21,7 @@ jobs:
 
   build_and_test:
     runs-on: ubuntu-latest
+    needs: setup_rust
 
     steps:
       - uses: actions/checkout@v3
@@ -39,9 +40,10 @@ jobs:
           docker-compose up -d
 
       # Run tests in the Rust application container
-      - name: Run Tests
+      - name: Run Tests with Docker Compose
         working-directory: ./docker
         run: |
+          docker-compose up -d  # Start the database and Rust app services
           docker-compose exec rust_app /bin/bash -c "\
             cargo test --release && \
             cargo tarpaulin --release --engine llvm --ignore-tests --out Xml"
