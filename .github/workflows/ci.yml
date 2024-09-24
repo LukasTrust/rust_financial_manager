@@ -40,13 +40,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Set up Docker and Docker Compose
+      # Set up Docker and Docker Compose from the 'docker' subdirectory
       - name: Set up Docker Compose
+        working-directory: ./docker  # Specify the correct working directory
         run: |
-          docker-compose -f docker-compose.yml up -d
+          docker-compose up -d
 
       # Run tests in the Rust application container
       - name: Run Tests
+        working-directory: ./docker  # Specify the correct working directory
         run: |
           docker-compose exec rust_app /bin/bash -c "\
             cargo test --release && \
@@ -54,12 +56,14 @@ jobs:
 
       # Upload coverage to Codecov
       - name: Upload coverage to Codecov
+        working-directory: ./docker  # Specify the correct working directory
         run: |
           docker-compose exec rust_app bash -c "\
             bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml"
 
       # Tear down the Docker Compose services after tests complete
       - name: Tear down Docker Compose
+        working-directory: ./docker  # Specify the correct working directory
         run: |
           docker-compose down
 
