@@ -44,29 +44,39 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Install Docker using a GitHub Action
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v2
-
-      # Pull the prebuilt Docker image that sets up the application and database
-      - name: Pull Docker image
+      # Install Docker and Docker Compose
+      - name: Install Docker and Docker Compose
         run: |
-          docker pull your-docker-image:latest
+          sudo apt-get update
+          sudo apt-get install -y docker.io docker-compose
 
-      # Run tests and code coverage inside Docker container
-      - name: Run Tests and Coverage inside Docker container
+      # Set up and run Docker Compose from the docker folder
+      - name: Set up Docker Compose
+        working-directory: ./docker  # Set the directory where your Docker files exist
         run: |
-          docker run --env-file .env.ci your-docker-image:latest \
-          /bin/bash -c "\
+          docker-compose up -d
+
+      # Run tests inside the Docker container
+      - name: Run Tests inside Docker container
+        working-directory: ./docker
+        run: |
+          docker-compose exec docker-compose.yml /bin/bash -c "\
             cargo test --release && \
             cargo tarpaulin --release --engine llvm --ignore-tests --out Xml"
 
       # Upload coverage to Codecov
       - name: Upload coverage to Codecov
+        working-directory: ./docker
         run: |
           bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      # Tear down the Docker Compose services after tests complete
+      - name: Tear down Docker Compose
+        working-directory: ./docker
+        run: |
+          docker-compose down
 
   lint_and_format:
     runs-on: ubuntu-latest
