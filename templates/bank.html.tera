@@ -86,7 +86,7 @@
 
         <!-- Form Panel Container -->
         <div
-            style="margin-top: 5%; margin-right: 20px;">
+            style="margin-top: 5%; padding-right: 20px;">
             <!-- Date Range Picker -->
             <div class="form-group" style="width: 100%">
                 <label for="dateRange" class="date-label">{{
