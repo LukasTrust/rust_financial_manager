@@ -61,7 +61,14 @@ jobs:
           /bin/bash -c "\
             cargo test --release && \
             cargo tarpaulin --release --engine llvm --ignore-tests --out Xml"
-          
+
+      # Upload coverage to Codecov
+      - name: Upload coverage to Codecov
+        run: |
+          bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   lint_and_format:
     runs-on: ubuntu-latest
     needs: setup_rust
