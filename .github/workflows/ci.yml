@@ -19,88 +19,47 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Cache Cargo dependencies
-      - name: Cache Cargo Registry
-        uses: actions/cache@v3
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-registry-
-
-      - name: Cache Cargo Build
-        uses: actions/cache@v3
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-build-
-
-      # Set up Rust environment and tools
-      - name: Set up Rust
-        run: |
-          rustc --version
-          cargo --version
-          rustup component add clippy rustfmt
-          cargo install cargo-tarpaulin cargo-audit
-
-  cargo_build_release:
+  build_and_test:
     runs-on: ubuntu-latest
     needs: setup_rust
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test_user"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v3
 
-      # Build the project in release mode without caching
-      - name: Build with Cargo in Release Mode
-        run: |
-          cargo build --release
-
-  run_tests_and_coverage:
-    runs-on: ubuntu-latest
-    needs: cargo_build_release
-    steps:
-      - uses: actions/checkout@v3
-
-      # Install Docker and Docker Compose from the official Docker repo
-      - name: Install Docker and Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get remove -y containerd  # Remove conflicting containerd package
-          sudo apt-get install -y \
-            ca-certificates \
-            curl \
-            gnupg \
-            lsb-release
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-          sudo apt-get update
-          sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-      # Set up and run Docker Compose from the docker folder
+      # Set up Docker and Docker Compose
       - name: Set up Docker Compose
-        working-directory: ./docker  # Set the directory where your Docker files exist
         run: |
-          docker-compose up --build -d
+          docker-compose -f docker-compose.yml up -d
 
-      # Run tests inside the Docker container
-      - name: Run Tests inside Docker container
-        working-directory: ./docker
+      # Run tests in the Rust application container
+      - name: Run Tests
         run: |
-          docker-compose exec docker-compose.yml /bin/bash -c "\
+          docker-compose exec rust_app /bin/bash -c "\
             cargo test --release && \
             cargo tarpaulin --release --engine llvm --ignore-tests --out Xml"
 
       # Upload coverage to Codecov
       - name: Upload coverage to Codecov
-        working-directory: ./docker
         run: |
-          bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          docker-compose exec rust_app bash -c "\
+            bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml"
 
       # Tear down the Docker Compose services after tests complete
       - name: Tear down Docker Compose
-        working-directory: ./docker
         run: |
           docker-compose down
 
