@@ -31,9 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup_rust
     steps:
-      - uses: actions/checkout@v3
-
-      # Build the project in release mode without caching
+      # No need to checkout again, workspace is already available
+      # Build the project in release mode
       - name: Build with Cargo in Release Mode
         run: |
           cargo build --release
@@ -44,11 +43,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Install Docker
+      # Remove any existing containerd or docker installations that may conflict
+      - name: Remove conflicting container runtimes
+        run: |
+          sudo apt-get remove -y containerd docker docker-engine docker.io containerd.io
+
+      # Install Docker using the official Docker installation script
       - name: Install Docker
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker.io
+          curl -fsSL https://get.docker.com | sh
 
       # Pull the prebuilt Docker image that sets up the application and database
       - name: Pull Docker image
@@ -74,8 +77,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup_rust
     steps:
-      - uses: actions/checkout@v3
-
       # Lint and format code
       - name: Lint and Format
         run: |
@@ -86,11 +87,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup_rust
     steps:
-      - uses: actions/checkout@v3
-
       # Generate documentation, run benchmarks, and audit dependencies
       - name: Documentation, Benchmarks, and Audit
         run: |
           cargo doc --no-deps
           cargo bench
-          cargo audit
+          cargo audit --deny-warnings
