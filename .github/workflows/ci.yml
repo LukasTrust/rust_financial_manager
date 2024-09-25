@@ -19,6 +19,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # Install Rust toolchain using `actions-rs/toolchain`
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable  # or specify a version like '1.56.0'
+          components: rustfmt, clippy  # Optionally include rustfmt and clippy
+
+      # Optional: Verify installation
+      - name: Verify Cargo installation
+        run: cargo --version
+
   build_and_test:
     runs-on: ubuntu-latest
     needs: setup_rust
