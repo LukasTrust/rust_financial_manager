@@ -25,6 +25,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
+        run_tests: ${RUN_TESTS}
         pkg: rust_financial_manager
     container_name: rust_app
     environment:
