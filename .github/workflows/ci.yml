@@ -29,24 +29,29 @@ jobs:
 
       # Set RUN_TESTS to true for Docker Compose
       - name: Set Environment Variable
+        working-directory: ./docker
         run: echo "RUN_TESTS=true" >> $GITHUB_ENV  # Use this if you want to run tests
 
        # Start Docker Compose
       - name: Start Docker Compose
+        working-directory: ./docker
         run: docker-compose up -d
 
       # Run additional commands or tests in the container if needed
       - name: Run Tests with Docker Compose
+        working-directory: ./docker
         run: |
           docker-compose exec -T rust_app /bin/bash -c "cargo tarpaulin --release --engine llvm --ignore-tests --out Xml"
           
         # Upload coverage to Codecov
       - name: Upload coverage to Codecov
+        working-directory: ./docker
         run: |
           docker-compose exec -T rust_app bash -c "bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml"
 
         # Tear down the Docker Compose services after tests complete
       - name: Tear down Docker Compose
+        working-directory: ./docker
         run: docker-compose down
 
   lint_and_format:
