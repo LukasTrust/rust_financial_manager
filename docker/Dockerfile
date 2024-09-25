@@ -16,18 +16,12 @@ RUN cargo install diesel_cli --no-default-features --features postgres
 
 # Define build argument with default value
 ARG pkg=rust_financial_manager
-ARG run_tests=false  # Default to false
 
 # Create a working directory
 WORKDIR /build
 
 # Clone the specific branch from the GitHub repository
 RUN git clone --branch master https://github.com/LukasTrust/rust_financial_manager.git .
-
-# Run tests if the run_tests argument is true
-RUN if [ "$run_tests" = "true" ]; then \
-    cargo test --release; \
-    fi
 
 # Build the application
 RUN --mount=type=cache,target=/build/target \
@@ -37,8 +31,8 @@ RUN --mount=type=cache,target=/build/target \
     cargo build --release; \
     objcopy --compress-debug-sections target/release/$pkg ./main
 
-# Stage 2: Minimal runtime image
-FROM debian:bookworm-slim
+# Stage 2: Runtime image with Cargo included (for testing)
+FROM rust:1-slim-bookworm
 
 # Install necessary runtime libraries, including PostgreSQL client library and openssl
 RUN apt-get update && \

@@ -14,8 +14,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  setup_rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
   build_and_test:
     runs-on: ubuntu-latest
+    needs: setup_rust
 
     steps:
       - uses: actions/checkout@v3
@@ -27,35 +33,34 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version  # Ensure Docker Compose is installed
 
-      # Set RUN_TESTS to true for Docker Compose
-      - name: Set Environment Variable
-        working-directory: ./docker
-        run: echo "RUN_TESTS=true" >> $GITHUB_ENV  # Use this if you want to run tests
 
-       # Start Docker Compose
-      - name: Start Docker Compose
-        working-directory: ./docker
-        run: docker-compose up -d
-
-      # Run additional commands or tests in the container if needed
+      # Run tests in the Rust application container
       - name: Run Tests with Docker Compose
         working-directory: ./docker
         run: |
-          docker-compose exec -T rust_app /bin/bash -c "cargo tarpaulin --release --engine llvm --ignore-tests --out Xml"
-          
-        # Upload coverage to Codecov
+          docker-compose up -d  # Start the database and Rust app services
+          docker-compose exec -T rust_app /bin/bash -c "\
+            cargo test --release && \
+            cargo tarpaulin --release --engine llvm --ignore-tests --out Xml"
+
+
+      # Upload coverage to Codecov
       - name: Upload coverage to Codecov
         working-directory: ./docker
         run: |
-          docker-compose exec -T rust_app bash -c "bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml"
+          docker-compose exec -T rust_app bash -c "\
+          bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml"
 
-        # Tear down the Docker Compose services after tests complete
+
+      # Tear down the Docker Compose services after tests complete
       - name: Tear down Docker Compose
         working-directory: ./docker
-        run: docker-compose down
+        run: |
+          docker-compose down
 
   lint_and_format:
     runs-on: ubuntu-latest
+    needs: setup_rust
     steps:
       - uses: actions/checkout@v3
 
@@ -67,6 +72,7 @@ jobs:
 
   documentation_benchmarks_audit:
     runs-on: ubuntu-latest
+    needs: setup_rust
     steps:
       - uses: actions/checkout@v3
 
