@@ -31,8 +31,8 @@ RUN --mount=type=cache,target=/build/target \
     cargo build --release; \
     objcopy --compress-debug-sections target/release/$pkg ./main
 
-# Stage 2: Create a minimal runtime image
-FROM debian:bookworm-slim
+# Stage 2: Runtime image with Cargo included (for testing)
+FROM rust:1-slim-bookworm
 
 # Install necessary runtime libraries, including PostgreSQL client library and openssl
 RUN apt-get update && \
