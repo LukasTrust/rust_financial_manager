@@ -33,11 +33,6 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version  # Ensure Docker Compose is installed
 
-      # Set up Docker Compose from the 'docker' subdirectory
-      - name: Set up Docker Compose
-        working-directory: ./docker
-        run: |
-          docker-compose up -d
 
       # Run tests in the Rust application container
       - name: Run Tests with Docker Compose
