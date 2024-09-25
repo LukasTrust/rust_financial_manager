@@ -39,16 +39,18 @@ jobs:
         working-directory: ./docker
         run: |
           docker-compose up -d  # Start the database and Rust app services
-          docker-compose exec rust_app /bin/bash -c "\
+          docker-compose exec -T rust_app /bin/bash -c "\
             cargo test --release && \
             cargo tarpaulin --release --engine llvm --ignore-tests --out Xml"
+
 
       # Upload coverage to Codecov
       - name: Upload coverage to Codecov
         working-directory: ./docker
         run: |
-          docker-compose exec rust_app bash -c "\
+          docker-compose exec -T rust_app bash -c "\
             bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml"
+
 
       # Tear down the Docker Compose services after tests complete
       - name: Tear down Docker Compose
