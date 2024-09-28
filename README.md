@@ -7,6 +7,28 @@
 
 ---
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Key Features](#key-features)
+3. [Other Features](#other-features)
+4. [Screenshots](#screenshots)
+   - [Dashboard Overview](#dashboard-overview)
+   - [Bank Overview](#bank-overview)
+   - [Contracts Page](#contracts-page)
+   - [Transactions Page](#transactions-page)
+   - [Add Transaction to Contract](#add-transaction-to-contract)
+   - [Login](#login)
+   - [Register](#register)
+   - [Settings](#settings)
+5. [Installation](#installation)
+   - [Prerequisites](#prerequisites)
+   - [Setup Instructions](#setup-instructions)
+6. [Updating the Application](#updating-the-application)
+7. [Additional Features](#additional-features)
+
+---
+
 ## Overview
 
 **Rust Financial Manager** is a lightweight web-based financial tool designed for seamless personal finance management. Built with Rust and powered by the Rocket framework, it ensures efficient performance and integrates with PostgreSQL through Diesel ORM. The user-friendly interface provides a comprehensive overview of your financial situation.
@@ -118,6 +140,6 @@ docker-compose up --build
 - **Automatic Contract Update:** If a contract is about to be closed but the application detects new transactions with a slightly modified amount (up to 10% difference), it will create a Contract History entry and update the contract with the new amount. This ensures contracts with small variations remain tracked properly.
 - **Contract Merging:** Users can manually merge contracts when automatic merging isn't possible due to discrepancies. The contract with the most recent payment date becomes the primary contract, but this may be adjusted in future updates to allow user selection of the primary contract.
 - **Contract Utilities:** Users can delete incorrectly merged contracts, and contracts can be recreated by re-scanning the data. This feature also includes the ability to review contract history and manage closed contracts.
-- **Assign Transactions to Contracts:** If transactions that belong to a contract aren't automatically matched, users can manually assign them by selecting the transaction row and clicking Add contract. The app will guide the user through resolving discrepancies, such as different transaction amounts (as shown in [**Add_transaction_2**](#add-transaction-to-contract-window)).
+- **Assign Transactions to Contracts:** If transactions that belong to a contract aren't automatically matched, users can manually assign them by selecting the transaction row and clicking Add contract. The app will guide the user through resolving discrepancies, such as different transaction amounts (as shown in [**Add_transaction_2**](#add_to_contract_1)).
 - **Transaction Utilities:** Transactions that are incorrectly matched can be removed from contracts, and users can mark them as Contract not allowed to exclude them from future scans. Additionally, users can hide or unhide transactions as needed for better visibility.
 - **Localization:** The application supports localization and is currently available in both English and German, ensuring users from different regions can comfortably interact with the tool in their preferred language.
