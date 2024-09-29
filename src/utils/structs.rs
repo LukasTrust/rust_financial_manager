@@ -2,10 +2,10 @@ use std::collections::{BTreeMap, HashMap};
 
 use chrono::NaiveDate;
 use diesel::prelude::*;
-use rocket::{time::Date, FromForm};
+use rocket::FromForm;
 use serde::Serialize;
 
-use crate::database::models::{Contract, ContractHistory};
+use crate::database::models::{Contract, ContractHistory, Transaction};
 
 pub type DataTuple = (f64, String, f64, Option<f64>);
 pub type DataMap = BTreeMap<NaiveDate, Vec<DataTuple>>;
@@ -45,27 +45,6 @@ impl Default for Bank {
             link: None,
         }
     }
-}
-
-#[derive(FromForm)]
-pub struct FormTransactions {
-    pub date: Date,
-    pub counterparty: String,
-    pub amount: f64,
-    pub current_amount_after: f64,
-}
-
-#[derive(Debug, Queryable, Serialize, Clone)]
-pub struct Transaction {
-    pub id: i32,
-    pub bank_id: i32,
-    pub contract_id: Option<i32>,
-    pub date: NaiveDate,
-    pub counterparty: String,
-    pub amount: f64,
-    pub bank_balance_after: f64,
-    pub is_hidden: bool,
-    pub contract_not_allowed: bool,
 }
 
 #[derive(Debug)]

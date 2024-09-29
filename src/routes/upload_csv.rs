@@ -10,13 +10,13 @@ use rocket_db_pools::Connection;
 use std::io::Cursor;
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{CSVConverter, NewTransaction};
+use crate::database::models::{CSVConverter, NewTransaction, Transaction};
 use crate::utils::appstate::{AppState, Language, LOCALIZATION};
 use crate::utils::create_contract::create_contract_from_transactions;
 use crate::utils::get_utils::get_user_id_and_language;
 use crate::utils::insert_utiles::insert_transactions;
 use crate::utils::loading_utils::{load_csv_converter_of_bank, load_transactions_of_bank};
-use crate::utils::structs::{Bank, ErrorResponse, SuccessResponse, Transaction};
+use crate::utils::structs::{Bank, ErrorResponse, SuccessResponse};
 
 #[post("/upload_csv", data = "<file>")]
 pub async fn upload_csv(

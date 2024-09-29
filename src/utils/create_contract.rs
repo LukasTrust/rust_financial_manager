@@ -6,14 +6,13 @@ use rocket_db_pools::Connection;
 use std::collections::{HashMap, HashSet};
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{Contract, NewContract, NewContractHistory};
+use crate::database::models::{Contract, NewContract, NewContractHistory, Transaction};
 use crate::utils::insert_utiles::{insert_contract_histories, insert_contracts};
 use crate::utils::loading_utils::{
     load_contracts_of_bank_without_end_date, load_last_transaction_data_of_bank,
     load_last_transaction_of_contract,
     load_transactions_of_bank_without_contract_and_contract_allowed,
 };
-use crate::utils::structs::Transaction;
 use crate::utils::update_utils::{
     update_contract_with_end_date, update_contract_with_new_amount,
     update_transactions_with_contract,

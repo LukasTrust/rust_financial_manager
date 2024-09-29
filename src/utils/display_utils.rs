@@ -4,13 +4,13 @@ use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::{
-    database::models::Contract,
+    database::models::{Contract, Transaction},
     utils::{appstate::LOCALIZATION, structs::DataMap},
 };
 
 use super::{
     appstate::Language,
-    structs::{Bank, Discrepancy, PerformanceData, Transaction},
+    structs::{Bank, Discrepancy, PerformanceData},
 };
 
 /// Generate balance graph data for plotting.

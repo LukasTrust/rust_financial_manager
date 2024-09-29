@@ -5,11 +5,11 @@ use rocket::serde::json::Json;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
 use crate::database::db_connector::DbConn;
-use crate::database::models::{CSVConverter, Contract, ContractHistory, User};
+use crate::database::models::{CSVConverter, Contract, ContractHistory, Transaction, User};
 use crate::utils::structs::ErrorResponse;
 
 use super::appstate::Language;
-use super::structs::{Bank, Transaction};
+use super::structs::Bank;
 
 pub async fn load_user_by_email(
     email_for_loading: &str,

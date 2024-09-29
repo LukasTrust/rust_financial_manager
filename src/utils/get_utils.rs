@@ -3,7 +3,7 @@ use log::error;
 use rocket::{http::CookieJar, serde::json::Json};
 use rocket_db_pools::Connection;
 
-use crate::database::db_connector::DbConn;
+use crate::database::{db_connector::DbConn, models::Transaction};
 
 use super::{
     appstate::Language,
@@ -12,10 +12,7 @@ use super::{
         load_contract_history, load_contracts_of_bank, load_last_transaction_of_contract,
         load_transactions_of_bank, load_transactions_of_contract,
     },
-    structs::{
-        Bank, ContractWithHistory, ErrorResponse, PerformanceData, Transaction,
-        TransactionWithContract,
-    },
+    structs::{Bank, ContractWithHistory, ErrorResponse, PerformanceData, TransactionWithContract},
 };
 
 pub fn get_user_id(cookies: &CookieJar<'_>) -> Result<i32, Json<ErrorResponse>> {

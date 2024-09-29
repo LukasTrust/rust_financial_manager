@@ -36,6 +36,8 @@ use rust_financial_manager::routes::settings::{
 use rust_financial_manager::utils::appstate::AppState;
 use rust_financial_manager::{database, routes};
 
+/// Main function to start the application
+/// This function will start the rocket server and attach all the routes
 #[launch]
 fn rocket() -> _ {
     env_logger::init_from_env(Env::default().default_filter_or("info"));

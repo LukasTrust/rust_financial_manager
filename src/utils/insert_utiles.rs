@@ -4,10 +4,10 @@ use rocket::serde::json::Json;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
 use super::appstate::Language;
-use super::structs::{Bank, Transaction};
+use super::structs::Bank;
 use crate::database::models::{
     CSVConverter, Contract, ContractHistory, NewCSVConverter, NewContract, NewContractHistory,
-    NewTransaction, NewUser,
+    NewTransaction, NewUser, Transaction,
 };
 use crate::database::{db_connector::DbConn, models::NewBank};
 use crate::utils::appstate::LOCALIZATION;

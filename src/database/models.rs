@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::{banks, contract_history, contracts, csv_converters, transactions, users};
 
+/// Struct to represent a new user
+/// This struct is used in the register form to create a new user
 #[derive(FromForm, Insertable, Debug)]
 #[diesel(table_name = users)]
 pub struct NewUser {
@@ -14,6 +16,8 @@ pub struct NewUser {
     pub password: String,
 }
 
+/// Struct to represent a user
+/// This struct is used in the application to represent a user
 #[derive(Queryable, Debug)]
 #[diesel(table_name = users)]
 pub struct User {
@@ -25,6 +29,8 @@ pub struct User {
     pub language: String,
 }
 
+/// Struct to represent a new bank
+/// This struct is used in the add bank form to create a new bank
 #[derive(Queryable, Insertable, Debug, Deserialize, Serialize, Clone)]
 #[diesel(table_name = banks)]
 pub struct NewBank {
@@ -33,6 +39,8 @@ pub struct NewBank {
     pub link: Option<String>,
 }
 
+/// Struct to represent a new transaction
+/// This struct is used in the upload csv form to create a new transaction, from the data
 #[derive(Insertable, Debug, Queryable)]
 #[diesel(table_name = transactions)]
 pub struct NewTransaction {
@@ -43,6 +51,24 @@ pub struct NewTransaction {
     pub bank_balance_after: f64,
 }
 
+/// Struct to represent a transaction
+/// This struct is used in the application to represent a transaction
+#[derive(Debug, Queryable, Serialize, Clone)]
+pub struct Transaction {
+    pub id: i32,
+    pub bank_id: i32,
+    pub contract_id: Option<i32>,
+    pub date: NaiveDate,
+    pub counterparty: String,
+    pub amount: f64,
+    pub bank_balance_after: f64,
+    pub is_hidden: bool,
+    pub contract_not_allowed: bool,
+}
+
+/// Struct to represent a CSV converter
+/// This struct is used to locate the columns in a CSV file that correspond to the date, counterparty, amount, and bank balance after
+/// If the struct is not present, or fully filled out, the CSV file cannot be parsed
 #[derive(Queryable, Debug, Clone, AsChangeset, Copy)]
 #[diesel(table_name = csv_converters)]
 pub struct CSVConverter {
@@ -54,6 +80,8 @@ pub struct CSVConverter {
     pub bank_balance_after_column: Option<i32>,
 }
 
+/// Struct to represent a new CSV converter
+/// This struct is used in the add bank form to create a new CSV converter
 #[derive(Insertable, Debug)]
 #[diesel(table_name = csv_converters)]
 pub struct NewCSVConverter {
@@ -64,6 +92,8 @@ pub struct NewCSVConverter {
     pub bank_balance_after_column: Option<i32>,
 }
 
+/// Struct to represent a contract
+/// This struct is used in the upload csv form to create a new contract, from the data
 #[derive(Insertable, Debug, Clone)]
 #[diesel(table_name = contracts)]
 pub struct NewContract {
@@ -75,6 +105,8 @@ pub struct NewContract {
     pub start_date: NaiveDate,
 }
 
+/// Struct to represent a contract
+/// This struct is used in the application to represent a contract
 #[derive(Queryable, Insertable, Debug, Clone, Serialize)]
 #[diesel(table_name = contracts)]
 pub struct Contract {
@@ -88,6 +120,9 @@ pub struct Contract {
     pub end_date: Option<NaiveDate>,
 }
 
+/// Struct to represent a new contract history
+/// This struct is used in the upload csv form to create a new contract history, from the data
+/// It is created when a existing contracts amount is changed
 #[derive(Insertable, Debug)]
 #[diesel(table_name = contract_history)]
 pub struct NewContractHistory {
@@ -97,6 +132,8 @@ pub struct NewContractHistory {
     pub changed_at: NaiveDate,
 }
 
+/// Struct to represent a contract history
+/// This struct is used in the application to represent a contract history
 #[derive(Queryable, Debug, Clone, Serialize)]
 #[diesel(table_name = contract_history)]
 pub struct ContractHistory {
