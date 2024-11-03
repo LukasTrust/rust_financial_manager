@@ -31,7 +31,7 @@ pub async fn base(mut db: Connection<DbConn>, cookies: &CookieJar<'_>) -> Templa
 
     let (cookie_user_id, cookie_user_language) = result.unwrap();
 
-    info!("User is loggefd in: {}", cookie_user_id);
+    info!("User is logged in: {}", cookie_user_id);
 
     let banks = load_banks_of_user(cookie_user_id, cookie_user_language, &mut db).await;
 
