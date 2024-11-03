@@ -79,7 +79,7 @@ jobs:
       # Run tests with coverage
       - name: Run tests with coverage
         run: |
-          cargo tarpaulin --out Lcov
+          cargo tarpaulin --out Lcov --out-dir ./target/debug/coverage
 
       # Upload coverage to Codecov
       - name: Upload coverage to Codecov
@@ -87,10 +87,6 @@ jobs:
         with:
           file: ./target/debug/coverage/lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
-
-      # Build the project
-      - name: Build project
-        run: cargo build --verbose
 
       # Run clippy with warnings treated as errors
       - name: Run Clippy
