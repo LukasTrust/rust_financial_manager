@@ -29,7 +29,7 @@ jobs:
           --health-retries=5
 
     env:
-      DATABASE_URL: postgresql://user:password@localhost:5432/financial_manager
+      DATABASE_URL: postgresql://user:password@localhost:5432/test_db
 
     steps:
       # Checkout the repository
@@ -58,11 +58,7 @@ jobs:
       - name: Install Diesel CLI
         run: cargo install diesel_cli --no-default-features --features postgres
 
-      # Wait for PostgreSQL service to be healthy
-      - name: Wait for DB to be ready
-        run: sleep 10
-
-         # Create .env file with DATABASE_URL
+      # Create .env file with DATABASE_URL
       - name: Create .env file
         run: echo "DATABASE_URL=postgresql://user:password@localhost:5432/test_db" > .env
 
