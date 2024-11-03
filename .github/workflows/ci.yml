@@ -1,3 +1,4 @@
+# .github/workflows/ci.yml
 name: Rust CI with PostgreSQL
 
 on:
@@ -48,7 +49,6 @@ jobs:
         run: |
           rustup component add clippy
           rustup component add rustfmt
-          rustup component add llvm-tools-preview  # Required for coverage
 
       # Install cargo-audit (for the audit step)
       - name: Install cargo-audit
@@ -57,6 +57,10 @@ jobs:
       # Install Diesel CLI (for setting up the database)
       - name: Install Diesel CLI
         run: cargo install diesel_cli --no-default-features --features postgres
+
+      # Install cargo-tarpaulin for coverage
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
 
       # Create .env file with DATABASE_URL
       - name: Create .env file
@@ -75,15 +79,14 @@ jobs:
       # Run tests with coverage
       - name: Run tests with coverage
         run: |
-          cargo test --verbose -- --report-time
-          cargo llvm-cov -- -o lcov.info
+          cargo tarpaulin --out Lcov
 
       # Upload coverage to Codecov
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           file: ./target/debug/coverage/lcov.info
-          token: ${{ secrets.CODECOV_TOKEN }} # Use your Codecov token from the GitHub Secrets
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       # Build the project
       - name: Build project
