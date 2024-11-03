@@ -70,14 +70,10 @@ jobs:
       - name: Run Diesel setup
         run: diesel setup
 
-      # Run Diesel migrations
-      - name: Run Diesel migrations
-        run: diesel migration run
-
       # Set up the Rocket.toml configuration
       - name: Configure Rocket.toml
         run: |
-          echo '[debug.databases.postgres_db]' > Rocket.toml
+          echo '[release.databases.postgres_db]' > Rocket.toml
           echo 'url = "postgresql://user:password@localhost:5432/test_db"' >> Rocket.toml
 
       # Run tests
