@@ -5,13 +5,11 @@ use std::vec;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{Contract, ContractHistory, NewContractHistory};
-use crate::utils::appstate::LOCALIZATION;
 use crate::utils::delete_utils::delete_contracts_with_ids;
 use crate::utils::loading_utils::load_contract_history;
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::update_utils::update_transactions_of_contract_to_new_contract;
 
-use super::appstate::Language;
 use super::insert_utiles::insert_contract_histories;
 use super::loading_utils::load_last_transaction_of_contract;
 

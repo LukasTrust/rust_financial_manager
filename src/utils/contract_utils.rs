@@ -5,14 +5,14 @@ use rocket_db_pools::Connection;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::NewContractHistory;
-use crate::utils::appstate::LOCALIZATION;
+use crate::utils::classes::localization::LOCALIZATION;
 use crate::utils::delete_utils::delete_contract_history_with_ids;
 use crate::utils::insert_utiles::insert_contract_histories;
 use crate::utils::update_utils::{
     update_contract_history, update_contract_with_new_amount, update_transactions_with_contract,
 };
 
-use super::appstate::Language;
+use super::classes::language::Language;
 use super::delete_utils::delete_contracts_with_ids;
 use super::loading_utils::{
     load_contract_history, load_contracts_from_ids, load_last_transaction_of_contract,

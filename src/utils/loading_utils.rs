@@ -1,4 +1,3 @@
-use crate::utils::appstate::LOCALIZATION;
 use diesel::{BoolExpressionMethods, ExpressionMethods, QueryDsl};
 use log::error;
 use rocket::serde::json::Json;
@@ -8,7 +7,6 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, Contract, ContractHistory, Transaction, User};
 use crate::utils::structs::ErrorResponse;
 
-use super::appstate::Language;
 use super::structs::Bank;
 
 pub async fn load_user_by_email(

@@ -5,11 +5,11 @@ use std::collections::{BTreeMap, HashMap};
 
 use crate::{
     database::models::{Contract, Transaction},
-    utils::{appstate::LOCALIZATION, structs::DataMap},
+    utils::{classes::localization::LOCALIZATION, structs::DataMap},
 };
 
 use super::{
-    appstate::Language,
+    classes::language::Language,
     structs::{Bank, Discrepancy, PerformanceData},
 };
 

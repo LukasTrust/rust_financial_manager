@@ -4,12 +4,9 @@ use log::error;
 use rocket::serde::json::Json;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
-use crate::{
-    database::db_connector::DbConn,
-    utils::{appstate::LOCALIZATION, structs::ErrorResponse},
-};
+use crate::{database::db_connector::DbConn, utils::classes::localization::LOCALIZATION};
 
-use super::appstate::Language;
+use super::{classes::language::Language, structs::ErrorResponse};
 
 pub async fn delete_contracts_with_ids(
     contract_ids: Vec<i32>,

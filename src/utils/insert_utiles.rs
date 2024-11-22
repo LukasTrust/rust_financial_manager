@@ -3,14 +3,14 @@ use log::{error, info};
 use rocket::serde::json::Json;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
-use super::appstate::Language;
+use super::classes::language::Language;
 use super::structs::Bank;
 use crate::database::models::{
     CSVConverter, Contract, ContractHistory, NewCSVConverter, NewContract, NewContractHistory,
     NewTransaction, NewUser, Transaction,
 };
 use crate::database::{db_connector::DbConn, models::NewBank};
-use crate::utils::appstate::LOCALIZATION;
+use crate::utils::classes::localization::LOCALIZATION;
 use crate::utils::structs::ErrorResponse;
 
 pub async fn insert_user(

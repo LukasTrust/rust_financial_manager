@@ -18,8 +18,9 @@ use crate::utils::update_utils::{
     update_transactions_with_contract,
 };
 
-use super::appstate::{Language, LOCALIZATION};
+use super::classes::language::Language;
 use super::structs::{CounterpartyMap, ErrorResponse};
+use crate::utils::classes::localization::LOCALIZATION;
 
 type Result<T> = std::result::Result<T, Json<ErrorResponse>>;
 

@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use crate::database::db_connector::DbConn;
 use crate::database::models::{NewBank, NewCSVConverter};
-use crate::utils::appstate::LOCALIZATION;
+use crate::utils::classes::localization::LOCALIZATION;
 use crate::utils::get_utils::{get_user_id_and_language, get_user_language};
 use crate::utils::insert_utiles::{insert_bank, insert_csv_converter};
 use crate::utils::loading_utils::load_banks_of_user;

@@ -6,7 +6,7 @@ use rocket_db_pools::Connection;
 use crate::database::{db_connector::DbConn, models::Transaction};
 
 use super::{
-    appstate::Language,
+    classes::language::Language,
     display_utils::{generate_graph_data, generate_performance_value},
     loading_utils::{
         load_contract_history, load_contracts_of_bank, load_last_transaction_of_contract,

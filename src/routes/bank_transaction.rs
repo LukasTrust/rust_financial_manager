@@ -9,13 +9,15 @@ use std::time::Instant;
 use std::vec;
 
 use crate::database::db_connector::DbConn;
-use crate::utils::appstate::{AppState, LOCALIZATION};
+use crate::utils::classes::appstate::AppState;
+use crate::utils::classes::localization::LOCALIZATION;
 use crate::utils::contract_utils::{
     handel_update_amount, handle_remove_contract, handle_set_old_amount,
 };
 use crate::utils::get_utils::{
     get_transactions_with_contract, get_user_id_and_language, get_user_language,
 };
+use crate::utils::interfaces::iAppstate::IAppState;
 use crate::utils::loading_utils::load_transaction_by_id;
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::translation_utils::get_transactions_localized_strings;

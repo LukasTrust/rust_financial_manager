@@ -13,9 +13,10 @@ use rocket_dyn_templates::Template;
 use crate::{
     database::db_connector::DbConn,
     utils::{
-        appstate::{AppState, Language, LOCALIZATION},
+        classes::{appstate::AppState, language::Language, localization::LOCALIZATION},
         delete_utils::delete_user_by_id,
         get_utils::get_user_id_and_language,
+        interfaces::iAppstate::IAppState,
         loading_utils::load_user_by_id,
         structs::{ChangePassword, ErrorResponse, SuccessResponse},
         translation_utils::get_settings_localized_strings,
