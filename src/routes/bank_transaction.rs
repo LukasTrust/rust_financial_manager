@@ -17,7 +17,7 @@ use crate::utils::contract_utils::{
 use crate::utils::get_utils::{
     get_transactions_with_contract, get_user_id_and_language, get_user_language,
 };
-use crate::utils::interfaces::iAppstate::IAppState;
+use crate::utils::interfaces::i_appstate::IAppState;
 use crate::utils::loading_utils::load_transaction_by_id;
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::translation_utils::get_transactions_localized_strings;

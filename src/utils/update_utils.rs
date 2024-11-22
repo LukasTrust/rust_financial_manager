@@ -5,13 +5,12 @@ use log::error;
 use rocket::serde::json::Json;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
+use super::classes::language::Language;
+use super::structs::ErrorResponse;
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, ContractHistory};
 use crate::schema::{contract_history, contracts, csv_converters, transactions, users};
-use crate::utils::appstate::LOCALIZATION;
-
-use super::appstate::Language;
-use super::structs::ErrorResponse;
+use crate::utils::classes::localization::LOCALIZATION;
 
 pub async fn update_transactions_with_contract(
     transaction_ids: Vec<i32>,

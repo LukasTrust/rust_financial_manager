@@ -9,7 +9,7 @@ use crate::database::db_connector::DbConn;
 use crate::utils::classes::appstate::AppState;
 use crate::utils::classes::localization::LOCALIZATION;
 use crate::utils::get_utils::{get_user_id_and_language, get_user_language};
-use crate::utils::interfaces::iAppstate::IAppState;
+use crate::utils::interfaces::i_appstate::IAppState;
 use crate::utils::loading_utils::{load_banks_of_user, load_user_by_name};
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::translation_utils::{

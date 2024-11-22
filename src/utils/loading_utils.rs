@@ -3,11 +3,12 @@ use log::error;
 use rocket::serde::json::Json;
 use rocket_db_pools::{diesel::prelude::RunQueryDsl, Connection};
 
+use super::classes::language::Language;
+use super::structs::Bank;
 use crate::database::db_connector::DbConn;
 use crate::database::models::{CSVConverter, Contract, ContractHistory, Transaction, User};
+use crate::utils::classes::localization::LOCALIZATION;
 use crate::utils::structs::ErrorResponse;
-
-use super::structs::Bank;
 
 pub async fn load_user_by_email(
     email_for_loading: &str,

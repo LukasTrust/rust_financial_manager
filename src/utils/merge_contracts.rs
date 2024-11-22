@@ -3,8 +3,10 @@ use rocket::serde::json::Json;
 use rocket_db_pools::Connection;
 use std::vec;
 
+use super::classes::language::Language;
 use crate::database::db_connector::DbConn;
 use crate::database::models::{Contract, ContractHistory, NewContractHistory};
+use crate::utils::classes::localization::LOCALIZATION;
 use crate::utils::delete_utils::delete_contracts_with_ids;
 use crate::utils::loading_utils::load_contract_history;
 use crate::utils::structs::{ErrorResponse, SuccessResponse};

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use super::appstate::{Language, LOCALIZATION};
+use super::classes::language::Language;
+use crate::utils::classes::localization::LOCALIZATION;
 
 pub fn get_base_localized_strings(language: Language) -> HashMap<&'static str, String> {
     let keys = vec![

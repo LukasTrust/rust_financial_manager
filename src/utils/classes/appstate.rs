@@ -1,5 +1,5 @@
 use crate::utils::{
-    interfaces::iAppstate::IAppState,
+    interfaces::i_appstate::IAppState,
     structs::{Bank, ErrorResponse},
 };
 use log::info;

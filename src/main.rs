@@ -33,7 +33,7 @@ use rust_financial_manager::routes::get_data::get_graph_data;
 use rust_financial_manager::routes::settings::{
     change_password, delete_account, set_user_language, settings,
 };
-use rust_financial_manager::utils::appstate::AppState;
+use rust_financial_manager::utils::classes::appstate::AppState;
 use rust_financial_manager::{database, routes};
 
 /// Main function to start the application

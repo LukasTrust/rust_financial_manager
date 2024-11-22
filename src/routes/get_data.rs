@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 use crate::database::db_connector::DbConn;
 use crate::utils::classes::appstate::AppState;
 use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id_and_language};
-use crate::utils::interfaces::iAppstate::IAppState;
+use crate::utils::interfaces::i_appstate::IAppState;
 use crate::utils::loading_utils::load_banks_of_user;
 use crate::utils::structs::ErrorResponse;
 

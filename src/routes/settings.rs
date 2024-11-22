@@ -16,7 +16,7 @@ use crate::{
         classes::{appstate::AppState, language::Language, localization::LOCALIZATION},
         delete_utils::delete_user_by_id,
         get_utils::get_user_id_and_language,
-        interfaces::iAppstate::IAppState,
+        interfaces::i_appstate::IAppState,
         loading_utils::load_user_by_id,
         structs::{ChangePassword, ErrorResponse, SuccessResponse},
         translation_utils::get_settings_localized_strings,

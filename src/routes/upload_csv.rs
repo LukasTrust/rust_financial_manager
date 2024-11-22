@@ -17,7 +17,7 @@ use crate::utils::classes::localization::LOCALIZATION;
 use crate::utils::create_contract::create_contract_from_transactions;
 use crate::utils::get_utils::get_user_id_and_language;
 use crate::utils::insert_utiles::insert_transactions;
-use crate::utils::interfaces::iAppstate::IAppState;
+use crate::utils::interfaces::i_appstate::IAppState;
 use crate::utils::loading_utils::{load_csv_converter_of_bank, load_transactions_of_bank};
 use crate::utils::structs::{Bank, ErrorResponse, SuccessResponse};
 

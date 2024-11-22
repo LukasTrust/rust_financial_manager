@@ -16,7 +16,7 @@ use crate::utils::delete_utils::delete_contracts_with_ids;
 use crate::utils::get_utils::{
     get_contracts_with_history, get_user_id_and_language, get_user_language,
 };
-use crate::utils::interfaces::iAppstate::IAppState;
+use crate::utils::interfaces::i_appstate::IAppState;
 use crate::utils::loading_utils::load_contracts_from_ids;
 use crate::utils::merge_contracts::{
     handle_all_closed_contracts, handle_open_and_closed_contracts,

@@ -33,7 +33,8 @@ use rust_financial_manager::routes::get_data::get_graph_data;
 use rust_financial_manager::routes::settings::{
     change_password, delete_account, set_user_language, settings,
 };
-use rust_financial_manager::utils::appstate::{AppState, Language};
+use rust_financial_manager::utils::classes::appstate::AppState;
+use rust_financial_manager::utils::classes::language::Language;
 use rust_financial_manager::utils::delete_utils::{delete_bank_by_name, delete_user_by_email};
 use rust_financial_manager::utils::insert_utiles::{insert_bank, insert_user};
 use rust_financial_manager::utils::loading_utils::load_user_by_email;
