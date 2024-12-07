@@ -14,11 +14,9 @@ use crate::utils::classes::localization::LOCALIZATION;
 use crate::utils::contract_utils::{
     handel_update_amount, handle_remove_contract, handle_set_old_amount,
 };
-use crate::utils::get_utils::{
-    get_transactions_with_contract, get_user_id_and_language, get_user_language,
-};
 use crate::utils::interfaces::i_appstate::IAppState;
 use crate::utils::loading_utils::load_transaction_by_id;
+use crate::utils::services::get_service::get_get_service;
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::translation_utils::get_transactions_localized_strings;
 use crate::utils::update_utils::{
@@ -29,7 +27,7 @@ use crate::utils::update_utils::{
 #[get("/bank/transaction")]
 pub async fn bank_transaction(cookies: &CookieJar<'_>) -> Result<Template, Json<ErrorResponse>> {
     let start_time = Instant::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     let translation_string = get_transactions_localized_strings(cookie_user_language);
 
@@ -51,14 +49,16 @@ pub async fn bank_transaction_data(
     db: Connection<DbConn>,
 ) -> Result<Json<Value>, Json<ErrorResponse>> {
     let start_time = Instant::now();
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+    let (cookie_user_id, cookie_user_language) =
+        get_get_service().get_user_id_and_language(cookies)?;
 
     let current_bank = state
         .get_current_bank(cookie_user_id, cookie_user_language)
         .await?;
 
-    let contract_history_string =
-        get_transactions_with_contract(current_bank.id, cookie_user_language, db).await?;
+    let contract_history_string = get_get_service()
+        .get_transactions_with_contract(current_bank.id, cookie_user_language, db)
+        .await?;
 
     let mut result = json!(SuccessResponse::new(
         LOCALIZATION.get_localized_string(cookie_user_language, "transactions_loaded"),
@@ -81,7 +81,7 @@ pub async fn transaction_remove(
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let start_time = Instant::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     let result = handle_remove_contract(transaction_id, cookie_user_language, &mut db).await;
 
@@ -101,7 +101,7 @@ pub async fn transaction_add_to_contract(
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let start_time = Instant::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     update_transactions_with_contract(
         vec![transaction_id],
@@ -132,7 +132,7 @@ pub async fn transaction_update_contract_amount(
     db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let start_time = Instant::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     let result = handel_update_amount(transaction_id, contract_id, cookie_user_language, db).await;
 
@@ -151,7 +151,7 @@ pub async fn transaction_set_old_amount(
     db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let start_time = Instant::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     let result = handle_set_old_amount(transaction_id, contract_id, cookie_user_language, db).await;
 
@@ -169,7 +169,7 @@ pub async fn transaction_hide(
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let start_time = Instant::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     update_transaction_with_hidden(transaction_id, true, cookie_user_language, &mut db).await?;
 
@@ -187,7 +187,7 @@ pub async fn transaction_show(
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let start_time = Instant::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     update_transaction_with_hidden(transaction_id, false, cookie_user_language, &mut db).await?;
 
@@ -208,7 +208,7 @@ pub async fn transaction_not_allow_contract(
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let start_time = Instant::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     let transaction = load_transaction_by_id(transaction_id, cookie_user_language, &mut db).await?;
 
@@ -257,7 +257,7 @@ pub async fn transaction_allow_contract(
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let start_time = Instant::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     update_transaction_with_contract_not_allowed(
         transaction_id,

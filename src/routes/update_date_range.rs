@@ -8,9 +8,9 @@ use serde_json::{json, Value};
 
 use crate::database::db_connector::DbConn;
 use crate::utils::classes::appstate::AppState;
-use crate::utils::get_utils::{get_performance_value_and_graph_data, get_user_id_and_language};
 use crate::utils::interfaces::i_appstate::IAppState;
 use crate::utils::loading_utils::load_banks_of_user;
+use crate::utils::services::get_service::get_get_service;
 use crate::utils::structs::ErrorResponse;
 
 #[get("/update_date_range/<start_date>/<end_date>")]
@@ -21,7 +21,8 @@ pub async fn update_date_range(
     state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Result<Json<Value>, Json<ErrorResponse>> {
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+    let (cookie_user_id, cookie_user_language) =
+        get_get_service().get_user_id_and_language(cookies)?;
 
     info!("Updating date range to {} - {}", start_date, end_date);
 
@@ -36,14 +37,15 @@ pub async fn update_date_range(
 
     match current_bank {
         Ok(current_bank) => {
-            let (performance_value, graph_data) = get_performance_value_and_graph_data(
-                &vec![current_bank],
-                Some(first_date),
-                Some(last_date),
-                cookie_user_language,
-                db,
-            )
-            .await?;
+            let (performance_value, graph_data) = get_get_service()
+                .get_performance_value_and_graph_data(
+                    &vec![current_bank],
+                    Some(first_date),
+                    Some(last_date),
+                    cookie_user_language,
+                    db,
+                )
+                .await?;
 
             Ok(Json(json!({
                 "graph_data": graph_data,
@@ -53,14 +55,15 @@ pub async fn update_date_range(
         Err(_) => {
             let banks = load_banks_of_user(cookie_user_id, cookie_user_language, &mut db).await?;
 
-            let (performance_value, graph_data) = get_performance_value_and_graph_data(
-                &banks,
-                Some(first_date),
-                Some(last_date),
-                cookie_user_language,
-                db,
-            )
-            .await?;
+            let (performance_value, graph_data) = get_get_service()
+                .get_performance_value_and_graph_data(
+                    &banks,
+                    Some(first_date),
+                    Some(last_date),
+                    cookie_user_language,
+                    db,
+                )
+                .await?;
 
             Ok(Json(json!({
                 "graph_data": graph_data,

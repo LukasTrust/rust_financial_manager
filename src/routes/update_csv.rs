@@ -9,10 +9,10 @@ use crate::database::db_connector::DbConn;
 use crate::database::models::NewCSVConverter;
 use crate::utils::classes::appstate::AppState;
 use crate::utils::classes::localization::LOCALIZATION;
-use crate::utils::get_utils::get_user_id_and_language;
 use crate::utils::insert_utiles::insert_csv_converter;
 use crate::utils::interfaces::i_appstate::IAppState;
 use crate::utils::loading_utils::load_csv_converter_of_bank;
+use crate::utils::services::get_service::get_get_service;
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::update_utils::update_csv_converter;
 
@@ -31,7 +31,8 @@ pub async fn update_csv(
     state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+    let (cookie_user_id, cookie_user_language) =
+        get_get_service().get_user_id_and_language(cookies)?;
 
     let current_bank = state
         .get_current_bank(cookie_user_id, cookie_user_language)

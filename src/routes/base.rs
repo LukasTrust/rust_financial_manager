@@ -8,9 +8,9 @@ use rocket_dyn_templates::Template;
 use crate::database::db_connector::DbConn;
 use crate::utils::classes::appstate::AppState;
 use crate::utils::classes::localization::LOCALIZATION;
-use crate::utils::get_utils::{get_user_id_and_language, get_user_language};
 use crate::utils::interfaces::i_appstate::IAppState;
 use crate::utils::loading_utils::{load_banks_of_user, load_user_by_name};
+use crate::utils::services::get_service::get_get_service;
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::translation_utils::{
     get_base_localized_strings, get_dashboard_localized_strings,
@@ -22,7 +22,7 @@ use crate::utils::translation_utils::{
 /// The user's bank accounts and transactions are loaded from the database and displayed on the dashboard.
 #[get("/base")]
 pub async fn base(mut db: Connection<DbConn>, cookies: &CookieJar<'_>) -> Template {
-    let result = get_user_id_and_language(cookies);
+    let result = get_get_service().get_user_id_and_language(cookies);
 
     if result.is_err() {
         return Template::render(
@@ -69,7 +69,8 @@ pub async fn dashboard(
     state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Result<Template, Json<ErrorResponse>> {
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+    let (cookie_user_id, cookie_user_language) =
+        get_get_service().get_user_id_and_language(cookies)?;
 
     let (user_first_name, user_last_name) =
         load_user_by_name(cookie_user_id, cookie_user_language, &mut db).await?;
@@ -97,7 +98,7 @@ pub async fn dashboard(
 /// Remove the user_id cookie to log the user out.
 #[get("/logout")]
 pub async fn logout(cookies: &CookieJar<'_>) -> Result<Template, Json<ErrorResponse>> {
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
     info!("User logged out.");
 
     let cookie = cookies.get_private("user_id");

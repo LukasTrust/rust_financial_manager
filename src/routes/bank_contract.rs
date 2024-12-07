@@ -13,21 +13,19 @@ use crate::utils::classes::appstate::AppState;
 use crate::utils::classes::localization::LOCALIZATION;
 use crate::utils::create_contract::create_contract_from_transactions;
 use crate::utils::delete_utils::delete_contracts_with_ids;
-use crate::utils::get_utils::{
-    get_contracts_with_history, get_user_id_and_language, get_user_language,
-};
 use crate::utils::interfaces::i_appstate::IAppState;
 use crate::utils::loading_utils::load_contracts_from_ids;
 use crate::utils::merge_contracts::{
     handle_all_closed_contracts, handle_open_and_closed_contracts,
 };
+use crate::utils::services::get_service::get_get_service;
 use crate::utils::structs::{ErrorResponse, SuccessResponse};
 use crate::utils::translation_utils::get_bank_contract_localized_strings;
 use crate::utils::update_utils::update_contract_with_new_name;
 
 #[get("/bank/contract")]
 pub async fn bank_contract(cookies: &CookieJar<'_>) -> Result<Template, Redirect> {
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     let localized_strings = get_bank_contract_localized_strings(cookie_user_language);
 
@@ -43,14 +41,16 @@ pub async fn bank_contact_data(
     state: &State<AppState>,
     mut db: Connection<DbConn>,
 ) -> Result<Json<Value>, Json<ErrorResponse>> {
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+    let (cookie_user_id, cookie_user_language) =
+        get_get_service().get_user_id_and_language(cookies)?;
 
     let current_bank = state
         .get_current_bank(cookie_user_id, cookie_user_language)
         .await?;
 
-    let contract_history_string =
-        get_contracts_with_history(current_bank.id, cookie_user_language, &mut db).await?;
+    let contract_history_string = get_get_service()
+        .get_contracts_with_history(current_bank.id, cookie_user_language, &mut db)
+        .await?;
 
     let mut result = json!(SuccessResponse::new(
         LOCALIZATION.get_localized_string(cookie_user_language, "contracts_loaded"),
@@ -73,7 +73,7 @@ pub async fn bank_contract_merge(
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let time = std::time::SystemTime::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     let contract_id_for_loading = ids.ids.clone();
 
@@ -126,7 +126,7 @@ pub async fn bank_contract_delete(
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let time = std::time::SystemTime::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     let contract_ids = ids.ids.clone();
 
@@ -167,7 +167,8 @@ pub async fn bank_scan_for_new_contracts(
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let time = std::time::SystemTime::now();
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+    let (cookie_user_id, cookie_user_language) =
+        get_get_service().get_user_id_and_language(cookies)?;
 
     let current_bank = state
         .get_current_bank(cookie_user_id, cookie_user_language)
@@ -194,7 +195,7 @@ pub async fn bank_contract_name_changed(
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
     let time = std::time::SystemTime::now();
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     update_contract_with_new_name(id, name.to_string(), cookie_user_language, &mut db).await?;
 

@@ -9,15 +9,15 @@ use serde_json::Value;
 use crate::database::db_connector::DbConn;
 use crate::database::models::{NewBank, NewCSVConverter};
 use crate::utils::classes::localization::LOCALIZATION;
-use crate::utils::get_utils::{get_user_id_and_language, get_user_language};
 use crate::utils::insert_utiles::{insert_bank, insert_csv_converter};
 use crate::utils::loading_utils::load_banks_of_user;
+use crate::utils::services::get_service::get_get_service;
 use crate::utils::structs::{ErrorResponse, FormBank, SuccessResponse};
 use crate::utils::translation_utils::get_add_bank_localized_strings;
 
 #[get("/add-bank")]
 pub async fn add_bank(cookies: &CookieJar<'_>) -> Template {
-    let cookie_user_language = get_user_language(cookies);
+    let cookie_user_language = get_get_service().get_user_language(cookies);
 
     let localized_strings = get_add_bank_localized_strings(cookie_user_language);
 
@@ -30,7 +30,8 @@ pub async fn add_bank_form(
     cookies: &CookieJar<'_>,
     mut db: Connection<DbConn>,
 ) -> Result<Json<Value>, Json<ErrorResponse>> {
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+    let (cookie_user_id, cookie_user_language) =
+        get_get_service().get_user_id_and_language(cookies)?;
 
     // Create a new bank instance
     let new_bank = NewBank {

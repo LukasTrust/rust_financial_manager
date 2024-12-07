@@ -15,9 +15,9 @@ use crate::{
     utils::{
         classes::{appstate::AppState, language::Language, localization::LOCALIZATION},
         delete_utils::delete_user_by_id,
-        get_utils::get_user_id_and_language,
         interfaces::i_appstate::IAppState,
         loading_utils::load_user_by_id,
+        services::get_service::get_get_service,
         structs::{ChangePassword, ErrorResponse, SuccessResponse},
         translation_utils::get_settings_localized_strings,
         update_utils::{update_user_password, update_user_with_language},
@@ -34,7 +34,8 @@ pub async fn settings(
     cookies: &CookieJar<'_>,
     state: &State<AppState>,
 ) -> Result<Template, Json<ErrorResponse>> {
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+    let (cookie_user_id, cookie_user_language) =
+        get_get_service().get_user_id_and_language(cookies)?;
 
     state.set_current_bank(cookie_user_id, None).await;
 
@@ -52,7 +53,8 @@ pub async fn set_user_language(
     cookies: &CookieJar<'_>,
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+    let (cookie_user_id, cookie_user_language) =
+        get_get_service().get_user_id_and_language(cookies)?;
 
     let old_language = cookies.get_private("language");
 
@@ -90,7 +92,8 @@ pub async fn change_password(
     change_password: Form<ChangePassword>,
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+    let (cookie_user_id, cookie_user_language) =
+        get_get_service().get_user_id_and_language(cookies)?;
 
     let user = load_user_by_id(cookie_user_id, cookie_user_language, &mut db).await?;
 
@@ -164,7 +167,8 @@ pub async fn delete_account(
     cookies: &CookieJar<'_>,
     mut db: Connection<DbConn>,
 ) -> Result<Json<SuccessResponse>, Json<ErrorResponse>> {
-    let (cookie_user_id, cookie_user_language) = get_user_id_and_language(cookies)?;
+    let (cookie_user_id, cookie_user_language) =
+        get_get_service().get_user_id_and_language(cookies)?;
 
     delete_user_by_id(cookie_user_id, cookie_user_language, &mut db).await?;
 
