@@ -86,6 +86,8 @@ pub async fn generate_graph_data(
                     ("red", 10) // Highlight lowest balance
                 } else if balance == max_balance {
                     ("green", 10) // Highlight highest balance
+                } else if discrepancy_amount.is_some() {
+                    ("yellow", 10) // Mark discrepancies in yellow
                 } else {
                     ("blue", 5) // Default size for other points
                 };
@@ -101,7 +103,7 @@ pub async fn generate_graph_data(
                         balance_string,
                         balance,
                         discrepancy_string,
-                        discrepancy_amount
+                        format!("{:.2}", discrepancy_amount) // Format discrepancy to 2 decimal places
                     )
                 } else {
                     format!(
@@ -251,25 +253,37 @@ fn handle_only_transactions(
 
     // Sort by date, then by ID descending for same-date transactions
     filtered_transactions.sort_by(|a, b| {
-        match a.date.cmp(&b.date) {
-            std::cmp::Ordering::Equal => b.id.cmp(&a.id), // Sort by ID descending if dates are equal
-            other => other,                               // Otherwise, sort by date
+        match a.bank_id.cmp(&b.bank_id) {
+            std::cmp::Ordering::Equal => {
+                match a.date.cmp(&b.date) {
+                    std::cmp::Ordering::Equal => b.id.cmp(&a.id), // Sort by ID descending if dates are equal
+                    other => other,                               // Otherwise, sort by date
+                }
+            }
+            other => other, // Sort by bank_id first
         }
     });
 
     let mut previous_balance = filtered_transactions.first().unwrap().bank_balance_after;
+    let mut current_bank_id = filtered_transactions.first().unwrap().bank_id;
 
     // Calculate discrepancies
     for (_, transaction) in filtered_transactions.iter().enumerate().skip(1) {
-        let discrepancy = previous_balance - (transaction.bank_balance_after - transaction.amount);
-        if !(-0.01..=0.01).contains(&discrepancy) {
-            transactions_total_discrepancy += discrepancy;
-            transactions_with_discrepancy.push(Discrepancy {
-                transaction_id: transaction.id,
-                discrepancy_amount: discrepancy,
-            });
+        if transaction.bank_id == current_bank_id {
+            let discrepancy =
+                transaction.bank_balance_after - transaction.amount - previous_balance;
+            if !(-0.01..=0.01).contains(&discrepancy) {
+                transactions_total_discrepancy += discrepancy;
+                transactions_with_discrepancy.push(Discrepancy {
+                    transaction_id: transaction.id,
+                    discrepancy_amount: discrepancy,
+                });
+            }
+            previous_balance = transaction.bank_balance_after;
+        } else {
+            previous_balance = transaction.bank_balance_after;
+            current_bank_id = transaction.bank_id;
         }
-        previous_balance = transaction.bank_balance_after;
     }
 
     let performance_data = PerformanceData::new_only_transaction(
